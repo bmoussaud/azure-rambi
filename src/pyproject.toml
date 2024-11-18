@@ -1,0 +1,25 @@
+[project]
+name = "azurerambi"
+version = "1.0.0"
+description = "Rambi projet on Azure"
+dependencies = [
+    "Flask",
+    "werkzeug",
+    "gunicorn",
+    "uvicorn",
+    # Used by uvicorn on non-Windows platforms
+    "uvloop>=0.16.0; sys_platform != 'win32' and (sys_platform != 'cygwin' and platform_python_implementation != 'PyPy')",
+    # Recommended for uvicorn
+    "httptools",
+    # Used by uvicorn for reload functionality
+    "watchfiles",
+    "openai",
+    "azure-identity",
+    "aiohttp",
+    "python-dotenv",
+    "pyyaml"
+    ]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"

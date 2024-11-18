@@ -1,0 +1,30 @@
+{
+    "name": "Azure Rambi Dev Container",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:3.12",
+    "forwardPorts": [
+        50505
+    ],
+    "features": {
+        "ghcr.io/azure/azure-dev/azd:latest": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "azure-cli": "latest"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-azuretools.azure-dev",
+                "ms-azuretools.vscode-bicep",
+                "ms-python.python",
+                "ms-python.black-formatter",
+                "ms-python.vscode-pylance",
+                "ms-python.pylint",
+                "GitHub.vscode-github-actions"
+            ]
+        }
+    },
+    "postCreateCommand": "./.devcontainer/postCreateCommand.sh",
+    "remoteUser": "vscode",
+    "hostRequirements": {
+        "memory": "8gb"
+    }
+}

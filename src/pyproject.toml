@@ -19,7 +19,8 @@ dependencies = [
     "azure-identity",
     "aiohttp",
     "python-dotenv",
-    "pyyaml"
+    "pyyaml",
+    "tmdbv3api"
     ]
 
 [build-system]

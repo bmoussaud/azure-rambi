@@ -4,6 +4,8 @@ version = "1.0.0"
 description = "Rambi projet on Azure"
 dependencies = [
     "Flask",
+    "Flask-Bootstrap",
+    "Flask-WTF",
     "werkzeug",
     "gunicorn",
     "uvicorn",

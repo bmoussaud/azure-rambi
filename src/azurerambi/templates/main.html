@@ -1,4 +1,5 @@
-<section id="main">
+<section id="movies">
+    {% if form %}
     <div class="container" id="movieForm">
         <form action="/" method="post">
             {{ form.hidden_tag() }}
@@ -13,10 +14,10 @@
                 <small id=" movie2Help" class="form-text text-muted">provide another movie title</small>
             </div>
             <br>
-
             {{ form.submit(class="btn btn-primary") }}
         </form>
     </div>
+    {% endif %}
     {% if rambimodel %}
     <div class="container mt-5" id="movieResults">
         <div class="row">
@@ -32,6 +33,28 @@
             </div>
         </div>
     </div>
+    <div class="container mt-5">
+        <div class="h-100 p-5 bg-body-tertiary border rounded-3">
+            <h2>Generate</h2>
+            <p>Generate a new movie title and a pitch based on the 2 selected movies</p>
+            <div class="col-auto">
+                <input type="hidden" id="rambimodel" name="movie1Title" value="{{ rambimodel.movie1.title }}">
+                <input type="hidden" id="rambimodel" name="movie2Title" value="{{ rambimodel.movie2.title }}">
+                <button class="btn btn-primary" type="button" id="btn-trigger-aigenerate-movie"
+                    hx-post="/movie/generate" hx-target="#aimovieresults"
+                    hx-include="[name='movie1Title'],[name='movie2Title']">
+                    Generate Movie
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="container mt-5">
+        <div id="aimovieresults">
+
+        </div>
+    </div>
     {% endif %}
+
+
 
 </section>

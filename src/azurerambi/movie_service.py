@@ -17,6 +17,12 @@ class MovieService:
     def __init__(self):
         pass
 
+    def generate_movie(self, movie1: Movie, movie2: Movie) -> Movie:
+        """ Generate a new movie based on the two movies  title """  # noqa
+        print(
+            "generate_movie called based on two movies {movie1.title} and {movie2.title}")
+        return self.get_movie_by_title("The Matrix")
+
     def get_movie_by_title(self, title) -> Movie:
         """ Get movie info from TMDB API """
         search_results = Search().movies(title)

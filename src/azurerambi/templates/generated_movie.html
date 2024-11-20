@@ -1,0 +1,11 @@
+{% block content %}
+<div class="container mt-5" id="generated_movie_container">
+    <div class="row">
+        <div class="col-md-6">
+            {% with movie=generated_movie %}
+            {% include "movie.html" %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endblock %}

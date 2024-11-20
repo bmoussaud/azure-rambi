@@ -1,13 +1,15 @@
 """ A simple Flask app with a single route."""
 from dataclasses import dataclass
+import dataclasses
+import json
 
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from flask import Flask, render_template, redirect, url_for, request
+from dotenv import load_dotenv
 
 from azurerambi.movie_service import MovieService, Movie
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -25,9 +27,12 @@ class Info:
 
 @dataclass
 class RambiModel:
-    """ Data class for PairOfMovies """
+    """ Data class for RambiModel """
     movie1: Movie
     movie2: Movie
+
+    def to_dict(self):
+        return dataclasses.asdict(self)
 
 
 class TwoMoviesForm(FlaskForm):
@@ -53,16 +58,16 @@ def home():
     return render_template('index.html', form=twomovieform, rambimodel=rambimodel)
 
 
-@app.route('/success')
-def success():
-    """Function printing python version."""
-    print("===== success.")
-    print(request.args)
-    movie1 = request.args.get('movie1')
-    print(f"===== movie1Title {movie1.title}.")
-    movie2 = request.args.get('movie2')
-    print(f"===== movie2Title {movie2.title}.")
-    return f"Movie 1: {movie1.title}, Movie 2: {movie2.title}."
+@app.route('/movie/generate', methods=['POST'])
+def movie_generate():
+    """Generate a new movie based on the two movies."""
+    movie1_title = request.form.get('movie1Title')
+    movie2_title = request.form.get('movie2Title')
+    movie_service = MovieService()
+    movie1 = movie_service.get_movie_by_title(movie1_title)
+    movie2 = movie_service.get_movie_by_title(movie2_title)
+    generated_movie = movie_service.generate_movie(movie1, movie2)
+    return render_template('generated_movie.html', generated_movie=generated_movie)
 
 
 if __name__ == '__main__':

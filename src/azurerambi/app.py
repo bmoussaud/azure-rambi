@@ -9,7 +9,7 @@ from wtforms import StringField, SubmitField
 from flask import Flask, render_template, redirect, url_for, request
 from dotenv import load_dotenv
 
-from azurerambi.movie_service import MovieService, Movie
+from azurerambi.movie_service import GenAiMovieService, Movie, TMDBService
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -33,9 +33,6 @@ class RambiModel:
     movie1: Movie
     movie2: Movie
 
-    def to_dict(self):
-        return dataclasses.asdict(self)
-
 
 class TwoMoviesForm(FlaskForm):
     """Form for find tow movies."""
@@ -50,10 +47,10 @@ def home():
     twomovieform = TwoMoviesForm()
     rambimodel = None
     if twomovieform.validate_on_submit():
-        movie_service = MovieService()
-        movie1 = movie_service.get_movie_by_title(
+        tmdb_svc = TMDBService()
+        movie1 = tmdb_svc.get_movie_by_title(
             twomovieform.movie1Title.data)
-        movie2 = movie_service.get_movie_by_title(
+        movie2 = tmdb_svc.get_movie_by_title(
             twomovieform.movie2Title.data)
         rambimodel = RambiModel(movie1, movie2)
 
@@ -65,10 +62,13 @@ def movie_generate():
     """Generate a new movie based on the two movies."""
     movie1_title = request.form.get('movie1Title')
     movie2_title = request.form.get('movie2Title')
-    movie_service = MovieService()
-    movie1 = movie_service.get_movie_by_title(movie1_title)
-    movie2 = movie_service.get_movie_by_title(movie2_title)
-    generated_movie = movie_service.generate_movie(movie1, movie2)
+
+    tmdb_svc = TMDBService()
+    movie1 = tmdb_svc.get_movie_by_title(movie1_title)
+    movie2 = tmdb_svc.get_movie_by_title(movie2_title)
+    
+    genai_movie_service = GenAiMovieService()
+    generated_movie = genai_movie_service.generate_movie(movie1, movie2)
     return render_template('generated_movie.html', generated_movie=generated_movie)
 
 

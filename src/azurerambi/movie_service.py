@@ -21,8 +21,32 @@ class Movie:
     poster_description: str = None
 
 
-class MovieService:
+@dataclass
+class GenAIMovie(Movie):
+    """ Data class for GenAIMovie """
+    prompt: str = None
+
+
+class TMDBService:
     """ Class to manage the access to TMDB API """
+
+    def __init__(self):
+        pass
+
+    def get_movie_by_title(self, title) -> Movie:
+        """ Get movie info from TMDB API """
+        search_results = Search().movies(title)
+        if search_results:
+            sr = search_results[0]  # Return the first result
+            return Movie(sr.title,
+                         sr.overview,
+                         f"https://image.tmdb.org/t/p/original/{sr.poster_path}")
+        else:
+            return None
+
+
+class GenAiMovieService:
+    """ Class to manage the access to OpenAI API to generate a new movie """
 
     def __init__(self):
         self.client = AzureOpenAI(
@@ -32,7 +56,7 @@ class MovieService:
         )
 
     def describe_poster(self, poster_url: str) -> str:
-        """ Get movie info from TMDB API """
+        """describe the movie poster using gp4o model"""
         response = self.client.chat.completions.create(
             model="gpt4o",
             messages=[
@@ -59,6 +83,7 @@ class MovieService:
         return response.choices[0].message.content
 
     def generate_poster(self, posterDescription: str) -> str:
+        """ Generate a new movie poster based on the description """
         print(
             f"----generate_movie_poster called with {posterDescription}!!.\n")
         try:
@@ -81,6 +106,9 @@ class MovieService:
         print(
             "generate_movie called based on two movies {movie1.title} and {movie2.title}")
 
+        movie1.poster_description = self.describe_poster(movie1.poster_url)
+        movie2.poster_description = self.describe_poster(movie2.poster_url)
+
         movie_schema = json.dumps(get_schema(Movie), indent=2)
         print(movie_schema)
 
@@ -92,10 +120,10 @@ class MovieService:
         prompt = prompt_template.format(
             movie1_title=movie1.title,
             movie1_plot=movie1.plot,
-            movie1_description=self.describe_poster(movie1.poster_url),
+            movie1_description=movie1.poster_description,
             movie2_title=movie2.title,
             movie2_plot=movie2.plot,
-            movie2_description=self.describe_poster(movie2.poster_url),
+            movie2_description=movie2.poster_description,
             genre="comedy",
             format=movie_schema
         )
@@ -107,10 +135,11 @@ class MovieService:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a bot expert with a huge knowledge in movies and cinema."},
+                    "content": "You are a bot expert with a huge knowledge in movies and cinema."
+                },
                 {
                     "role": "user",
-                    "content": prompt
+                    "content": f"Generate a movie poster with this description: {prompt}"
                 },
             ]
         )
@@ -122,15 +151,5 @@ class MovieService:
         new_movie = json.loads(generated_movie_plot)
         url = self.generate_poster(new_movie.get("poster_description"))
         new_movie["poster_url"] = url
+        new_movie["prompt"] = prompt
         return new_movie
-
-    def get_movie_by_title(self, title) -> Movie:
-        """ Get movie info from TMDB API """
-        search_results = Search().movies(title)
-        if search_results:
-            sr = search_results[0]  # Return the first result
-            return Movie(sr.title,
-                         sr.overview,
-                         f"https://image.tmdb.org/t/p/original/{sr.poster_path}")
-        else:
-            return None

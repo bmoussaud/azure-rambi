@@ -6,6 +6,14 @@
             {% include "movie.html" %}
             {% endwith %}
         </div>
+        <div class="col-md-6">
+            <div class="card-body">
+                <h5 class="card-title">Pitch Generation Prompt</h5>
+                <p class="card-text">
+                    <md-block>{{generated_movie.prompt}}</md-block>
+                </p>
+
+            </div>
+        </div>
     </div>
-</div>
-{% endblock %}
+    {% endblock %}

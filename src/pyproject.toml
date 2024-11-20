@@ -20,7 +20,8 @@ dependencies = [
     "aiohttp",
     "python-dotenv",
     "pyyaml",
-    "tmdbv3api"
+    "tmdbv3api",
+    "dc-schema"
     ]
 
 [build-system]

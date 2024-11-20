@@ -1,7 +1,7 @@
 """ A simple Flask app with a single route."""
 from dataclasses import dataclass
 import dataclasses
-import json
+import logging
 
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired
@@ -10,6 +10,8 @@ from flask import Flask, render_template, redirect, url_for, request
 from dotenv import load_dotenv
 
 from azurerambi.movie_service import MovieService, Movie
+logging.basicConfig(level=logging.DEBUG)
+
 
 load_dotenv()
 

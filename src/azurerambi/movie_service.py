@@ -65,7 +65,7 @@ class GenAiMovieService:
                 {"role": "user", "content": [
                     {
                         "type": "text",
-                        "text": "Describe this picture:"
+                        "text": "Describe this movie poster:"
                     },
                     {
                         "type": "image_url",
@@ -83,15 +83,14 @@ class GenAiMovieService:
 
         return response.choices[0].message.content
 
-    def generate_poster(self, posterDescription: str) -> str:
+    def generate_poster(self, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
-        print(
-            f"----generate_movie_poster called with {posterDescription}!!.\n")
+        print(f"generate_movie_poster called with {poster_description}.\n")
         try:
             client = AzureOpenAI()
             response = client.images.generate(
                 model="dall-e-3",
-                prompt=posterDescription,
+                prompt="Generate a movie poster with this image description: "+poster_description,
                 n=1,
                 size='1024x1792'
             )
@@ -140,7 +139,7 @@ class GenAiMovieService:
                 },
                 {
                     "role": "user",
-                    "content": f"Generate a movie poster with this description: {prompt}"
+                    "content": prompt
                 },
             ]
         )

@@ -8,6 +8,7 @@ from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from flask import Flask, render_template, redirect, url_for, request
 from dotenv import load_dotenv
+from typing import List
 
 from azurerambi.movie_service import GenAiMovieService, Movie, TMDBService
 logging.basicConfig(level=logging.DEBUG)
@@ -32,6 +33,12 @@ class RambiModel:
     """ Data class for RambiModel """
     movie1: Movie
     movie2: Movie
+    default_genres: List[str] = dataclasses.field(default_factory=lambda: ["Action", "Adventure", "Animation",
+                                                                           "Comedy", "Crime",
+                                                                           "Documentary", "Drama",
+                                                                           "Family", "Fantasy", "History", "Horror",
+                                                                           "Music", "Mystery", "Romance", "Science Fiction",
+                                                                           "TV Movie", "Thriller", "War", "Western"])
 
 
 class TwoMoviesForm(FlaskForm):
@@ -41,7 +48,7 @@ class TwoMoviesForm(FlaskForm):
     submit = SubmitField('Submit')
 
 
-@app.route('/', methods=['GET', 'POST'])
+@ app.route('/', methods=['GET', 'POST'])
 def home():
     """Function printing python version."""
     twomovieform = TwoMoviesForm()
@@ -57,18 +64,19 @@ def home():
     return render_template('index.html', form=twomovieform, rambimodel=rambimodel)
 
 
-@app.route('/movie/generate', methods=['POST'])
+@ app.route('/movie/generate', methods=['POST'])
 def movie_generate():
     """Generate a new movie based on the two movies."""
     movie1_title = request.form.get('movie1Title')
     movie2_title = request.form.get('movie2Title')
+    genre = request.form.get('genre')
 
     tmdb_svc = TMDBService()
     movie1 = tmdb_svc.get_movie_by_title(movie1_title)
     movie2 = tmdb_svc.get_movie_by_title(movie2_title)
-    
+
     genai_movie_service = GenAiMovieService()
-    generated_movie = genai_movie_service.generate_movie(movie1, movie2)
+    generated_movie = genai_movie_service.generate_movie(movie1, movie2, genre)
     return render_template('generated_movie.html', generated_movie=generated_movie)
 
 

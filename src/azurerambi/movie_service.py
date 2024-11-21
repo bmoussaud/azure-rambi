@@ -3,6 +3,7 @@ import os
 import json
 
 from dataclasses import dataclass
+from pydantic import BaseModel
 from tmdbv3api import Search
 from openai import AzureOpenAI
 import openai
@@ -101,10 +102,10 @@ class GenAiMovieService:
             url = "https://bit.ly/3YOrHPI"
         return url
 
-    def generate_movie(self, movie1: Movie, movie2: Movie) -> Movie:
+    def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
         """ Generate a new movie based on the two movies """
         print(
-            "generate_movie called based on two movies {movie1.title} and {movie2.title}")
+            "generate_movie called based on two movies {movie1.title} and {movie2.title} {genre}!!.\n")
 
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
@@ -124,7 +125,7 @@ class GenAiMovieService:
             movie2_title=movie2.title,
             movie2_plot=movie2.plot,
             movie2_description=movie2.poster_description,
-            genre="comedy",
+            genre=genre,
             format=movie_schema
         )
 

@@ -35,16 +35,28 @@
     </div>
     <div class="container mt-5">
         <div class="h-100 p-5 bg-body-tertiary border rounded-3">
-            <h2>Generate</h2>
-            <p>Generate a new movie title and a pitch based on the 2 selected movies</p>
-            <div class="col-auto">
-                <input type="hidden" id="rambimodel" name="movie1Title" value="{{ rambimodel.movie1.title }}">
-                <input type="hidden" id="rambimodel" name="movie2Title" value="{{ rambimodel.movie2.title }}">
-                <button class="btn btn-primary" type="button" id="btn-trigger-aigenerate-movie"
-                    hx-post="/movie/generate" hx-target="#aimovieresults"
-                    hx-include="[name='movie1Title'],[name='movie2Title']">
-                    Generate Movie
-                </button>
+            <div class="row">
+                <div class="col-sm">
+                    <h2>Generate</h2>
+                    <p>Generate a new movie title and a pitch based on the 2 selected movies</p>
+                    <input type="hidden" id="rambimodel" name="movie1Title" value="{{ rambimodel.movie1.title }}">
+                    <input type="hidden" id="rambimodel" name="movie2Title" value="{{ rambimodel.movie2.title }}">
+                    <button class="btn btn-primary" type="button" id="btn-trigger-aigenerate-movie"
+                        hx-post="/movie/generate" hx-target="#aimovieresults"
+                        hx-include="[name='movie1Title'],[name='movie2Title'],[name='genre']">
+                        Generate Movie
+                        <span class="htmx-indicator spinner-border spinner-border-sm" role="status"
+                            aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="col-sm">
+                    <h3>Genres</h3>
+                    <select class="form-select" id="genreSelect" name="genre">
+                        {% for genre in rambimodel.default_genres %}
+                        <option value="{{ genre }}">{{ genre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
     </div>
@@ -54,7 +66,4 @@
         </div>
     </div>
     {% endif %}
-
-
-
 </section>

@@ -64,6 +64,18 @@ def home():
     return render_template('index.html', form=twomovieform, rambimodel=rambimodel)
 
 
+@ app.route('/movie/poster_description', methods=['GET'])
+def poster_description():
+    """Function to show the movie poster description."""
+    movie_title = request.args.get('title')
+    tmdb_svc = TMDBService()
+    movie = tmdb_svc.get_movie_by_title(movie_title)
+    genai_movie_service = GenAiMovieService()
+    poster_desc = genai_movie_service.describe_poster(movie.poster_url)
+    return render_template('poster_description.html',
+                           poster_description=poster_desc)
+
+
 @ app.route('/movie/generate', methods=['POST'])
 def movie_generate():
     """Generate a new movie based on the two movies."""

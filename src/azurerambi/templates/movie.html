@@ -4,5 +4,9 @@
 <div class="card-body">
     <h5 class="card-title">{{movie.title}}</h5>
     <p class="card-text">{{movie.plot}}</p>
+    {% if movie.poster_description %}
     <p class="card-text"><small class="text-muted">{{movie.poster_description}}</small></p>
+    {% else %}
+    <div hx-get="/movie/poster_description?title={{movie.title}}" hx-trigger="load"></div>
+    {% endif %}
 </div>

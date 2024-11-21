@@ -85,7 +85,7 @@ class GenAiMovieService:
 
     def generate_poster(self, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
-        print(f"generate_movie_poster called with {poster_description}.\n")
+        print(f"generate_poster called with {poster_description}.\n")
         try:
             client = AzureOpenAI()
             response = client.images.generate(
@@ -98,7 +98,7 @@ class GenAiMovieService:
             url = json_response["data"][0]["url"]
         except Exception as e:
             print(f"--- Generation Image Error: {e}")
-            url = "https://bit.ly/3YOrHPI"
+            url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return url
 
     def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
@@ -110,7 +110,7 @@ class GenAiMovieService:
         movie2.poster_description = self.describe_poster(movie2.poster_url)
 
         movie_schema = json.dumps(get_schema(Movie), indent=2)
-        print(movie_schema)
+        # print(movie_schema)
 
         # https://yh3bek4jwqde2-openai.openai.azure.com/openai/deployments/gpt4o/chat/completions?api-version=2024-08-01-preview
 
@@ -135,7 +135,7 @@ class GenAiMovieService:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a bot expert with a huge knowledge in movies and cinema."
+                    "content": "You are a bot expert with a huge knowledge about movies and the cinema."
                 },
                 {
                     "role": "user",
@@ -144,12 +144,9 @@ class GenAiMovieService:
             ]
         )
         generated_movie_plot = completion.choices[0].message.content
-
-        print("Generated movie plot: ", generated_movie_plot)
-
+        # print("Generated movie plot: ", generated_movie_plot)
         # Deserialize the generated movie plot into a Movie object using generated_movie_plot
         new_movie = json.loads(generated_movie_plot)
-        url = self.generate_poster(new_movie.get("poster_description"))
-        new_movie["poster_url"] = url
+        new_movie["poster_url"] = None
         new_movie["prompt"] = prompt
         return new_movie

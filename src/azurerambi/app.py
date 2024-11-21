@@ -67,7 +67,6 @@ def home():
 @ app.route('/movie/poster_description', methods=['POST'])
 def poster_description():
     """Function to show the movie poster description."""
-    print("** poster_description", request.form)
     movie_title = request.form.get('movie_title')
     tmdb_svc = TMDBService()
     movie = tmdb_svc.get_movie_by_title(movie_title)
@@ -75,6 +74,14 @@ def poster_description():
     poster_desc = genai_movie_service.describe_poster(movie.poster_url)
     return render_template('poster_description.html',
                            poster_description=poster_desc)
+
+
+@app.route('/poster/generate', methods=['POST'])
+def poster_generate():
+    """Function to generate a new movie poster."""
+    desc = request.form.get('poster_description')
+    generated_poster = GenAiMovieService().generate_poster(desc)
+    return render_template('poster.html', url=generated_poster)
 
 
 @ app.route('/movie/generate', methods=['POST'])

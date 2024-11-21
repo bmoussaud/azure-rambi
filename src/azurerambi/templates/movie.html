@@ -7,6 +7,12 @@
     {% if movie.poster_description %}
     <p class="card-text"><small class="text-muted">{{movie.poster_description}}</small></p>
     {% else %}
-    <div hx-get="/movie/poster_description?title={{movie.title}}" hx-trigger="load"></div>
+    <div hx-get="/movie/poster_description?title={{movie.title}}" hx-trigger="load">
+        <p class="card-text"><small class="text-muted">Fetch poster the poster description
+                <span class="htmx-indicator spinner-border spinner-border-sm" role="status"
+                    aria-hidden="true" /></small>
+        </p>
+
+    </div>
     {% endif %}
 </div>

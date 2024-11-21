@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from typing import List
 
 from azurerambi.movie_service import GenAiMovieService, Movie, TMDBService
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 
 load_dotenv()
@@ -64,10 +64,11 @@ def home():
     return render_template('index.html', form=twomovieform, rambimodel=rambimodel)
 
 
-@ app.route('/movie/poster_description', methods=['GET'])
+@ app.route('/movie/poster_description', methods=['POST'])
 def poster_description():
     """Function to show the movie poster description."""
-    movie_title = request.args.get('title')
+    print("** poster_description", request.form)
+    movie_title = request.form.get('movie_title')
     tmdb_svc = TMDBService()
     movie = tmdb_svc.get_movie_by_title(movie_title)
     genai_movie_service = GenAiMovieService()

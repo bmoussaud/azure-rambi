@@ -10,7 +10,7 @@ import openai
 
 from dc_schema import get_schema
 
-openai.log = "debug"
+# openai.log = "debug"
 
 
 @dataclass

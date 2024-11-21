@@ -1,18 +1,18 @@
 <div class="card">
-    <img class="card-img-top" alt="Card image cap2" src="{{movie.poster_url}}" />
+    <img class="card-img-top" alt="Card image cap2" src="{{ movie.poster_url }}" />
 </div>
 <div class="card-body">
-    <h5 class="card-title">{{movie.title}}</h5>
-    <p class="card-text">{{movie.plot}}</p>
+    <h5 class="card-title" id="movie_title_main" name="movie_title">{{ movie.title }}</h5>
+    <p class="card-text">{{ movie.plot }}</p>
     {% if movie.poster_description %}
-    <p class="card-text"><small class="text-muted">{{movie.poster_description}}</small></p>
+    <p class="card-text"><small class="text-muted">{{ movie.poster_description }}</small></p>
     {% else %}
-    <div hx-get="/movie/poster_description?title={{movie.title}}" hx-trigger="load">
-        <p class="card-text"><small class="text-muted">Fetch poster the poster description
+    <div hx-post="/movie/poster_description" hx-trigger="load delay:1s" hx-include="find input">
+        <input type="hidden" id="movie_title_main_2" name="movie_title" value="{{movie.title}}" />
+        <p class="card-text"><small class="text-muted">LLM Query: get the poster description
                 <span class="htmx-indicator spinner-border spinner-border-sm" role="status"
-                    aria-hidden="true" /></small>
+                    aria-hidden="true"></span></small>
         </p>
-
     </div>
     {% endif %}
 </div>

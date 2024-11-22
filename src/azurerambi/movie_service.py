@@ -22,8 +22,16 @@ class Movie:
     poster_description: str = None
 
 
+class Movie2(BaseModel):
+    """ Data class for Movie2 """
+    title: str
+    plot: str
+    poster_url: str
+    poster_description: str = None
+    
+
 @dataclass
-class GenAIMovie(Movie):
+class GenAIMovie(Movie2):
     """ Data class for GenAIMovie """
     prompt: str = None
 
@@ -150,3 +158,67 @@ class GenAiMovieService:
         new_movie["poster_url"] = None
         new_movie["prompt"] = prompt
         return new_movie
+    
+    def generate_movie2(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
+        """ Generate a new movie based on the two movies 
+        https://openai.com/index/introducing-structured-outputs-in-the-api/
+        """
+        print(
+            f"generate_movie called based on two movies {movie1.title} and {movie2.title} {genre}!!.\n")
+
+        movie1.poster_description = self.describe_poster(movie1.poster_url)
+        movie2.poster_description = self.describe_poster(movie2.poster_url)
+
+        with open("prompts/structured_new_movie_short.txt", "r", encoding="utf-8") as file:
+            prompt_template = file.read()
+
+        #print("Prompt template: ", prompt_template)
+
+        prompt = prompt_template.format(
+            movie1_title=movie1.title,
+            movie1_plot=movie1.plot,
+            movie1_description=movie1.poster_description,
+            movie2_title=movie2.title,
+            movie2_plot=movie2.plot,
+            movie2_description=movie2.poster_description,
+            genre=genre
+        )
+
+        #print(prompt)
+
+        completion = self.client.beta.chat.completions.parse(
+            model="gpt4o",
+            response_format=GenAIMovie,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a bot expert with a huge knowledge about movies and the cinema."
+                },
+                {
+                    "role": "system",
+                    "content": """
+                                Two movie titles and plots will be provided, along with a target genre.
+                                Using the titles, plots and genre as inspiration, generate the following:
+                                * Generate a new movie title that combines elements of the provided titles and fits the target genre. The title should be catchy and humorous.
+                                * Generate a 4-6 sentence movie plot synopsis for the new title, incorporating themes, characters, or plot points from the provided movies. Adapt them to fit the target genre.
+                                * Based on the generated movie plot and the 2 provied movie posters, describe a movie poster
+                                Take care of not generating any violence. 
+                                Take care of not generating any copyrighted content. 
+                                Remove all mentions about copyrighted content and replace them with the generic words.  
+                                """
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                },
+            ]
+        )
+        message = completion.choices[0].message
+        #print("Message: ", message)
+        #print("Message Content: ", message.content)
+        movie = GenAIMovie.model_validate(json.loads(message.content))
+        movie.prompt= prompt
+        movie.poster_url = None
+        return movie
+
+

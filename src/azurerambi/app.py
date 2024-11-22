@@ -20,13 +20,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'azure_rambi'
 
 
-@dataclass
-class Info:
-    """ Data class for Info """
-    title: str
-    heading: str
-    message: str
-
 
 @dataclass
 class RambiModel:
@@ -96,7 +89,7 @@ def movie_generate():
     movie2 = tmdb_svc.get_movie_by_title(movie2_title)
 
     genai_movie_service = GenAiMovieService()
-    generated_movie = genai_movie_service.generate_movie(movie1, movie2, genre)
+    generated_movie = genai_movie_service.generate_movie2(movie1, movie2, genre)
     return render_template('generated_movie.html', generated_movie=generated_movie)
 
 

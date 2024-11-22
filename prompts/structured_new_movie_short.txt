@@ -1,0 +1,18 @@
+### Movie 1
+
+* Title: {movie1_title}
+* Plot: {movie1_plot}
+* Poster description: {movie1_description}
+
+### Movie 2
+
+* Title: {movie2_title}
+* Plot: {movie2_plot}
+* Poster description: {movie2_description}
+
+### Additional Information
+
+* Target Genre: {genre} 
+
+
+

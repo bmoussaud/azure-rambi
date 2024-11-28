@@ -2,6 +2,9 @@
 name = "azurerambi"
 version = "1.0.0"
 description = "Rambi projet on Azure"
+authors = [
+  { name="Benoit Moussaud", email="benoit@moussaud.orgg" }
+]
 dependencies = [
     "Flask",
     "Flask-Bootstrap",

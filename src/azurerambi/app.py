@@ -93,5 +93,6 @@ def movie_generate():
     return render_template('generated_movie.html', generated_movie=generated_movie)
 
 
+
 if __name__ == '__main__':
     app.run(debug=True)

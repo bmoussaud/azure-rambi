@@ -5,10 +5,10 @@ from typing import List
 
 #import logging
 
+from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
-from flask import Flask, render_template, request
 from dotenv import load_dotenv
 from azurerambi.movie_service import GenAiMovieService, Movie, TMDBService
 # logging.basicConfig(level=logging.DEBUG)

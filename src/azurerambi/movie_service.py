@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass
 from pydantic import BaseModel
 from tmdbv3api import Search
+from tmdbv3api.exceptions import TMDbException
 from openai import AzureOpenAI
 import openai
 
@@ -49,14 +50,18 @@ class TMDBService:
     def get_movie_by_title(self, title) -> Movie:
         """ Get movie info from TMDB API """
         logger.info("Fetching movie with title: %s", title)
-        search_results = Search().movies(title)
-        if search_results:
-            sr = search_results[0]  # Return the first result
-            return Movie(sr.title,
-                         sr.overview,
-                         f"https://image.tmdb.org/t/p/original/{sr.poster_path}")
-        else:
-            return None
+        try:
+            search_results = Search().movies(title)
+            if search_results:
+                sr = search_results[0]  # Return the first result
+                return Movie(sr.title,
+                            sr.overview,
+                            f"https://image.tmdb.org/t/p/original/{sr.poster_path}")
+            else:
+                return None
+        except TMDbException as e:
+            logger.error("get_movie_by_title: %s", e)
+            return Movie(title,str(e),"https://placehold.co/150x220?text=TMDB%20Error")
 
 
 class GenAiMovieService:

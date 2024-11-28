@@ -1,9 +1,0 @@
-Flask==2.2.2
-Flask-Bootstrap
-Flask-WTF
-gunicorn==20.1.0
-Werkzeug==2.2.2
-azure-openai
-requests==2.26.0
-
-

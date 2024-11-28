@@ -1,0 +1,18 @@
+#requirements.txt
+#needed by Azure App Service
+Flask  
+Flask-Bootstrap  
+Flask-WTF  
+werkzeug  
+gunicorn  
+uvicorn  
+uvloop>=0.16
+httptools  
+watchfiles  
+openai  
+azure-identity  
+aiohttp  
+python-dotenv  
+pyyaml  
+tmdbv3api  
+dc-schema  

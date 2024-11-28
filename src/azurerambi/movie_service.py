@@ -1,16 +1,20 @@
 """ Class to manage the access to TMDB API """
 import os
 import json
-
+import logging
 from dataclasses import dataclass
 from pydantic import BaseModel
 from tmdbv3api import Search
 from openai import AzureOpenAI
 import openai
 
+
 from dc_schema import get_schema
 
 # openai.log = "debug"
+
+# Create a logger for this module
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -40,10 +44,11 @@ class TMDBService:
     """ Class to manage the access to TMDB API """
 
     def __init__(self):
-        pass
+        logger.info("Initializing TMDBService")
 
     def get_movie_by_title(self, title) -> Movie:
         """ Get movie info from TMDB API """
+        logger.info("Fetching movie with title: %s", title)
         search_results = Search().movies(title)
         if search_results:
             sr = search_results[0]  # Return the first result
@@ -58,6 +63,7 @@ class GenAiMovieService:
     """ Class to manage the access to OpenAI API to generate a new movie """
 
     def __init__(self):
+        logger.info("Initializing GenAiMovieService")
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
             api_version="2024-08-01-preview",
@@ -66,6 +72,7 @@ class GenAiMovieService:
 
     def describe_poster(self, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
+        logger.info("describe_poster called with %s", poster_url)   
         response = self.client.chat.completions.create(
             model="gpt4o",
             messages=[
@@ -86,14 +93,12 @@ class GenAiMovieService:
             max_tokens=2000
         )
         # Return the generated description
-        print(
-            f"--{poster_url} describe_poster: {response.choices[0].message.content}.\n")
-
+        logger.info("describe_poster: %s", response.choices[0].message.content)
         return response.choices[0].message.content
 
     def generate_poster(self, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
-        print(f"generate_poster called with {poster_description}.\n")
+        logger.info("generate_poster called with %s", poster_description)
         try:
             client = AzureOpenAI()
             response = client.images.generate(
@@ -105,22 +110,19 @@ class GenAiMovieService:
             json_response = json.loads(response.model_dump_json())
             url = json_response["data"][0]["url"]
         except Exception as e:
-            print(f"--- Generation Image Error: {e}")
+            logger.error("generate_poster: %s", e)
             url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return url
 
     def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
         """ Generate a new movie based on the two movies """
-        print(
-            "generate_movie called based on two movies {movie1.title} and {movie2.title} {genre}!!.\n")
-
+        logger.info(
+            "generate_movie called based on two movies %s and %s, genre: %s\n", movie1.title, movie2.title, genre)
+  
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
 
         movie_schema = json.dumps(get_schema(Movie), indent=2)
-        # print(movie_schema)
-
-        # https://yh3bek4jwqde2-openai.openai.azure.com/openai/deployments/gpt4o/chat/completions?api-version=2024-08-01-preview
 
         with open("prompts/new_movie.txt", "r", encoding="utf-8") as file:
             prompt_template = file.read()
@@ -136,7 +138,7 @@ class GenAiMovieService:
             format=movie_schema
         )
 
-        print(prompt)
+        logger.info("Prompt: %s", prompt)
 
         completion = self.client.chat.completions.create(
             model="gpt4o",
@@ -161,10 +163,12 @@ class GenAiMovieService:
     
     def generate_movie2(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
         """ Generate a new movie based on the two movies 
-        https://openai.com/index/introducing-structured-outputs-in-the-api/
+            https://openai.com/index/introducing-structured-outputs-in-the-api/
         """
-        print(
-            f"generate_movie called based on two movies {movie1.title} and {movie2.title} {genre}!!.\n")
+        
+        logger.info(
+            "generate_movie2 called based on two movies %s and %s, genre: %s\n", movie1.title, movie2.title, genre)
+        
 
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
@@ -184,7 +188,7 @@ class GenAiMovieService:
             genre=genre
         )
 
-        #print(prompt)
+        logger.info("Prompt: %s", prompt)
 
         completion = self.client.beta.chat.completions.parse(
             model="gpt4o",

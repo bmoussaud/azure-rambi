@@ -1,9 +1,9 @@
-""" A simple Flask app with a single route."""
+""" A Rambi Flask app with a single route."""
 from dataclasses import dataclass
 import dataclasses
 from typing import List
-
-#import logging
+import logging
+import sys
 
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
@@ -11,8 +11,12 @@ from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
 from azurerambi.movie_service import GenAiMovieService, Movie, TMDBService
-# logging.basicConfig(level=logging.DEBUG)
 
+# logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+logger.addHandler(handler)
 
 load_dotenv()
 
@@ -20,18 +24,17 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'azure_rambi'
 
 
+genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
+              "Documentary", "Drama","Family", "Fantasy", "History", "Horror",
+              "Music", "Mystery", "Romance", "Science Fiction",
+              "TV Movie", "Thriller", "War", "Western"]
 
 @dataclass
 class RambiModel:
     """ Data class for RambiModel """
     movie1: Movie
     movie2: Movie
-    default_genres: List[str] = dataclasses.field(default_factory=lambda: ["Action", "Adventure", "Animation",
-                                                                           "Comedy", "Crime",
-                                                                           "Documentary", "Drama",
-                                                                           "Family", "Fantasy", "History", "Horror",
-                                                                           "Music", "Mystery", "Romance", "Science Fiction",
-                                                                           "TV Movie", "Thriller", "War", "Western"])
+    default_genres: List[str] = dataclasses.field(default_factory=lambda: genre_list)
 
 
 class TwoMoviesForm(FlaskForm):

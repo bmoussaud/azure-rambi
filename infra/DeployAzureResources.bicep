@@ -101,7 +101,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'AZURE_OPENAI_API_KEY'
-          value: listKeys(openAI.id, '2023-05-01').key1
+          value: openAI.listKeys().key2
         }
         {
           name: 'AZURE_OPENAI_ENDPOINT'

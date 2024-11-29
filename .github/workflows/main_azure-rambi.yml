@@ -66,14 +66,12 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5A079CE48865410EBF41F2338F7E8140 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C362C79A3181435485C057FC99715D2D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6228766B525747F0AEB63950FDE1E373 }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'azure-rambi'
+          app-name: 'azrambi-b76s6utvi44xo'
           slot-name: 'Production'
           

@@ -18,7 +18,7 @@ param deployments array = [
     model: 'dall-e-3'
     version: '3.0'
     capacity: 1 
-    
+      
   }
 ]
 

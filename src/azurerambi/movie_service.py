@@ -18,16 +18,8 @@ from dc_schema import get_schema
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Movie:
-    """ Data class for Movie """
-    title: str
-    plot: str
-    poster_url: str
-    poster_description: str = None
 
-
-class Movie2(BaseModel):
+class Movie(BaseModel):
     """ Data class for Movie2 """
     title: str
     plot: str
@@ -36,7 +28,7 @@ class Movie2(BaseModel):
     
 
 @dataclass
-class GenAIMovie(Movie2):
+class GenAIMovie(Movie):
     """ Data class for GenAIMovie """
     prompt: str = None
 
@@ -54,14 +46,16 @@ class TMDBService:
             search_results = Search().movies(title)
             if search_results:
                 sr = search_results[0]  # Return the first result
-                return Movie(sr.title,
-                            sr.overview,
-                            f"https://image.tmdb.org/t/p/original/{sr.poster_path}")
+                return Movie(
+                    title=sr.title,
+                    plot=sr.overview,
+                    poster_url=f"https://image.tmdb.org/t/p/original/{sr.poster_path}"
+                )
             else:
                 return None
         except TMDbException as e:
             logger.error("get_movie_by_title: %s", e)
-            return Movie(title,str(e),"https://placehold.co/150x220?text=TMDB%20Error")
+            return Movie(title=title, plot=str(e), poster_url="https://placehold.co/150x220?text=TMDB%20Error")
 
 
 class GenAiMovieService:
@@ -119,62 +113,14 @@ class GenAiMovieService:
             url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return url
 
-    def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
-        """ Generate a new movie based on the two movies """
-        logger.info(
-            "generate_movie called based on two movies %s and %s, genre: %s\n", movie1.title, movie2.title, genre)
   
-        movie1.poster_description = self.describe_poster(movie1.poster_url)
-        movie2.poster_description = self.describe_poster(movie2.poster_url)
-
-        movie_schema = json.dumps(get_schema(Movie), indent=2)
-
-        with open("prompts/new_movie.txt", "r", encoding="utf-8") as file:
-            prompt_template = file.read()
-
-        prompt = prompt_template.format(
-            movie1_title=movie1.title,
-            movie1_plot=movie1.plot,
-            movie1_description=movie1.poster_description,
-            movie2_title=movie2.title,
-            movie2_plot=movie2.plot,
-            movie2_description=movie2.poster_description,
-            genre=genre,
-            format=movie_schema
-        )
-
-        logger.info("Prompt: %s", prompt)
-
-        completion = self.client.chat.completions.create(
-            model="gpt4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a bot expert with a huge knowledge about movies and the cinema."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                },
-            ]
-        )
-        generated_movie_plot = completion.choices[0].message.content
-        # print("Generated movie plot: ", generated_movie_plot)
-        # Deserialize the generated movie plot into a Movie object using generated_movie_plot
-        new_movie = json.loads(generated_movie_plot)
-        new_movie["poster_url"] = None
-        new_movie["prompt"] = prompt
-        return new_movie
-    
     def generate_movie2(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
         """ Generate a new movie based on the two movies 
             https://openai.com/index/introducing-structured-outputs-in-the-api/
-        """
-        
+        """ 
+
         logger.info(
             "generate_movie2 called based on two movies %s and %s, genre: %s\n", movie1.title, movie2.title, genre)
-        
-
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
 

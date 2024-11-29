@@ -13,8 +13,14 @@ param deployments array = [
     capacity: 120
     version: '2'
   }
+  {
+    name: 'dall-e-3'
+    model: 'dall-e-3'
+    version: '3.0'
+    capacity: 1 
+    
+  }
 ]
-
 
 @description('Restore the service instead of creating a new instance. This is useful if you previously soft-deleted the service and want to restore it. If you are restoring a service, set this to true. Otherwise, leave this as false.')
 param restore bool = false
@@ -28,12 +34,11 @@ var apimSku = 'Basicv2'
 var apimSkuCount = 1
 var apimPublisherName = 'Contoso Suites'
 
-var webAppNameApi = '${uniqueString(resourceGroup().id)}-api'
-var webAppNameDash = '${uniqueString(resourceGroup().id)}-dash'
+var webAppNameMain = 'azrambi-${uniqueString(resourceGroup().id)}'
+//var webAppNameApi = 'azrambi-api-${uniqueString(resourceGroup().id)}'
 var webAppSku = 'S1'
-var appServicePlanName = '${uniqueString(resourceGroup().id)}-cosu-asp'
-
-var openAIName = '${uniqueString(resourceGroup().id)}-openai'
+var appServicePlanName = 'azrambi-asp-${uniqueString(resourceGroup().id)}'
+var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure OpenAI resource.')
 resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
@@ -82,7 +87,7 @@ resource appServicePlan 'Microsoft.Web/serverFarms@2022-09-01' = {
 
 @description('Creates an Azure App Service for the API.')
 resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
-  name: webAppNameApi
+  name: webAppNameMain
   location: location
   kind: 'linux'
   properties: {
@@ -90,7 +95,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
     httpsOnly: true
     clientAffinityEnabled: false
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.12' // Specify Python version
+      linuxFxVersion: 'PYTHON|3.12'
       http20Enabled: true
       minTlsVersion: '1.2'
       appCommandLine: 'gunicorn azurerambi.app:app --bind=0.0.0.0 --chdir src'
@@ -119,6 +124,10 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
       }
     }
 }
+
+
+
+
 
 
 

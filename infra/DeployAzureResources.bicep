@@ -97,11 +97,11 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
       appSettings: [
         {
           name: 'OPENAI_API_VERSION'
-          value: '2024-02-01'
+          value: deployments[0].version
         }
         {
           name: 'AZURE_OPENAI_API_KEY'
-          value: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+          value: listKeys(openAI.id, '2023-05-01').key1
         }
         {
           name: 'AZURE_OPENAI_ENDPOINT'

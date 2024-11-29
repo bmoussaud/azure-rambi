@@ -10,33 +10,48 @@ on:
       - main
   workflow_dispatch:
 
+
 env:
-  AZURE_WEBAPP_NAME: azrambi-b76s6utvi44xo # set this to your application's name
-  AZURE_WEBAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  AZURE_WEBAPP_NAME: azrambi-b76s6utvi44xo     # set this to your application's name
+  WORKING_DIRECTORY: 'src'        # set this to the path to your path of working directory inside github repository, defaults to the repository root
+  PYTHON_VERSION: '3.12'        # set the version to use
+  STARTUP_COMMAND: ''           # set this to the startup command required to start the gunicorn server. default it is empty
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Set up Python 3.x
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.x
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Deploy web App using GH Action azure/webapps-deploy
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-    - name: logout
-      run: |
-        az logout
+ build-and-deploy:
+  runs-on: ubuntu-latest
+  steps:
+  # checkout the repo 
+  - uses: actions/checkout@v3
+  # setup python
+  - name: Setup Python
+    uses: actions/setup-python@v1
+    with:
+     python-version: ${{ env.PYTHON_VERSION }}
+  # install dependencies
+  - name: python install
+    working-directory: ${{ env.WORKING_DIRECTORY }}
+    run: |
+     sudo apt install python${{ env.PYTHON_VERSION }}-venv
+     python -m venv --copies antenv
+     source antenv/bin/activate
+     pip install setuptools
+     pip install -r requirements.txt
+  # Azure login
+  - uses: azure/login@v1
+    with:
+     creds: ${{ secrets.AZURE_CREDENTIALS }}
+  - uses: azure/appservice-settings@v1
+    with:
+     app-name: ${{ env.AZURE_WEBAPP_NAME }}
+     mask-inputs: false
+     general-settings-json: '{"linuxFxVersion": "PYTHON|${{ env.PYTHON_VERSION }}"}' #'General configuration settings as Key Value pairs'
+  # deploy web app
+  - uses: azure/webapps-deploy@v2
+    with:
+     app-name: ${{ env.AZURE_WEBAPP_NAME }}
+     package: ${{ env.WORKING_DIRECTORY }}
+  # Azure logout
+  - name: logout
+    run: |
+     az logout

@@ -22,6 +22,7 @@
 
 <body data-bs-theme="light" class="container">
 
+
     <header class="my-3">
         <div class="row">
             <h1 class="col-12 text-center">
@@ -43,7 +44,14 @@
                 <img src="{{ url_for('static', filename='images/azure.png') }}" alt="Azure" width="90" height="30" />
         </div>
         <a class="github-fork-ribbon right-up fixed" href="https://github.com/bmoussaud/azure-rambi"
-            data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
+            data-ribbon="Fork me on GitHub" title="Fork me on GitHub ">Fork</a>
+        <a
+            class="github-fork-ribbon left-bottom fixed"
+            href="https://github.com/bmoussaud/azure-rambi"
+            data-ribbon="{{github_run_id}}"
+            title="Fork me on GitHub"
+            >Fork me on GitHub</a
+          >
     </footer>
 
 </body>

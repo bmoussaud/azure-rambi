@@ -38,7 +38,8 @@ jobs:
   # **Generate Job Info File**
   - name: Generate Job Info File
     run: |
-      echo "GITHUB_RUN_ID=${{ github.run_id }}" >> .env
+      echo "GITHUB_JOB=${{ github.job }}" >> .env
+      echo "GITHUB_SHA=${{ github.sha }}" >> .env
   # Azure login
   - uses: azure/login@v1
     with:

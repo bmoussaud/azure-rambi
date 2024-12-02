@@ -60,7 +60,7 @@ def home():
             twomovieform.movie2Title.data)
         rambimodel = RambiModel(movie1, movie2)
 
-    return render_template('index.html', form=twomovieform, rambimodel=rambimodel, github_run_id=os.getenv('GITHUB_RUN_ID'))
+    return render_template('index.html', form=twomovieform, rambimodel=rambimodel, github_job=os.getenv('GITHUB_JOB'))
 
 
 @ app.route('/movie/poster_description', methods=['POST'])

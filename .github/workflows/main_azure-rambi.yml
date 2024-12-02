@@ -40,6 +40,7 @@ jobs:
     run: |
       echo "GITHUB_JOB=${{ github.job }}" >> .env
       echo "GITHUB_SHA=${{ github.sha }}" >> .env
+      echo "GITHUB_ACTOR=${{ github.actor }}" >> .env
   # Azure login
   - uses: azure/login@v1
     with:

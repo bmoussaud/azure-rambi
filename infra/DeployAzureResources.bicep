@@ -89,7 +89,7 @@ resource appServicePlan 'Microsoft.Web/serverFarms@2022-09-01' = {
 resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
   name: webAppNameMain
   location: location
-  kind: 'linux'
+  kind: 'app,linux'
   properties: {
     serverFarmId: appServicePlan.id
     httpsOnly: true

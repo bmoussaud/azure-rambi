@@ -29,13 +29,12 @@ param restore bool = false
 @minLength(1)
 param apimPublisherEmail string = 'support@contososuites.com'
 
-var apiManagementServiceName = 'apim-${uniqueString(resourceGroup().id)}'
+var apiManagementServiceName = 'azure-rambi-apim-${uniqueString(resourceGroup().id)}'
 var apimSku = 'Basicv2'
 var apimSkuCount = 1
-var apimPublisherName = 'Contoso Suites'
+var apimPublisherName = 'Azure Rambi Suites'
 
 var webAppNameMain = 'azrambi-${uniqueString(resourceGroup().id)}'
-//var webAppNameApi = 'azrambi-api-${uniqueString(resourceGroup().id)}'
 var webAppSku = 'S1'
 var appServicePlanName = 'azrambi-asp-${uniqueString(resourceGroup().id)}'
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
@@ -126,8 +125,23 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
 }
 
 
+resource apiManagementService 'Microsoft.ApiManagement/service@2023-09-01-preview' = {
+  name: apiManagementServiceName
+  location: location
+  sku: {
+    name: apimSku
+    capacity: apimSkuCount
+  }
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    publisherEmail: apimPublisherEmail
+    publisherName: apimPublisherName
+    restore: restore
+  }
+}
 
-
-
-
-
+output application_url string = appServiceApp.properties.hostNames[0]
+output application_name string = appServiceApp.name
+output apiManagementServiceName string = apiManagementService.name

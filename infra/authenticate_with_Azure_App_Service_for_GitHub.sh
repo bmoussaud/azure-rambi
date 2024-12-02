@@ -1,9 +1,7 @@
 #!/bin/bash
 # Variables
 resourceGroup="azrambi"
-#resourceGroup="rambi-agents"
 appName="azrambi-b76s6utvi44xo"
-#appName="azure-rambi"
 subscriptionId="9479b396-5d3e-467a-b89f-ba8400aeb7dd"
 myApp="azure-rambi"
 

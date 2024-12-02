@@ -4,6 +4,7 @@ import dataclasses
 from typing import List
 import logging
 import sys
+import os
 
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
@@ -59,7 +60,7 @@ def home():
             twomovieform.movie2Title.data)
         rambimodel = RambiModel(movie1, movie2)
 
-    return render_template('index.html', form=twomovieform, rambimodel=rambimodel)
+    return render_template('index.html', form=twomovieform, rambimodel=rambimodel, github_run_id=os.getenv('GITHUB_RUN_ID'))
 
 
 @ app.route('/movie/poster_description', methods=['POST'])

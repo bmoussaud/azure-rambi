@@ -9,15 +9,11 @@ from tmdbv3api.exceptions import TMDbException
 from openai import AzureOpenAI
 import openai
 
-
-from dc_schema import get_schema
-
 # openai.log = "debug"
 
 # Create a logger for this module
 logger = logging.getLogger(__name__)
-
-
+logger.setLevel(logging.INFO)
 
 class Movie(BaseModel):
     """ Data class for Movie2 """

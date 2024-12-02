@@ -35,6 +35,10 @@ jobs:
      python -m venv --copies antenv
      source antenv/bin/activate
      pip install -r requirements.txt
+  # **Generate Job Info File**
+  - name: Generate Job Info File
+    run: |
+      echo "GITHUB_RUN_ID=${{ github.run_id }}" >> .enb
   # Azure login
   - uses: azure/login@v1
     with:

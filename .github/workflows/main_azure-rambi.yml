@@ -13,9 +13,9 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: azure-rambi     # set this to your application's name
-  WORKING_DIRECTORY: 'src'        # set this to the path to your path of working directory inside github repository, defaults to the repository root
-  PYTHON_VERSION: '3.12'        # set the version to use
-  STARTUP_COMMAND: ''           # set this to the startup command required to start the gunicorn server. default it is empty
+  WORKING_DIRECTORY: 'src'           # set this to the path to your path of working directory inside github repository, defaults to the repository root
+  PYTHON_VERSION: '3.12'             # set the version to use
+  STARTUP_COMMAND: ''                # set this to the startup command required to start the gunicorn server. default it is empty
 
 jobs:
  build-and-deploy:
@@ -38,16 +38,16 @@ jobs:
   # **Generate Job Info File**
   - name: Generate Job Info File
     run: |
-      echo "GITHUB_RUN_ID=${{ github.run_id }}" >> .enb
+      echo "GITHUB_RUN_ID=${{ github.run_id }}" >> .env
   # Azure login
   - uses: azure/login@v1
     with:
      creds: ${{ secrets.AZURE_CREDENTIALS }}
-  - uses: azure/appservice-settings@v1
-    with:
-     app-name: ${{ env.AZURE_WEBAPP_NAME }}
-     mask-inputs: false
-     general-settings-json: '{"linuxFxVersion": "PYTHON|${{ env.PYTHON_VERSION }}"}' #'General configuration settings as Key Value pairs'
+  #- uses: azure/appservice-settings@v1
+  #  with:
+  #   app-name: ${{ env.AZURE_WEBAPP_NAME }}
+  #   mask-inputs: false
+  #   general-settings-json: '{"linuxFxVersion": "PYTHON|${{ env.PYTHON_VERSION }}"}' #'General configuration settings as Key Value pairs'
   # deploy web app
   - uses: azure/webapps-deploy@v2
     with:

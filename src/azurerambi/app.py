@@ -13,7 +13,8 @@ from dotenv import load_dotenv
 from azurerambi.movie_service import GenAiMovieService, Movie, TMDBService
 import openai
 
-# logging.basicConfig(level=logging.DEBUG)
+
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)

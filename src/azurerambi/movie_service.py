@@ -63,9 +63,11 @@ class GenAiMovieService:
 
     def __init__(self):
         logger.info("Initializing GenAiMovieService")
+        #https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-05-13
+        #https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview 
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version="2024-08-01-preview",
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
 
@@ -73,7 +75,7 @@ class GenAiMovieService:
         """describe the movie poster using gp4o model"""
         logger.info("describe_poster called with %s", poster_url)   
         response = self.client.chat.completions.create(
-            model="gpt4o",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": [
@@ -142,7 +144,7 @@ class GenAiMovieService:
         logger.info("Prompt: %s", prompt)
 
         completion = self.client.beta.chat.completions.parse(
-            model="gpt4o",
+            model="gpt-4o",
             response_format=GenAIMovie,
             messages=[
                 {

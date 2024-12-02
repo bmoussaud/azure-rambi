@@ -101,7 +101,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
       appCommandLine: 'gunicorn azurerambi.app:app --bind=0.0.0.0 --chdir src'
       appSettings: [
         {
-          name: 'OPENAI_API_VERSION'
+          name: 'AZURE_OPENAI_API_VERSION'
           value: deployments[0].version
         }
         {
@@ -113,7 +113,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
           value: 'https://${openAI.name}.search.windows.net'
         }
         {
-          name: 'TMBDTMDB_API_KEY'
+          name: 'TMDB_API_KEY'
           value: '68d40b1b40c8ba0c137374cf5dc3e7a1'
         }
         {

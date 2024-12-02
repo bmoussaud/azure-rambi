@@ -33,6 +33,17 @@ genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
               "TV Movie", "Thriller", "War", "Western"]
 
 @dataclass
+class GitHubContext:
+    """ Data class for GitHubContext """
+    job: str = os.getenv('GITHUB_JOB')
+    sha: str = os.getenv('GITHUB_SHA')
+    actor: str = os.getenv('GITHUB_ACTOR')
+    run_number: str = os.getenv('GITHUB_RUN_NUMBER')
+    repository: str = "https://github.com/bmoussaud/azure-rambi"
+
+
+
+@dataclass
 class RambiModel:
     """ Data class for RambiModel """
     movie1: Movie
@@ -59,8 +70,7 @@ def home():
         movie2 = tmdb_svc.get_movie_by_title(
             twomovieform.movie2Title.data)
         rambimodel = RambiModel(movie1, movie2)
-
-    return render_template('index.html', form=twomovieform, rambimodel=rambimodel, github_job=os.getenv('GITHUB_JOB'))
+    return render_template('index.html', form=twomovieform, rambimodel=rambimodel, github=GitHubContext())
 
 
 @ app.route('/movie/poster_description', methods=['POST'])

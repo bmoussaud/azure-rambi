@@ -65,9 +65,12 @@ class GenAiMovieService:
         logger.info("Initializing GenAiMovieService")
         #https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-05-13
         #https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview 
+        logger.info("Initializing AzureOpenAI with api_key: %s, api_version: %s, azure_endpoint: %s",
+                    os.getenv("AZURE_OPENAI_API_KEY"), os.getenv("OPENAI_API_VERSION"), os.getenv("AZURE_OPENAI_ENDPOINT"))
+        
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+            api_version=os.getenv("OPENAI_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
 
@@ -122,7 +125,7 @@ class GenAiMovieService:
         """ 
 
         logger.info(
-            "generate_movie2 called based on two movies %s and %s, genre: %s\n", movie1.title, movie2.title, genre)
+            "generate_movie2 called based on two movies %s and %s, genre: %s", movie1.title, movie2.title, genre)
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
 

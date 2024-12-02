@@ -6,7 +6,7 @@ param deployments array = [
   {
     name: 'gpt-4o'
     capacity: 40
-    version: '2024-05-13'
+    version: '2024-08-06' //2024-08-06 ?
   }
   {
     name: 'text-embedding-ada-002'
@@ -101,8 +101,8 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
       appCommandLine: 'gunicorn azurerambi.app:app --bind=0.0.0.0 --chdir src'
       appSettings: [
         {
-          name: 'AZURE_OPENAI_API_VERSION'
-          value: deployments[0].version
+          name: 'OPENAI_API_VERSION'
+          value: '2024-08-01-preview'
         }
         {
           name: 'AZURE_OPENAI_API_KEY'
@@ -110,7 +110,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'AZURE_OPENAI_ENDPOINT'
-          value: 'https://${openAI.name}.search.windows.net'
+          value: 'https://${openAI.name}.openai.azure.com'
         }
         {
           name: 'TMDB_API_KEY'

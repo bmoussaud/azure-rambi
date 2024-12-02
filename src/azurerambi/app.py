@@ -17,8 +17,8 @@ import openai
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-logger.addHandler(handler)
+#handler = logging.StreamHandler(sys.stdout)
+#logger.addHandler(handler)
 
 load_dotenv()
 
@@ -73,7 +73,7 @@ def poster_description():
         poster_desc = genai_movie_service.describe_poster(movie.poster_url)
     except openai.OpenAIError as e:
         logger.error("Error in describe_poster: %s", e)
-        poster_desc = "Error in describe_poster: %s" % e
+        poster_desc = f"Error in describe_poster: {e}"
 
     return render_template('poster_description.html',
                            poster_description=poster_desc)

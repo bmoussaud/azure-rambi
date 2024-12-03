@@ -197,5 +197,11 @@
         "deprecated": false
       }
     }
-  }
+  },
+  "x-readme": {
+    "headers": [],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true
 }

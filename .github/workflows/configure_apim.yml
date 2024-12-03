@@ -35,8 +35,7 @@ jobs:
     with:
       subscriptionId:  ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       resourceGroupName: ${{ env.AZ_RESOURCE_GROUP }}
-      template: src/apim/sample.bicep
-      parameters: 'storagePrefix=mystore storageSKU=Standard_LRS'
+      template: src/apim/ConfigureAPIs.bicep
       failOnStdErr: false
       scope: resourcegroup        
   # Azure Logout

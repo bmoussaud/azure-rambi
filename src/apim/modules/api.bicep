@@ -23,7 +23,7 @@ resource unlimitedProduct 'Microsoft.ApiManagement/service/products@2023-03-01-p
 }
 
 resource primarybackend 'Microsoft.ApiManagement/service/backends@2023-03-01-preview' = {
-  name: '$apiName-primary-backend'
+  name: '${apiName}-primary-backend'
   parent: parentAPIM
   properties: {
     description: '$apiName Primary endpoint'

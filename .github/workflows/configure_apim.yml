@@ -39,8 +39,8 @@ jobs:
       location: westus2
       subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       template-file: src/apim/ConfigureAPIs.bicep
-      parameters: |
-        apimName=${{ env.APIM_NAME }}
+      parameters: src/apim/ConfigureAPIs.json
+        
   # Azure Logout
   - name: Azure Logout
     if: always()

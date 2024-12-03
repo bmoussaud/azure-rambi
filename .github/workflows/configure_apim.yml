@@ -37,7 +37,7 @@ jobs:
       operation: create
       name: Development
       scope: resourceGroup
-      location: francecentral
+      location: westus
       subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       resource-group-name: ${{ env.AZ_RESOURCE_GROUP }}
       template-file: src/apim/ConfigureAPIs.bicep

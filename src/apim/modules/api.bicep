@@ -12,6 +12,16 @@ resource parentAPIM 'Microsoft.ApiManagement/service@2023-03-01-preview' existin
   name: apimName
 }
 
+resource starterProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview'  existing = {
+  name: 'Starter'
+  parent: parentAPIM
+}
+
+resource unlimitedProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview'  existing = {
+  name: 'Unlimited'
+  parent: parentAPIM
+}
+
 resource primarybackend 'Microsoft.ApiManagement/service/backends@2023-03-01-preview' = {
   name: 'aoai-primary-backend'
   parent: parentAPIM
@@ -19,6 +29,7 @@ resource primarybackend 'Microsoft.ApiManagement/service/backends@2023-03-01-pre
     description: 'Primary endpoint'
     protocol: 'http'
     url: serviceUrlPrimary
+    
   }
 }
 
@@ -30,8 +41,23 @@ resource api 'Microsoft.ApiManagement/service/apis@2023-03-01-preview' = {
     format: 'openapi+json-link'
     value: openApiJson
     path: apiPath
+    protocols: [
+      'https'
+    ]
+    
   }
 }
+
+resource addToUnlimited 'Microsoft.ApiManagement/service/products/apis@2023-05-01-preview' = {
+  name: apiName
+  parent: unlimitedProduct
+}
+
+resource addToStarter 'Microsoft.ApiManagement/service/products/apis@2023-05-01-preview' = {
+  name: apiName
+  parent: starterProduct
+}
+
 
 resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-03-01-preview' = {
   parent: api

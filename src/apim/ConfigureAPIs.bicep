@@ -22,7 +22,7 @@ module tmdbApiKey 'modules/nv.bicep' ={
   params: {
     apimName: apiManagementServiceName
     keyName: 'tmdb-api-key'
-    value: '68d40b1b40c8ba0c137374cf5dc3e7a1'
+    value: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2OGQ0MGIxYjQwYzhiYTBjMTM3Mzc0Y2Y1ZGMzZTdhMSIsIm5iZiI6MTcxMzI1NDA2Mi43MjgsInN1YiI6IjY2MWUyZWFlZDE4ZmI5MDE3ZGNhNjcxMSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.LNNv4AbXo8asYhfL3Pjr9S-EOIe-Chu1iKSr-gRfmo4'
   }
 }
 

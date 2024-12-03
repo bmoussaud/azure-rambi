@@ -53,6 +53,27 @@ resource aiLoggerWithSystemAssignedIdentity 'Microsoft.ApiManagement/service/log
     }
   }
 }
+//define a new product 'Starter' with a subscription required
+resource starterProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview' = {
+  name: 'Starter'
+  parent: apiManagementService
+  properties: {
+    displayName: 'Starter'
+    description: 'Starter product'
+    terms: 'Subscription is required for this product.'
+  }
+}
+
+//define a new Product 'Unlimited' with no subscription required
+resource unlimitedProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview' = {
+  name: 'Unlimited'
+  parent: apiManagementService
+  properties: {
+    displayName: 'Unlimited'
+    description: 'Unlimited product'
+    terms: 'No subscription required for this product.'
+  }
+}
 
 //output apiManagementInternalIPAddress string = apiManagementService.properties.publicIPAddresses[0]
 output apiManagementIdentityPrincipalId string = apiManagementService.identity.principalId

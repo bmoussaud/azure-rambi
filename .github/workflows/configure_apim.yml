@@ -40,7 +40,7 @@ jobs:
       location: westus
       subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       resource-group-name: ${{ env.AZ_RESOURCE_GROUP }}
-      template-file: src/apim/ConfigureAPIs.bicep
+      template-file: src/apim/sample.bicep
       parameters-file: src/apim/ConfigureAPIs.json
         
   # Azure Logout

@@ -30,19 +30,15 @@ jobs:
     with:
       creds: ${{ secrets.AZURE_CREDENTIALS }}
   # **Deploy Azure Resources using Bicep**
-  - name: Deploy Azure Resources using Bicep
-    uses: azure/bicep-deploy@v1
+  - name: Deploy Bicep file
+    uses: azure/arm-deploy@v1
     with:
-      type: deployment
-      operation: create
-      name: DeployAzureResourcesAPIM
-      scope: resourceGroup
-      location: westus
-      subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      resource-group-name: ${{ env.AZ_RESOURCE_GROUP }}
-      template-file: src/apim/sample.bicep
-      parameters-file: src/apim/ConfigureAPIs.json
-        
+      subscriptionId:  ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      resourceGroupName: ${{ env.AZ_RESOURCE_GROUP }}
+      template: src/apim/sample.bicep
+      parameters: 'storagePrefix=mystore storageSKU=Standard_LRS'
+      failOnStdErr: false
+      scope: resourceGroup        
   # Azure Logout
   - name: Azure Logout
     if: always()

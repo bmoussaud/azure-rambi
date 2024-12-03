@@ -12,6 +12,9 @@ module tmdbApi 'modules/api.bicep' = {
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerId: 'diag_apiManagement.outputs.aiLoggerId'
   }
+  dependsOn: [
+    tmdbApiKey
+  ]
 }
 
 module tmdbApiKey 'modules/nv.bicep' ={
@@ -22,9 +25,7 @@ module tmdbApiKey 'modules/nv.bicep' ={
     displayName: 'TMDB API Key'
     value: '68d40b1b40c8ba0c137374cf5dc3e7a1'
   }
-  dependsOn: [
-    tmdbApi
-  ]
+  
 }
 
 

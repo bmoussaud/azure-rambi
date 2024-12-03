@@ -6,6 +6,10 @@ name: Build and deploy Python app to Azure Web App - azure-rambi
 
 on:
   push:
+    paths:
+      - 'src/azurerambi'
+      - 'requirements.txt'
+      - '.github/workflows/main_azure-rambi.yml'
     branches:
       - main
   workflow_dispatch:
@@ -13,9 +17,9 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: azrambi-b76s6utvi44xo    # set this to your application's name
-  WORKING_DIRECTORY: '.'           # set this to the path to your path of working directory inside github repository, defaults to the repository root
-  PYTHON_VERSION: '3.12'             # set the version to use
-  STARTUP_COMMAND: ''                # set this to the startup command required to start the gunicorn server. default it is empty
+  WORKING_DIRECTORY: '.'                      # set this to the path to your path of working directory inside github repository, defaults to the repository root
+  PYTHON_VERSION: '3.12'                      # set the version to use
+  STARTUP_COMMAND: ''                         # set this to the startup command required to start the gunicorn server. default it is empty
 
 jobs:
  build-and-deploy:

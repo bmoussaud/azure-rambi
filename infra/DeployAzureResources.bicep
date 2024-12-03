@@ -144,6 +144,26 @@ module apiManagement 'modules/api-management.bicep' = {
   ]
 }
 
+module api 'modules/api.bicep' = {
+  name: 'apiTMDB'
+  params: {
+    apimName: apiManagementServiceName
+    apiName: 'TMDB API'
+    apiPath: '/tmdb'
+    openApiJson : 'https://developer.themoviedb.org/openapi/64542913e1f86100738e227f'
+    openApiXml : openApiXml
+    serviceUrlPrimary : 'https://api.themoviedb.org'
+    apiSubscriptionName: 'azure-rambi-sub'
+    aiLoggerId: apiManagement.outputs.aiLoggerId
+  }
+  dependsOn: [
+    apiManagement
+  ]
+}
+
+
+
+
 module logAnalyticsWorkspace 'modules/log-analytics-workspace.bicep' = {
   name: 'log-analytics-workspace'
   params: {

@@ -124,24 +124,55 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
     }
 }
 
-
-resource apiManagementService 'Microsoft.ApiManagement/service@2023-09-01-preview' = {
-  name: apiManagementServiceName
-  location: location
-  sku: {
-    name: apimSku
-    capacity: apimSkuCount
-  }
-  identity: {
-    type: 'SystemAssigned'
-  }
-  properties: {
-    publisherEmail: apimPublisherEmail
+module apiManagement 'modules/api-management.bicep' = {
+  name: 'api-management'
+  params: {
+    location: location
+    serviceName: apiManagementServiceName
     publisherName: apimPublisherName
-    restore: restore
+    publisherEmail: apimPublisherEmail
+    skuName: apimSku
+    skuCount: apimSkuCount
+    aiName: 'azure-rambi-appIn-${uniqueString(resourceGroup().id)}'
+    eventHubNamespaceName: 'azure-rambi-ehn-${uniqueString(resourceGroup().id)}'
+    eventHubName: 'azure-rambi-eh-${uniqueString(resourceGroup().id)}'
   }
+  dependsOn: [
+    logAnalyticsWorkspace
+    eventHub
+    applicationInsights
+  ]
+}
+
+module logAnalyticsWorkspace 'modules/log-analytics-workspace.bicep' = {
+  name: 'log-analytics-workspace'
+  params: {
+    location: location
+    logAnalyticsName: 'azure-rambi-log-${uniqueString(resourceGroup().id)}'
+  }
+}
+
+module eventHub 'modules/event-hub.bicep' = {
+  name: 'event-hub'
+  params: {
+    location: location
+    eventHubNamespaceName: 'azure-rambi-ehn-${uniqueString(resourceGroup().id)}'
+    eventHubName: 'azure-rambi-eh-${uniqueString(resourceGroup().id)}'
+  }
+}
+
+module applicationInsights 'modules/app-insights.bicep' = {
+  name: 'application-insights'
+  params: {
+    location: location
+    workspaceName: 'azure-rambi-log-${uniqueString(resourceGroup().id)}'
+    applicationInsightsName: 'azure-rambi-appIn-${uniqueString(resourceGroup().id)}'
+  }
+  dependsOn: [
+    logAnalyticsWorkspace
+  ]
 }
 
 output application_url string = appServiceApp.properties.hostNames[0]
 output application_name string = appServiceApp.name
-output apiManagementServiceName string = apiManagementService.name
+

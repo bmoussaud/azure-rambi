@@ -61,6 +61,13 @@ The [infra/DeployAzureResources.bicep](infra/DeployAzureResources.bicep)
 
 Note: edit the file [infra/authenticate_with_Azure_App_Service_for_GitHub.sh](infra/authenticate_with_Azure_App_Service_for_GitHub.sh) with your context and run it to generate the `AZURE_CREDENTIALS` secret used by the GitHub action pipeline to deploy the application.
 
+### API Management
+
+Note: The bicep files come from: https://github.com/microsoft/AzureOpenAI-with-APIM/
+
+#### TMDB
+
+The OpenAPI json file is available here: https://developer.themoviedb.org/openapi. You'll find the file for [v3](https://developer.themoviedb.org/openapi/64542913e1f86100738e227f) and [v4](https://developer.themoviedb.org/openapi/6453cc549c91cf004cd2a015) version
 ## Contributing
 
 We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING.md) for more details.

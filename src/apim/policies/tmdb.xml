@@ -1,11 +1,9 @@
 <policies>
     <inbound>
         <base />
-        <!--
         <set-header name="api-key" exists-action="append">
-            <value>{{benoit-tmdb-api-key}}</value>
+            <value>{{tmdb-api-key}}</value>
         </set-header>
-        -->
     </inbound>
     <backend>
         <base />

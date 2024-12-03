@@ -1,6 +1,6 @@
 var apiManagementServiceName = 'azure-rambi-apim-${uniqueString(resourceGroup().id)}'
 
-module api 'modules/api.bicep' = {
+module tmdbApi 'modules/api.bicep' = {
   name: 'apiTMDB'
   params: {
     apimName: apiManagementServiceName
@@ -12,8 +12,21 @@ module api 'modules/api.bicep' = {
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerId: 'diag_apiManagement.outputs.aiLoggerId'
   }
-
 }
+
+module tmdbApiKey 'modules/nv.bicep' ={
+  name: 'tmdbApiKey'
+  params: {
+    apimName: apiManagementServiceName
+    keyName: 'tmdb-api-key'
+    displayName: 'TMDB API Key'
+    value: '68d40b1b40c8ba0c137374cf5dc3e7a1'
+  }
+  dependsOn: [
+    tmdbApi
+  ]
+}
+
 
 
 

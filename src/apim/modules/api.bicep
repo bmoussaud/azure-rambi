@@ -58,6 +58,7 @@ resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-
   }
 }
 
+/*
 resource diagnostic 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-preview' = {
   parent: parentAPIM
   dependsOn: [api]
@@ -102,3 +103,4 @@ resource diagnostic 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-prev
     }
   }
 }
+*/

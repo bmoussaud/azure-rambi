@@ -1,10 +1,11 @@
 <policies>
     <inbound>
         <base />
-        <set-backend-service backend-id="aoai-primary-backend" />
+        <!--
         <set-header name="api-key" exists-action="append">
             <value>{{tmdb-api-key}}</value>
         </set-header>
+        -->
     </inbound>
     <backend>
         <base />

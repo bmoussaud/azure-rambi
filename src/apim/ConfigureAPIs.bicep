@@ -22,10 +22,8 @@ module tmdbApiKey 'modules/nv.bicep' ={
   params: {
     apimName: apiManagementServiceName
     keyName: 'tmdb-api-key'
-    displayName: 'TMDB API Key'
     value: '68d40b1b40c8ba0c137374cf5dc3e7a1'
   }
-  
 }
 
 

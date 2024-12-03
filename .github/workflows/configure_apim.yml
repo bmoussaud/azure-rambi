@@ -38,7 +38,7 @@ jobs:
       template: src/apim/sample.bicep
       parameters: 'storagePrefix=mystore storageSKU=Standard_LRS'
       failOnStdErr: false
-      scope: resourceGroup        
+      scope: resourcegroup        
   # Azure Logout
   - name: Azure Logout
     if: always()

@@ -1,6 +1,5 @@
 var apiManagementServiceName = 'azure-rambi-apim-${uniqueString(resourceGroup().id)}'
 
-//TODO: move it to a dedicated bicep file 
 module api 'modules/api.bicep' = {
   name: 'apiTMDB'
   params: {

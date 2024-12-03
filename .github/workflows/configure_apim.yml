@@ -7,7 +7,7 @@ name: Configure API Management definition and policies - azure-rambi
 on:
   push:
     paths:
-      - 'src/apim'
+      - 'src/apim/**'
       - '.github/workflows/configure_apim.yml'
     branches:
       - main

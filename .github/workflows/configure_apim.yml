@@ -16,6 +16,7 @@ on:
 
 env:
   APIM_NAME: azure-rambi-apim-b76s6utvi44xo   # set this to your APIM's name
+  AZ_RESOURCE_GROUP: azrambi                  # set this to your resource group name
  
 jobs:
  configure-apim:
@@ -35,9 +36,10 @@ jobs:
       type: deployment
       operation: create
       name: Development
-      scope: subscription
+      scope: resourceGroup
       location: westus2
       subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      resource-group-name: ${{ env.AZ_RESOURCE_GROUP }}
       template-file: src/apim/ConfigureAPIs.bicep
       parameters-file: src/apim/ConfigureAPIs.json
         

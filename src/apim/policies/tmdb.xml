@@ -3,7 +3,7 @@
         <base />
         <!--
         <set-header name="api-key" exists-action="append">
-            <value>{{my-tmdb-api-key}}</value>
+            <value>{{benoit-tmdb-api-key}}</value>
         </set-header>
         -->
     </inbound>

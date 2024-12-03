@@ -42,6 +42,7 @@ To use Azure Rambi, execute the following command:
 python src/azurerambi/app.py
 ```
 
+
 ## Azure Resources
 
 ### Azure Infrastructue
@@ -54,12 +55,19 @@ The [infra/DeployAzureResources.bicep](infra/DeployAzureResources.bicep)
 * Web-App
 * API Management
 
+
+### GitHub Credentials
+
+edit the file [infra/authenticate_with_Azure_App_Service_for_GitHub.sh](infra/authenticate_with_Azure_App_Service_for_GitHub.sh) with your context and run it to grant a contributor to the resource group and to generate the secrets used by the GitHub action pipeline to deploy the differents components.
+* `AZURE_CREDENTIALS` 
+* `AZURE_SUBSCRIPTION_ID`
+
 ### Front GUI
 
 * Service: Azure Application Service using the python runtime on linux
 * CI/CD Pipeline: [.github/workflows/main_azure-rambi.yml](.github/workflows/main_azure-rambi.yml)
 
-Note: edit the file [infra/authenticate_with_Azure_App_Service_for_GitHub.sh](infra/authenticate_with_Azure_App_Service_for_GitHub.sh) with your context and run it to generate the `AZURE_CREDENTIALS` secret used by the GitHub action pipeline to deploy the application.
+
 
 ### API Management
 

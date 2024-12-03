@@ -148,10 +148,10 @@ module api 'modules/api.bicep' = {
   name: 'apiTMDB'
   params: {
     apimName: apiManagementServiceName
-    apiName: 'TMDB API'
+    apiName: 'TMDB'
     apiPath: '/tmdb'
     openApiJson : 'https://developer.themoviedb.org/openapi/64542913e1f86100738e227f'
-    openApiXml : openApiXml
+    openApiXml : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/tmdb.xml'
     serviceUrlPrimary : 'https://api.themoviedb.org'
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerId: apiManagement.outputs.aiLoggerId

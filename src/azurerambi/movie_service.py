@@ -39,7 +39,9 @@ class TMDBService:
         """ Get movie info from TMDB API """
         logger.info("Fetching movie with title: %s", title)
         try:
-            search_results = Search().movies(title)
+            search = Search()
+            search._base = "https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/tmdb"
+            search_results = search.movies(title)
             if search_results:
                 sr = search_results[0]  # Return the first result
                 return Movie(

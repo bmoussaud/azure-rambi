@@ -119,9 +119,16 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'TMDB_CACHE_ENABLED'
           value: 'true'
         }
+        {
+          name: 'API_SUBSCRIPTION_KEY'
+          value: apiManagement.outputs.apiAdminSubscriptionKey
+        }
         ]
       }
-    }
+  }
+  dependsOn: [
+    apiManagement
+  ]
 }
 
 module apiManagement 'modules/api-management.bicep' = {

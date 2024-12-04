@@ -75,8 +75,26 @@ resource unlimitedProduct 'Microsoft.ApiManagement/service/products@2023-03-01-p
   }
 }
 
+
+resource adminUser 'Microsoft.ApiManagement/service/users/subscriptions@2023-05-01-preview' existing = {
+  name: '/users/1'
+}
+
+resource apiAdminSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-01-preview' = {
+  name: 'azure-rambi-admin-sub'
+  parent: apiManagementService
+  properties: {
+    allowTracing: false
+    displayName: 'azure-rambi-admin-sub'
+    ownerId: adminUser.id
+    state: 'active'
+    scope: '/apis'
+  }
+}
+
 //output apiManagementInternalIPAddress string = apiManagementService.properties.publicIPAddresses[0]
 output apiManagementIdentityPrincipalId string = apiManagementService.identity.principalId
 //output apiManagementProxyHostName string = apiManagementService.properties.hostnameConfigurations[0].hostName
 //output apiManagementDeveloperPortalHostName string = replace(apiManagementService.properties.developerPortalUrl, 'https://', '')
 output aiLoggerId string = aiLoggerWithSystemAssignedIdentity.id
+output apiAdminSubscriptionKey string = apiAdminSubscription.listSecrets().primaryKey

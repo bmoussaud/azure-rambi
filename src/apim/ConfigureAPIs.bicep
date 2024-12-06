@@ -11,7 +11,7 @@ module tmdbApi 'modules/api.bicep' = {
     openApiXml : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/tmdb.xml'
     serviceUrlPrimary : 'https://api.themoviedb.org'
     apiSubscriptionName: 'azure-rambi-sub'
-    aiLoggerName: aiName
+    aiLoggerName: 'aiLogger'
   }
   dependsOn: [
     tmdbApiKey

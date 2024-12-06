@@ -14,5 +14,6 @@ azure-identity
 aiohttp  
 python-dotenv  
 pyyaml  
-tmdbv3api  
-dc-schema  
+opentelemetry-instrumentation-flask  
+opentelemetry-instrumentation-requests
+dc-schema

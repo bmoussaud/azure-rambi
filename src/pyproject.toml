@@ -23,7 +23,8 @@ dependencies = [
     "aiohttp",
     "python-dotenv",
     "pyyaml",
-    "tmdbv3api",
+    "opentelemetry-instrumentation-requests",
+    "opentelemetry-instrumentation-flask",
     "dc-schema"
     ]
 

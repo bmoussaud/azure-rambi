@@ -120,6 +120,18 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'APIM_ENDPOINT'
           value: apiManagement.outputs.apiManagementProxyHostName
         }
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsights.outputs.instrumentationKey
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsights.outputs.connectionString
+        }
+        {
+          name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+          value: '~3'
+        }
         ]
       }
   }

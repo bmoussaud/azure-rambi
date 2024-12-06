@@ -2,7 +2,7 @@
     <inbound>
         <base />
         <set-header name="Authorization" exists-action="override">
-            <value>BBBearer {{tmdb-api-key}}</value>
+            <value>Bearer {{tmdb-api-key}}</value>
         </set-header>   
     </inbound>
     <backend>

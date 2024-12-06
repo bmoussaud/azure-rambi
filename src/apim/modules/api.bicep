@@ -7,9 +7,13 @@ param openApiXml string
 param serviceUrlPrimary string
 param apiSubscriptionName string
 
-
 resource parentAPIM 'Microsoft.ApiManagement/service@2023-03-01-preview' existing = {
   name: apimName
+}
+
+resource aiLoggerWithSystemAssignedIdentity 'Microsoft.ApiManagement/service/loggers@2022-08-01' existing = {
+  name: 'aiLoggerWithSystemAssignedIdentity'
+  parent: parentAPIM
 }
 
 resource starterProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview'  existing = {
@@ -86,7 +90,6 @@ resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-
 output apiSubscription string = apiSubscription.listSecrets().primaryKey
 
 
-/*
 resource diagnostic 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-preview' = {
   parent: parentAPIM
   dependsOn: [api]
@@ -96,7 +99,7 @@ resource diagnostic 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-prev
     httpCorrelationProtocol: 'Legacy'
     verbosity: 'information'
     logClientIp: true
-    loggerId: aiLoggerId
+    loggerId: aiLoggerWithSystemAssignedIdentity.id
     sampling: {
       samplingType: 'fixed'
       percentage: 100
@@ -131,4 +134,4 @@ resource diagnostic 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-prev
     }
   }
 }
-*/
+

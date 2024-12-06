@@ -11,6 +11,7 @@ module tmdbApi 'modules/api.bicep' = {
     serviceUrlPrimary : 'https://api.themoviedb.org'
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerId: 'diag_apiManagement.outputs.aiLoggerId'
+
   }
   dependsOn: [
     tmdbApiKey

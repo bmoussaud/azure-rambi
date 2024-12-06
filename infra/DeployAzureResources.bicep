@@ -152,6 +152,36 @@ resource symbolicname 'Microsoft.Web/sites/config@2022-09-01' = {
   }
 }
 
+resource appServiceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: '${appServiceApp.name}-diagnostics'
+  properties: {
+    logs: [
+      {
+        category: 'AppServiceHTTPLogs'
+        enabled: true
+      }
+      {
+        category: 'AppServiceConsoleLogs'
+        enabled: true
+        
+      }
+      {
+        category: 'AppServiceAppLogs'
+        enabled: true
+        
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+    workspaceId: logAnalyticsWorkspace.outputs.id
+  }
+  scope: appServiceApp
+}
+
 module apiManagement 'modules/api-management.bicep' = {
   name: 'api-management'
   params: {

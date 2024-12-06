@@ -41,15 +41,14 @@ resource apiManagementService 'Microsoft.ApiManagement/service@2023-03-01-previe
   }
 }
 
-resource aiLoggerWithSystemAssignedIdentity 'Microsoft.ApiManagement/service/loggers@2022-08-01' = {
-  name: 'aiLoggerWithSystemAssignedIdentity'
+resource aiLogger 'Microsoft.ApiManagement/service/loggers@2022-08-01' = {
+  name: aiParent.name
   parent: apiManagementService
   properties: {
     loggerType: 'applicationInsights'
-    description: 'Application Insights logger with connection string'
+    description: 'Application Insights logger'
     credentials: {
-      connectionString: aiParent.properties.ConnectionString
-      identityClientId: 'systemAssigned'
+      instrumentationKey: aiParent.properties.InstrumentationKey
     }
   }
 }
@@ -96,5 +95,5 @@ resource apiAdminSubscription 'Microsoft.ApiManagement/service/subscriptions@202
 output apiManagementIdentityPrincipalId string = apiManagementService.identity.principalId
 output apiManagementProxyHostName string = apiManagementService.properties.hostnameConfigurations[0].hostName
 //output apiManagementDeveloperPortalHostName string = replace(apiManagementService.properties.developerPortalUrl, 'https://', '')
-output aiLoggerId string = aiLoggerWithSystemAssignedIdentity.id
+output aiLoggerId string = aiLogger.id
 output apiAdminSubscriptionKey string = apiAdminSubscription.listSecrets().primaryKey

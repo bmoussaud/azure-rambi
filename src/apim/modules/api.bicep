@@ -1,18 +1,18 @@
 param apimName string
 param apiName string
 param apiPath string
-param aiLoggerId string
 param openApiJson string
 param openApiXml string
 param serviceUrlPrimary string
 param apiSubscriptionName string
+param aiLoggerName string
 
 resource parentAPIM 'Microsoft.ApiManagement/service@2023-03-01-preview' existing = {
   name: apimName
 }
 
-resource aiLoggerWithSystemAssignedIdentity 'Microsoft.ApiManagement/service/loggers@2022-08-01' existing = {
-  name: 'aiLoggerWithSystemAssignedIdentity'
+resource aiLogger 'Microsoft.ApiManagement/service/loggers@2022-08-01' existing = {
+  name:  aiLoggerName
   parent: parentAPIM
 }
 
@@ -47,18 +47,19 @@ resource api 'Microsoft.ApiManagement/service/apis@2023-03-01-preview' = {
     protocols: [
       'https'
     ]
-    
   }
 }
 
-resource addToUnlimited 'Microsoft.ApiManagement/service/products/apis@2023-05-01-preview' = {
+resource APIunlimitedProduct 'Microsoft.ApiManagement/service/products/apis@2023-05-01-preview' = {
   name: apiName
   parent: unlimitedProduct
+  dependsOn: [api]
 }
 
-resource addToStarter 'Microsoft.ApiManagement/service/products/apis@2023-05-01-preview' = {
+resource APIstarterProduct 'Microsoft.ApiManagement/service/products/apis@2023-05-01-preview' = {
   name: apiName
   parent: starterProduct
+  dependsOn: [api]
 }
 
 
@@ -71,35 +72,13 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-03-01-pre
   }
 }
 
-resource adminUser 'Microsoft.ApiManagement/service/users/subscriptions@2023-05-01-preview' existing = {
-  name: '/users/1'
-}
 
-resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-01-preview' = {
-  name: apiSubscriptionName
-  parent: parentAPIM
-  properties: {
-    allowTracing: false
-    displayName: apiSubscriptionName
-    ownerId: adminUser.id
-    scope: api.id
-    state: 'active'
-  }
-}
-
-output apiSubscription string = apiSubscription.listSecrets().primaryKey
-
-
-resource diagnostic 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-preview' = {
-  parent: parentAPIM
-  dependsOn: [api]
+resource apiDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2023-03-01-preview' = {
+  parent: api
   name: 'applicationinsights'
   properties: {
     alwaysLog: 'allErrors'
-    httpCorrelationProtocol: 'Legacy'
-    verbosity: 'information'
-    logClientIp: true
-    loggerId: aiLoggerWithSystemAssignedIdentity.id
+    loggerId: aiLogger.id
     sampling: {
       samplingType: 'fixed'
       percentage: 100
@@ -135,3 +114,21 @@ resource diagnostic 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-prev
   }
 }
 
+resource adminUser 'Microsoft.ApiManagement/service/users/subscriptions@2023-05-01-preview' existing = {
+  name: '/users/1'
+}
+
+
+resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-01-preview' = {
+  name: apiSubscriptionName
+  parent: parentAPIM
+  properties: {
+    allowTracing: false
+    displayName: apiSubscriptionName
+    ownerId: adminUser.id
+    scope: api.id
+    state: 'active'
+  }
+}
+
+output apiSubscription string = apiSubscription.listSecrets().primaryKey

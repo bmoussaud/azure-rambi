@@ -98,6 +98,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
       http20Enabled: true
       minTlsVersion: '1.2'
       appCommandLine: 'gunicorn azurerambi.app:app --bind=0.0.0.0 --chdir src'
+      
       appSettings: [
         {
           name: 'OPENAI_API_VERSION'
@@ -125,6 +126,30 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
   dependsOn: [
     apiManagement
   ]
+}
+
+resource symbolicname 'Microsoft.Web/sites/config@2022-09-01' = {
+  name: 'logs'
+  kind: 'string'
+  parent: appServiceApp
+  properties: {
+    applicationLogs: {
+      fileSystem: {
+        level: 'Information'
+      }
+    }
+    detailedErrorMessages: {
+      enabled: true
+    }
+    failedRequestsTracing: {
+      enabled: true
+    }
+    httpLogs: {
+      fileSystem: {
+        enabled: true
+      }
+    }
+  }
 }
 
 module apiManagement 'modules/api-management.bicep' = {

@@ -94,7 +94,7 @@ resource apiAdminSubscription 'Microsoft.ApiManagement/service/subscriptions@202
 
 //output apiManagementInternalIPAddress string = apiManagementService.properties.publicIPAddresses[0]
 output apiManagementIdentityPrincipalId string = apiManagementService.identity.principalId
-//output apiManagementProxyHostName string = apiManagementService.properties.hostnameConfigurations[0].hostName
+output apiManagementProxyHostName string = apiManagementService.properties.hostnameConfigurations[0].hostName
 //output apiManagementDeveloperPortalHostName string = replace(apiManagementService.properties.developerPortalUrl, 'https://', '')
 output aiLoggerId string = aiLoggerWithSystemAssignedIdentity.id
 output apiAdminSubscriptionKey string = apiAdminSubscription.listSecrets().primaryKey

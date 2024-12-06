@@ -4,8 +4,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pydantic import BaseModel
-from tmdbv3api import Search
-from tmdbv3api.exceptions import TMDbException
+import requests
 from openai import AzureOpenAI
 import openai
 
@@ -32,26 +31,35 @@ class GenAIMovie(Movie):
 class TMDBService:
     """ Class to manage the access to TMDB API """
 
-    def __init__(self):
+    def __init__(self, end_point: str = None, api_key: str = None, ):
         logger.info("Initializing TMDBService")
-
+        self._api_key = api_key
+        self._end_point = end_point
+       
     def get_movie_by_title(self, title) -> Movie:
         """ Get movie info from TMDB API """
-        logger.info("Fetching movie with title: %s", title)
         try:
-            search = Search()
-            search._base = "https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/tmdb"
-            search_results = search.movies(title)
-            if search_results:
-                sr = search_results[0]  # Return the first result
-                return Movie(
-                    title=sr.title,
-                    plot=sr.overview,
-                    poster_url=f"https://image.tmdb.org/t/p/original/{sr.poster_path}"
-                )
+            logger.info("Fetching movie with title: %s", title)
+            _headers = {
+                'Ocp-Apim-Subscription-Key': self._api_key
+            }
+            url = f"{self._end_point}/tmdb/3/search/movie?query={title}"
+            logger.info("url: %s", url)
+            response = requests.get(url, headers=_headers, timeout=10)
+            logger.info("response: %s", response)
+            if response.status_code == 200:
+                data = response.json()
+                if data["results"]:
+                    movie = data["results"][0]
+                    return Movie(
+                        title=movie["title"],
+                        plot=movie["overview"],
+                        poster_url=f"https://image.tmdb.org/t/p/original/{movie['poster_path']}"
+                    )
             else:
+                logger.error("Movie not found %s %s",title, response.status_code)
                 return None
-        except TMDbException as e:
+        except Exception as e:
             logger.error("get_movie_by_title: %s", e)
             return Movie(title=title, plot=str(e), poster_url="https://placehold.co/150x220?text=TMDB%20Error")
 

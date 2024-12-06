@@ -123,6 +123,10 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'API_SUBSCRIPTION_KEY'
           value: apiManagement.outputs.apiAdminSubscriptionKey
         }
+        {
+          name: 'APIM_ENDPOINT'
+          value: apiManagement.outputs.apiManagementProxyHostName
+        }
         ]
       }
   }

@@ -112,14 +112,6 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
           value: 'https://${openAI.name}.openai.azure.com'
         }
         {
-          name: 'TMDB_API_KEY'
-          value: '68d40b1b40c8ba0c137374cf5dc3e7a1'
-        }
-        {
-          name: 'TMDB_CACHE_ENABLED'
-          value: 'true'
-        }
-        {
           name: 'API_SUBSCRIPTION_KEY'
           value: apiManagement.outputs.apiAdminSubscriptionKey
         }

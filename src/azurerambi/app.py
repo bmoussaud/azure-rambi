@@ -58,13 +58,17 @@ class TwoMoviesForm(FlaskForm):
     submit = SubmitField('Submit')
 
 
+def tmdb_service() -> TMDBService:
+    """ Function to get the TMDBService """
+    return TMDBService(os.getenv("APIM_ENDPOINT"), api_key=os.getenv('API_SUBSCRIPTION_KEY'))
+
 @ app.route('/', methods=['GET', 'POST'])
 def home():
     """Function printing python version."""
     twomovieform = TwoMoviesForm()
     rambimodel = None
     if twomovieform.validate_on_submit():
-        tmdb_svc = TMDBService()
+        tmdb_svc = tmdb_service()
         movie1 = tmdb_svc.get_movie_by_title(
             twomovieform.movie1Title.data)
         movie2 = tmdb_svc.get_movie_by_title(
@@ -77,7 +81,7 @@ def home():
 def poster_description():
     """Function to show the movie poster description."""
     movie_title = request.form.get('movie_title')
-    tmdb_svc = TMDBService()
+    tmdb_svc = tmdb_service()
     movie = tmdb_svc.get_movie_by_title(movie_title)
     try:
         genai_movie_service = GenAiMovieService()
@@ -105,7 +109,7 @@ def movie_generate():
     movie2_title = request.form.get('movie2Title')
     genre = request.form.get('genre')
 
-    tmdb_svc = TMDBService()
+    tmdb_svc = tmdb_service()
     movie1 = tmdb_svc.get_movie_by_title(movie1_title)
     movie2 = tmdb_svc.get_movie_by_title(movie2_title)
 
@@ -113,7 +117,6 @@ def movie_generate():
     generated_movie = genai_movie_service.generate_movie2(movie1, movie2, genre)
 
     return render_template('generated_movie.html', generated_movie=generated_movie)
-
 
 
 if __name__ == '__main__':

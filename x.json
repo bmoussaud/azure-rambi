@@ -1,0 +1,25 @@
+{'choices': [
+        {'content_filter_results': {'hate': {'filtered': False, 'severity': 'safe'
+                }, 'protected_material_code': {'filtered': False, 'detected': False
+                }, 'protected_material_text': {'filtered': False, 'detected': False
+                }, 'self_harm': {'filtered': False, 'severity': 'safe'
+                }, 'sexual': {'filtered': False, 'severity': 'safe'
+                }, 'violence': {'filtered': False, 'severity': 'safe'
+                }
+            }, 'finish_reason': 'stop', 'index': 0, 'logprobs': None, 'message': {'content': 'The image is a movie poster for the film "The Exorcist: Believer." It features a silhouetted figure standing in a mysterious and eerie setting. The background is dark with shades of blue, and the figure is standing in front of a partially illuminated doorway, through which a bright and otherworldly light is emanating. The text at the top of the poster reads "The Exorcist: Believer" in bold, stylized letters, further enhancing the ominous and suspenseful tone of the image.', 'refusal': None, 'role': 'assistant'
+            }
+        }
+    ], 'created': 1733736888, 'id': 'chatcmpl-AcUS8bWUBcfVXUmemVVzD2x2IDzXK', 'model': 'gpt-4o-2024-08-06', 'object': 'chat.completion', 'prompt_filter_results': [
+        {'prompt_index': 0, 'content_filter_results': {'hate': {'filtered': False, 'severity': 'safe'
+                }, 'jailbreak': {'filtered': False, 'detected': False
+                }, 'self_harm': {'filtered': False, 'severity': 'safe'
+                }, 'sexual': {'filtered': False, 'severity': 'safe'
+                }, 'violence': {'filtered': False, 'severity': 'safe'
+                }
+            }
+        }
+    ], 'system_fingerprint': 'fp_04751d0b65', 'usage': {'completion_tokens': 105, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0
+        }, 'prompt_tokens': 57, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0
+        }, 'total_tokens': 162
+    }
+}

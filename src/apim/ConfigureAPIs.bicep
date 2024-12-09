@@ -28,5 +28,16 @@ module tmdbApiKey 'modules/nv.bicep' ={
 }
 
 
-
-
+module openaiApi 'modules/api.bicep' = {
+  name: 'apiOpenAI'
+  params: {
+    apimName: apiManagementServiceName
+    apiName: 'OpenAI'
+    apiPath: '/openai'
+    openApiJson : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/openai.json'
+    openApiXml : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/openai.xml'
+    serviceUrlPrimary : 'https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai'
+    apiSubscriptionName: 'azure-rambi-sub'
+    aiLoggerName: 'aiLogger'
+  }
+} 

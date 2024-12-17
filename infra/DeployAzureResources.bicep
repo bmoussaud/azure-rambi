@@ -120,11 +120,11 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'AZURE_OPENAI_API_KEY'
-          value: openAI.listKeys().key2
+          value: '-1'
         }
         {
           name: 'AZURE_OPENAI_ENDPOINT'
-          value: 'https://${openAI.name}.openai.azure.com'
+          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-rambi'
         }
         {
           name: 'API_SUBSCRIPTION_KEY'

@@ -31,7 +31,7 @@ module openaiApi 'modules/api.bicep' = {
   params: {
     apimName: apiManagementServiceName
     apiName: 'OpenAI'
-    apiPath: '/openai'
+    apiPath: '/azure-rambi/openai'
     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/azure_open_ai.json'
     openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/azure_open_ai.xml'
     serviceUrlPrimary: 'https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai'

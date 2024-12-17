@@ -1,6 +1,6 @@
 <policies>
     <inbound>
-        <set-backend-service id="apim-generated-policy" backend-id="azure-openai-api-openai-endpoint" />
+        <set-backend-service id="apim-generated-policy" backend-id="OpenAI-primary-backend" />
         <azure-openai-emit-token-metric>
             <dimension name="Subscription ID" />
         </azure-openai-emit-token-metric>

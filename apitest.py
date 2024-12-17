@@ -18,6 +18,7 @@ os.environ["AZURE_OPENAI_ENDPOINT"]="https://azrambi-openai-b76s6utvi44xo.openai
 os.environ["AZURE_OPENAI_SUBSCRIPTION_KEY"]="7e33943656894e78bda27a309f907998"
 
 os.environ["AZURE_OPENAI_ENDPOINT"]="https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/azure-openai-api"
+os.environ["AZURE_OPENAI_ENDPOINT"]="https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/azure-rambi"
 def describe_image(url):
     """Placeholder function to describe the image"""
     logger.info("Description of image at %s", url)
@@ -66,7 +67,7 @@ def describe_image2(poster_url):
 
 if __name__ == "__main__":
     all =[]
-    for attempt in range(10):
+    for attempt in range(1):
         logger.info("Attempt %d", attempt + 1)
         start_time = time.time()
         result = describe_image2("https://image.tmdb.org/t/p/w600_and_h900_bestv2/yh64qw9mgXBvlaWDi7Q9tpUBAvH.jpg")

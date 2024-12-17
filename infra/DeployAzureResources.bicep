@@ -17,8 +17,7 @@ param deployments array = [
     name: 'dall-e-3'
     model: 'dall-e-3'
     version: '3.0'
-    capacity: 1 
-      
+    capacity: 1
   }
 ]
 
@@ -55,33 +54,36 @@ resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
 }
 
 @batchSize(1)
-resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [for deployment in deployments: {
-  parent: openAI
-  name: deployment.name
-  sku: {
-    name: 'Standard'
-    capacity: deployment.capacity
-  }
-  properties: {
-    model: {
-      format: 'OpenAI'
-      name: deployment.name
-      version: deployment.version
+resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
+  for deployment in deployments: {
+    parent: openAI
+    name: deployment.name
+    sku: {
+      name: 'Standard'
+      capacity: deployment.capacity
+    }
+    properties: {
+      model: {
+        format: 'OpenAI'
+        name: deployment.name
+        version: deployment.version
+      }
     }
   }
-}]
-
+]
 
 //Cognitive Services OpenAI User
 resource cognitiveServiceOpenAIUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name:  guid('Cognitive Services OpenAI User Role On API Management')
+  name: guid('Cognitive Services OpenAI User Role On API Management')
   scope: openAI
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+    )
     principalId: apiManagement.outputs.apiManagementIdentityPrincipalId
   }
 }
-
 
 @description('Creates an Azure App Service Plan.')
 resource appServicePlan 'Microsoft.Web/serverFarms@2022-09-01' = {
@@ -110,7 +112,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
       http20Enabled: true
       minTlsVersion: '1.2'
       appCommandLine: 'gunicorn azurerambi.app:app --bind=0.0.0.0 --chdir src'
-      
+
       appSettings: [
         {
           name: 'OPENAI_API_VERSION'
@@ -144,12 +146,9 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
           value: '~3'
         }
-        ]
-      }
+      ]
+    }
   }
-  dependsOn: [
-    apiManagement
-  ]
 }
 
 resource symbolicname 'Microsoft.Web/sites/config@2022-09-01' = {
@@ -187,12 +186,10 @@ resource appServiceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01
       {
         category: 'AppServiceConsoleLogs'
         enabled: true
-        
       }
       {
         category: 'AppServiceAppLogs'
         enabled: true
-        
       }
     ]
     metrics: [
@@ -257,4 +254,3 @@ module applicationInsights 'modules/app-insights.bicep' = {
 
 output application_url string = appServiceApp.properties.hostNames[0]
 output application_name string = appServiceApp.name
-

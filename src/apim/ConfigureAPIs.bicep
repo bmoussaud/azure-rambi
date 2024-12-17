@@ -26,6 +26,15 @@ module tmdbApiKey 'modules/nv.bicep' = {
   }
 }
 
+var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
+resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
+  name: openAIName
+}
+resource gpt4 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' existing = {
+  name: 'azure-rambi-deployment-${uniqueString(resourceGroup().id)}'
+  parent: openAI
+}
+
 module openaiApi 'modules/api.bicep' = {
   name: 'apiOpenAI'
   params: {
@@ -34,7 +43,7 @@ module openaiApi 'modules/api.bicep' = {
     apiPath: '/azure-rambi/openai'
     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/azure_open_ai.json'
     openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/azure_open_ai.xml'
-    serviceUrlPrimary: 'https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai'
+    serviceUrlPrimary: '${openAI.properties.endpoint}/openai'
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerName: 'aiLogger'
   }

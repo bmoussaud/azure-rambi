@@ -73,6 +73,7 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01
 ]
 
 //Cognitive Services OpenAI User
+/*
 resource cognitiveServiceOpenAIUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: guid('Cognitive Services OpenAI User Role On API Management')
   scope: openAI
@@ -84,6 +85,7 @@ resource cognitiveServiceOpenAIUserRoleAssignment 'Microsoft.Authorization/roleA
     principalId: apiManagement.outputs.apiManagementIdentityPrincipalId
   }
 }
+*/
 
 @description('Creates an Azure App Service Plan.')
 resource appServicePlan 'Microsoft.Web/serverFarms@2022-09-01' = {

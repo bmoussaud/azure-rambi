@@ -1,5 +1,4 @@
 var apiManagementServiceName = 'azure-rambi-apim-${uniqueString(resourceGroup().id)}'
-var aiName = 'azure-rambi-appIn-${uniqueString(resourceGroup().id)}'
 
 module tmdbApi 'modules/api.bicep' = {
   name: 'apiTMDB'
@@ -7,9 +6,9 @@ module tmdbApi 'modules/api.bicep' = {
     apimName: apiManagementServiceName
     apiName: 'TMDB'
     apiPath: '/tmdb'
-    openApiJson : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/tmdb_search_movie.json'
-    openApiXml : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/tmdb.xml'
-    serviceUrlPrimary : 'https://api.themoviedb.org'
+    openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/tmdb_search_movie.json'
+    openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/tmdb.xml'
+    serviceUrlPrimary: 'https://api.themoviedb.org'
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerName: 'aiLogger'
   }
@@ -18,7 +17,7 @@ module tmdbApi 'modules/api.bicep' = {
   ]
 }
 
-module tmdbApiKey 'modules/nv.bicep' ={
+module tmdbApiKey 'modules/nv.bicep' = {
   name: 'tmdbApiKey'
   params: {
     apimName: apiManagementServiceName
@@ -27,17 +26,16 @@ module tmdbApiKey 'modules/nv.bicep' ={
   }
 }
 
-
 module openaiApi 'modules/api.bicep' = {
   name: 'apiOpenAI'
   params: {
     apimName: apiManagementServiceName
     apiName: 'OpenAI'
     apiPath: '/openai'
-    openApiJson : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/openai.json'
-    openApiXml : 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/openai.xml'
-    serviceUrlPrimary : 'https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai'
+    openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/azure_open_ai.json'
+    openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/azure_open_ai.xml'
+    serviceUrlPrimary: 'https://azrambi-openai-b76s6utvi44xo.openai.azure.com/openai'
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerName: 'aiLogger'
   }
-} 
+}

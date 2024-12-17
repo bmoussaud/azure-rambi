@@ -14,11 +14,7 @@ logger.setLevel(logging.INFO)
 
 
 load_dotenv()
-os.environ["AZURE_OPENAI_ENDPOINT"]="https://azrambi-openai-b76s6utvi44xo.openai.azure.com"
-os.environ["AZURE_OPENAI_SUBSCRIPTION_KEY"]="7e33943656894e78bda27a309f907998"
 
-os.environ["AZURE_OPENAI_ENDPOINT"]="https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/azure-openai-api"
-os.environ["AZURE_OPENAI_ENDPOINT"]="https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/azure-rambi"
 def describe_image(url):
     """Placeholder function to describe the image"""
     logger.info("Description of image at %s", url)

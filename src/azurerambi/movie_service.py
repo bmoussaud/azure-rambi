@@ -8,7 +8,7 @@ import requests
 from openai import AzureOpenAI
 import openai
 
-# openai.log = "debug"
+openai.log = "debug"
 
 # Create a logger for this module
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class GenAiMovieService:
 
     def describe_poster(self, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
-        logger.info("describe_poster called with %s", poster_url)   
+        logger.info("describe_poster called with %s", poster_url) 
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -113,7 +113,7 @@ class GenAiMovieService:
             client = AzureOpenAI()
             response = client.images.generate(
                 model="dall-e-3",
-                prompt="Generate a movie poster with this image description: "+poster_description,
+                prompt="Generate a movie poster based on this description: "+poster_description,
                 n=1,
                 size='1024x1792'
             )
@@ -163,20 +163,27 @@ class GenAiMovieService:
                 {
                     "role": "system",
                     "content": """
-                                Two movie titles and plots will be provided, along with a target genre.
-                                Using the titles, plots and genre as inspiration, generate the following:
-                                * Generate a new movie title that combines elements of the provided titles and fits the target genre. The title should be catchy and humorous.
-                                * Generate a 4-6 sentence movie plot synopsis for the new title, incorporating themes, characters, or plot points from the provided movies. Adapt them to fit the target genre.
-                                * Based on the generated movie plot and the 2 provied movie posters, describe a movie poster
-                                Take care of not generating any violence. 
-                                Take care of not generating any copyrighted content. 
-                                Remove all mentions about copyrighted content and replace them with the generic words.  
+                    Two movie titles and plots will be provided, along with a target genre.
+                    Using the titles, plots and genre as inspiration, generate the following:
+                    * Step 1: Generate a new movie title that combines elements of the provided titles and fits the target genre. The title should be catchy and humorous.
+                    * Step 2: Generate a 4-6 sentence movie plot synopsis for the new title, incorporating themes, characters, or plot points from the provided movies. Adapt them to fit the target genre.
+                    * Step 3: Based on the generated movie plot and the key elements of the 2 movie posters, generate the movie poster description without using the movie's titles.
                                 """
                 },
                 {
                     "role": "user",
                     "content": prompt
                 },
+                {
+                    "role":"system",
+                    "content": """
+                Use the details below to generate the new movie title and plot.
+                Use the description of the two posters to generate the new posterDescription without any title.
+                Take care of not generating any violence.
+                Take care of not generating any copyrighted content.
+                Remove all mentions about copyrighted content and replace them with the generic words.
+                """
+                }
             ]
         )
         message = completion.choices[0].message

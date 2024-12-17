@@ -89,6 +89,9 @@ def poster_description():
     except openai.OpenAIError as e:
         logger.error("Error in describe_poster: %s", e)
         poster_desc = f"Error in describe_poster: {e}"
+    except Exception as e:
+        logger.error("Other Error in describe_poster: %s", e)
+        poster_desc = f"Error in describe_poster: {e}"
 
     return render_template('poster_description.html',
                            poster_description=poster_desc)

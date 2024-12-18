@@ -1,6 +1,7 @@
 <policies>
     <inbound>
         <set-backend-service id="apim-generated-policy" backend-id="OpenAI-primary-backend" />
+        <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" allow-private-response-caching="false" must-revalidate="false" downstream-caching-type="none" />
         <azure-openai-emit-token-metric>
             <dimension name="Subscription ID" />
         </azure-openai-emit-token-metric>
@@ -12,6 +13,7 @@
     </backend>
     <outbound>
         <base />
+        <cache-store duration="600"  />
     </outbound>
     <on-error>
         <base />

@@ -36,7 +36,7 @@ jobs:
       registry: ${{ env.ACR_NAME }}
       repository: azure-rambi
       image: movie_poster_svc
-      tag: ${{ github.sha }}
+      tag: latest                                         ##${{ github.sha }}:
       folder: src/movie_poster_svc
       git_access_token: ${{ secrets.GITHUB_TOKEN }}
       branch: main

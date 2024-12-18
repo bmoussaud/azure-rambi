@@ -305,7 +305,7 @@ resource uaiRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 @description('Creates an Azure Container App.')
-resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
+resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: containerMoviePosterSvcName
   location: location
   identity: {
@@ -338,8 +338,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     template: {
       containers: [
         {
-          //name: 'azrambi-container'
-          //image: '${containerRegistry.properties.loginServer}/azrambi:latest'
+          name: 'azrambi-container'
+          image: '${containerRegistry.properties.loginServer}/azure-rambi/movie_poster_svc:latest'
         }
       ]
     }
@@ -348,5 +348,5 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 
 output application_url string = appServiceApp.properties.hostNames[0]
 output application_name string = appServiceApp.name
-output containerAppFQDN string = containerApp.properties.configuration.ingress.fqdn
+output containerAppFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 //output containerImage string = acrImportImage.outputs.importedImages[0].acrHostedImage

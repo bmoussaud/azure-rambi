@@ -38,7 +38,7 @@ jobs:
       image: img_movie_poster_svc
       tag: ${{ github.sha }}
       folder: src/movie_poster_svc
-      dockerfile: src/movie_poster_svc/Dockerfile
+      dockerfile: src/movie_poster_svc
       git_access_token: ${{ secrets.GITHUB_TOKEN }}
       branch: main
       build_args: '[{"python_version": ${{env.PYTHON_VERSION}} }]'

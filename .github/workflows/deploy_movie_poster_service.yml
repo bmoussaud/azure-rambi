@@ -13,8 +13,10 @@ on:
 
 env:
   ACR_NAME: azrambiacrb76s6utvi44xo    # set this to your ACR's name
-  TAG:                # tag
-  PYTHON_VERSION: '3.12'                
+  WORKING_DIRECTORY: '.'                      # set this to the path to your path of working directory inside github repository, defaults to the repository root
+  PYTHON_VERSION: '3.12'                      # set the version to use
+  STARTUP_COMMAND: ''                         # set this to the startup command required to start the gunicorn server. default it is empty
+
 jobs:
  build-and-deploy:
   runs-on: ubuntu-latest
@@ -34,6 +36,8 @@ jobs:
       registry: ${{ env.ACR_NAME }}
       repository: azure-rambi
       image: movie_poster_svc
+      tag: ${{ github.sha }}
       folder: src/movie_poster_svc
       git_access_token: ${{ secrets.GITHUB_TOKEN }}
-     
+      branch: main
+      build_args: '[{"python_version": ${{env.PYTHON_VERSION}} }]'

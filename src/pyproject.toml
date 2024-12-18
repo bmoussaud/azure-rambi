@@ -25,7 +25,12 @@ dependencies = [
     "pyyaml",
     "opentelemetry-instrumentation-requests",
     "opentelemetry-instrumentation-flask",
-    "dc-schema"
+    "dc-schema",
+    "fastapi",
+    "uvicorn",
+    "gunicorn",
+    "jinja2",
+    "python-multipart"
     ]
 
 [build-system]

@@ -10,16 +10,17 @@ myApp="azure-rambi"
 az login 
 az ad app create --display-name $myApp
 echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   ${appName}"
-az ad sp create-for-rbac --name $myApp --role contributor --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${appName}" --json-auth > ${myApp}.json
-json_content=$(cat ${myApp}.json)
-echo "${json_content}"
-echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   ${apimName}"
-az ad sp create-for-rbac --name $myApp --role contributor --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.ApiManagement/service/${apimName}" --json-auth > ${myApp}.json
-json_content=$(cat ${myApp}.json)
-echo "${json_content}"
+
+#az ad sp create-for-rbac --name $myApp --role contributor --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${appName}" --json-auth > ${myApp}.json
+#json_content=$(cat ${myApp}.json)
+#echo "${json_content}"
+#echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   ${apimName}"
+#az ad sp create-for-rbac --name $myApp --role contributor --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.ApiManagement/service/${apimName}" --json-auth > ${myApp}.json
+#json_content=$(cat ${myApp}.json)
+#echo "${json_content}"
 
 echo "create-for-rbac   ${myApp}   scope:${subscriptionId}/${resourceGroup}"
-az ad sp create-for-rbac --name $myApp --role contributor --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}" --json-auth > ${myApp}.json
+az ad sp create-for-rbac --name $myApp --role Owner --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}" --json-auth > ${myApp}.json
 json_content=$(cat ${myApp}.json)
 echo "${json_content}"
 

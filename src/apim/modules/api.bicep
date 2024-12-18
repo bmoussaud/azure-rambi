@@ -12,16 +12,16 @@ resource parentAPIM 'Microsoft.ApiManagement/service@2023-03-01-preview' existin
 }
 
 resource aiLogger 'Microsoft.ApiManagement/service/loggers@2022-08-01' existing = {
-  name:  aiLoggerName
+  name: aiLoggerName
   parent: parentAPIM
 }
 
-resource starterProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview'  existing = {
+resource starterProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview' existing = {
   name: 'Starter'
   parent: parentAPIM
 }
 
-resource unlimitedProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview'  existing = {
+resource unlimitedProduct 'Microsoft.ApiManagement/service/products@2023-03-01-preview' existing = {
   name: 'Unlimited'
   parent: parentAPIM
 }
@@ -35,7 +35,6 @@ resource primarybackend 'Microsoft.ApiManagement/service/backends@2023-03-01-pre
     url: serviceUrlPrimary
   }
 }
-
 
 resource api 'Microsoft.ApiManagement/service/apis@2023-03-01-preview' = {
   parent: parentAPIM
@@ -62,7 +61,6 @@ resource APIstarterProduct 'Microsoft.ApiManagement/service/products/apis@2023-0
   dependsOn: [api]
 }
 
-
 resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-03-01-preview' = {
   parent: api
   name: 'policy'
@@ -71,7 +69,6 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-03-01-pre
     value: openApiXml
   }
 }
-
 
 resource apiDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2023-03-01-preview' = {
   parent: api
@@ -117,7 +114,6 @@ resource apiDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2023-0
 resource adminUser 'Microsoft.ApiManagement/service/users/subscriptions@2023-05-01-preview' existing = {
   name: '/users/1'
 }
-
 
 resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-01-preview' = {
   name: apiSubscriptionName

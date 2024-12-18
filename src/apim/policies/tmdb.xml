@@ -1,10 +1,10 @@
 <policies>
     <inbound>
         <base />
-        <set-header name="Authorization" exists-action="override">
+        <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" allow-private-response-caching="false" must-revalidate="false" downstream-caching-type="none" />
+         <set-header name="Authorization" exists-action="override">
             <value>Bearer {{tmdb-api-key}}</value>
         </set-header>
-        <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" allow-private-response-caching="false" must-revalidate="false" downstream-caching-type="none" />
     </inbound>
     <backend>
         <base />

@@ -13,14 +13,15 @@ logger.setLevel(logging.INFO)
 #https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/azure-openai-api/openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview 
 
 
-def generate_image(poster_data: dict):
+
+def generate_image(poster: dict):
     """Placeholder function to describe the image"""
-    logger.info("generate_image of image at %s", poster_data['title'])
+    logger.info("generate_image of image at %s", poster['title'])
     endpoint = "http://localhost:8000/movie_poster/generate"
 
     logger.info("Calling endpoint %s", endpoint)
 
-    response = requests.post(endpoint, json=poster_data, timeout=100)
+    response = requests.post(endpoint, json=poster, timeout=100)
     if response.status_code == 200:
         return response.json()
     else:
@@ -32,11 +33,11 @@ if __name__ == "__main__":
     for attempt in range(1):
         logger.info("Attempt %d", attempt + 1)
         start_time = time.time()
-        poster_data = {
+        poster = {
             'title': 'The Blues Brothers',
             'description': 'The poster features two characters dressed in black suits, white shirts, black ties, and black hats, standing side by side against a police lineup backdrop with height measurements. Each character is holding a sign resembling a mugshot placard. One placard reads "THE BLUES" with details: 01A4392, BLUES, ELWOOD, 6\'1", 220 lbs. The other placard reads "BROTHERS" with details: 01A4391, BLUES, JAKE, 5\'8", 225 lbs. The character with the "BROTHERS" placard has the name "JAKE" tattooed across the fingers of one hand. The overall aesthetic suggests a playful yet mischievous tone, hinting at a comedic narrative.',
         }
-        result = generate_image(poster_data)
+        result = generate_image(poster)
         all.append(time.time() - start_time)
         logger.info("Time taken: %s seconds", all[-1])
 

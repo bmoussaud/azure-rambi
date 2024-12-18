@@ -23,6 +23,9 @@ jobs:
   steps:
   # checkout the repo 
   - uses: actions/checkout@v3
+  - uses: azure/login@v1
+    with:
+      creds: ${{ secrets.AZURE_CREDENTIALS }}
   - name: ACR build
     id: acr
     uses: azure/acr-build@v1

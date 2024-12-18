@@ -7,7 +7,7 @@ subscriptionId="9479b396-5d3e-467a-b89f-ba8400aeb7dd"
 myApp="azure-rambi"
 
 # Login to Azure
-#az login 
+az login 
 az ad app create --display-name $myApp
 echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   ${appName}"
 
@@ -28,13 +28,17 @@ service_princial=$(echo "${json_content}" | jq -r '.clientId')
 service_principal_password=$(echo "${json_content}" | jq -r '.clientSecret')
 tenant=$(echo "${json_content}" | jq -r '.tenantId')
 
+echo "------"
+echo "${service_princial}/${service_principal_password}/${tenant}"
+echo "------"
+
 # Set GitHub secrets using the content of the json file
-gh auth login
+#gh auth login
 echo "gh secret set AZURE_CREDENTIALS  -b\"${json_content}\""
 gh secret set AZURE_CREDENTIALS  -b"${json_content}"
 echo "gh secret set AZURE_SUBSCRIPTION_ID  -b\"${subscriptionId}\""
 gh secret set AZURE_SUBSCRIPTION_ID  -b"${subscriptionId}"
-
+set -x 
 gh secret set AZURE_SERVICE_PRINCIPAL_ID  -b\"${service_princial}\"
 gh secret set AZURE_SERVICE_PRINCIPAL_PASSWORD  -b\"${service_principal_password}\"
 gh secret set AZURE_TENANT_ID  -b\"${tenant}\"

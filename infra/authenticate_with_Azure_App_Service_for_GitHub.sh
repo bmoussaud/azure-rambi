@@ -24,6 +24,7 @@ az ad sp create-for-rbac --name $myApp --role Owner --scopes "/subscriptions/${s
 json_content=$(cat ${myApp}.json)
 echo "${json_content}"
 
+
 service_princial=$(echo "${json_content}" | jq -r '.clientId')
 service_principal_password=$(echo "${json_content}" | jq -r '.clientSecret')
 tenant=$(echo "${json_content}" | jq -r '.tenantId')
@@ -32,15 +33,21 @@ echo "------"
 echo "${service_princial}/${service_principal_password}/${tenant}"
 echo "------"
 
+cat <<EOF > .env
+AZURE_SERVICE_PRINCIPAL_ID=${service_princial}
+AZURE_SERVICE_PRINCIPAL_PASSWORD=${service_principal_password}
+AZURE_TENANT_ID=${tenant}
+AZURE_SUBSCRIPTION_ID=${subscriptionId}
+EOF
+ 
+cat .env
+
 # Set GitHub secrets using the content of the json file
 #gh auth login
 echo "gh secret set AZURE_CREDENTIALS  -b\"${json_content}\""
 gh secret set AZURE_CREDENTIALS  -b"${json_content}"
-echo "gh secret set AZURE_SUBSCRIPTION_ID  -b\"${subscriptionId}\""
-gh secret set AZURE_SUBSCRIPTION_ID  -b"${subscriptionId}"
 set -x 
-gh secret set AZURE_SERVICE_PRINCIPAL_ID  -b\"${service_princial}\"
-gh secret set AZURE_SERVICE_PRINCIPAL_PASSWORD  -b\"${service_principal_password}\"
-gh secret set AZURE_TENANT_ID  -b\"${tenant}\"
+gh secret set -f .env   
 
 rm ${myApp}.json
+rm .env

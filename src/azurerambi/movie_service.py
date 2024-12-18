@@ -135,7 +135,7 @@ class GenAiMovieService:
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
 
-        with open("prompts/structured_new_movie_short.txt", "r", encoding="utf-8") as file:
+        with open("azurerambi/prompts/structured_new_movie_short.txt", "r", encoding="utf-8") as file:
             prompt_template = file.read()
 
         #print("Prompt template: ", prompt_template)

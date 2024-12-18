@@ -2,7 +2,7 @@
     <inbound>
         <base />
         <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" allow-private-response-caching="false" must-revalidate="false" downstream-caching-type="none" />
-         <set-header name="Authorization" exists-action="override">
+        <set-header name="Authorization" exists-action="override">
             <value>Bearer {{tmdb-api-key}}</value>
         </set-header>
     </inbound>

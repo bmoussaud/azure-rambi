@@ -53,7 +53,7 @@ def describe_image2(poster_url):
         "messages": messages
     }
     logger.info("Calling endpoint %s with data:", endpoint)
-    #logger.info(json.dumps(data, indent=2))
+    logger.info(json.dumps(data, indent=2))
     response = requests.post(endpoint, headers=headers, json=data, timeout=100)
     if response.status_code == 200:
         return response.json()['choices'][0]['message']['content']

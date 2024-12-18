@@ -30,17 +30,13 @@ var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
   name: openAIName
 }
-resource gpt4 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' existing = {
-  name: 'azure-rambi-deployment-${uniqueString(resourceGroup().id)}'
-  parent: openAI
-}
 
 module openaiApi 'modules/api.bicep' = {
   name: 'apiOpenAI'
   params: {
     apimName: apiManagementServiceName
     apiName: 'OpenAI'
-    apiPath: '/azure-rambi/openai'
+    apiPath: '/azure-openai/openai'
     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/azure_open_ai.json'
     openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/azure_open_ai.xml'
     serviceUrlPrimary: '${openAI.properties.endpoint}/openai'

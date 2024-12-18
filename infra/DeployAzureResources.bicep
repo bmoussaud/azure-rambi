@@ -37,6 +37,7 @@ var webAppNameMain = 'azrambi-${uniqueString(resourceGroup().id)}'
 var webAppSku = 'S1'
 var appServicePlanName = 'azrambi-asp-${uniqueString(resourceGroup().id)}'
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
+var acrName = 'azrambiacr${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure OpenAI resource.')
 resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
@@ -253,5 +254,99 @@ module applicationInsights 'modules/app-insights.bicep' = {
   ]
 }
 
+@description('Creates an Azure Container Registry.')
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
+  name: acrName
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: true
+  }
+  tags: {
+    displayName: 'Container Registry'
+    'container.registry': acrName
+  }
+}
+
+var containerAppEnvName = 'azrambi-env-${uniqueString(resourceGroup().id)}'
+var containerMoviePosterSvcName = 'movie-poster-svc-${uniqueString(resourceGroup().id)}'
+
+@description('Creates an Azure Container Apps Environment.')
+resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
+  name: containerAppEnvName
+  location: location
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalyticsWorkspace.outputs.customerId
+        sharedKey: logAnalyticsWorkspace.outputs.primarySharedKey
+      }
+    }
+  }
+}
+
+resource uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+  name: 'id-${containerMoviePosterSvcName}'
+  location: location
+}
+var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+
+@description('This allows the managed identity of the container app to access the registry, note scope is applied to the wider ResourceGroup not the ACR')
+resource uaiRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, uai.id, acrPullRole)
+  properties: {
+    roleDefinitionId: acrPullRole
+    principalId: uai.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+@description('Creates an Azure Container App.')
+resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: containerMoviePosterSvcName
+  location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uai.id}': {}
+    }
+  }
+  properties: {
+    managedEnvironmentId: containerAppsEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 80
+        allowInsecure: false
+        traffic: [
+          {
+            latestRevision: true
+            weight: 100
+          }
+        ]
+      }
+      registries: [
+        {
+          identity: uai.id
+          server: containerRegistry.properties.loginServer
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          //name: 'azrambi-container'
+          //image: '${containerRegistry.properties.loginServer}/azrambi:latest'
+        }
+      ]
+    }
+  }
+}
+
 output application_url string = appServiceApp.properties.hostNames[0]
 output application_name string = appServiceApp.name
+output containerAppFQDN string = containerApp.properties.configuration.ingress.fqdn
+//output containerImage string = acrImportImage.outputs.importedImages[0].acrHostedImage

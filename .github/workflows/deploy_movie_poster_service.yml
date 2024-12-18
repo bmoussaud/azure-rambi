@@ -1,0 +1,41 @@
+name: Build and deploy Movie Poster Service to Azure Container Apps - azure-movie-poster-service
+
+on:
+  push:
+    paths:
+      - 'src/movie_poster_svc/**'
+      - 'requirements.txt'
+      - '.github/workflows/deploy_movie_poster_service.yml'
+    branches:
+      - main
+  workflow_dispatch:
+
+
+env:
+  ACR_NAME: azrambiacrb76s6utvi44xo    # set this to your ACR's name
+  WORKING_DIRECTORY: '.'                      # set this to the path to your path of working directory inside github repository, defaults to the repository root
+  PYTHON_VERSION: '3.12'                      # set the version to use
+  STARTUP_COMMAND: ''                         # set this to the startup command required to start the gunicorn server. default it is empty
+
+jobs:
+ build-and-deploy:
+  runs-on: ubuntu-latest
+  steps:
+  # checkout the repo 
+  - uses: actions/checkout@v3
+  - name: ACR build
+    id: acr
+    uses: azure/acr-build@v1
+    with:
+      service_principal: ${{ secrets.AZURE_SERVICE_PRINCIPAL_ID }}
+      service_principal_password: ${{ secrets.AZURE_SERVICE_PRINCIPAL_PASSWORD }}
+      tenant: ${{ secrets.AZURE_TENANT_ID }}
+      registry: ${{ env.ACR_NAME }}
+      repository: re_movie_poster_svc
+      image: img_movie_poster_svc
+      tag: ${{ github.sha }}
+      folder: src/movie_poster_svc
+      dockerfile: src/movie_poster_svc/Dockerfile
+      git_access_token: ${{ secrets.GITHUB_TOKEN }}
+      branch: main
+      build_args: '[{"python_version": ${{env.PYTHON_VERSION}} }]'

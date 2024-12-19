@@ -13,23 +13,20 @@ on:
 env:
   ACR_NAME: azrambiacrb76s6utvi44xo    # set this to your ACR's name
   
-
 jobs:
  build-and-deploy:
   runs-on: ubuntu-latest
   steps:
   # checkout the repo 
   - uses: actions/checkout@v3
+    name: Checkout to the branch
+
   - uses: azure/login@v1
+    name: Azure Login
     with:
       creds: ${{ secrets.AZURE_CREDENTIALS }}
-  - name: Azure Login
-    uses: azure/login@v1
-    with:
-      client-id: ${{ secrets.AZURE_SERVICE_PRINCIPAL_ID }}
-      tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-      subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  - name: ACR build
+
+  - name: Build the image in the Azure Containe Registry
     id: acr
     uses: azure/acr-build@v1
     with:

@@ -319,7 +319,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
     configuration: {
       ingress: {
         external: true
-        targetPort: 80
+        targetPort: 3100
         allowInsecure: false
         traffic: [
           {
@@ -381,7 +381,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
               type: 'Liveness'
               httpGet: {
                 path: '/liveness'
-                port: 80
+                port: 3100
               }
             }
 
@@ -389,7 +389,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
               type: 'Readiness'
               httpGet: {
                 path: '/readiness'
-                port: 80
+                port: 3100
               }
             }
           ]

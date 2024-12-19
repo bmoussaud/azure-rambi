@@ -1,8 +1,8 @@
 import json
-from azurerambi.movie_service import GenAiMovieService
+
 import requests
 import os
-from dotenv import load_dotenv
+
 import logging
 import time
 logging.basicConfig(level=logging.DEBUG)
@@ -17,9 +17,11 @@ logger.setLevel(logging.INFO)
 def generate_image(poster: dict):
     """Placeholder function to describe the image"""
     logger.info("generate_image of image at %s", poster['title'])
-    endpoint = "http://localhost:8000/movie_poster/generate"
+    endpoint = "http://movie-poster-svc-b76s6utvi44xo.graywater-74a15be5.francecentral.azurecontainerapps.io/movie_poster/generate"
+    #endpoint = "http://localhost:8000/movie_poster/generate"
 
     logger.info("Calling endpoint %s", endpoint)
+    logger.info(json.dumps(poster))
 
     response = requests.post(endpoint, json=poster, timeout=100)
     if response.status_code == 200:

@@ -1,8 +1,5 @@
-import json
-from azurerambi.movie_service import GenAiMovieService
+
 import requests
-import os
-from dotenv import load_dotenv
 import logging
 import time
 logging.basicConfig(level=logging.DEBUG)
@@ -17,7 +14,7 @@ logger.setLevel(logging.INFO)
 def describe_image2(poster_url):
     """Placeholder function to describe the image"""
     logger.info("Description of image at %s", poster_url)
-    endpoint = "http://localhost:8000/movie_poster/describe/moana2?url=https://image.tmdb.org/t/p/w600_and_h900_bestv2/yh64qw9mgXBvlaWDi7Q9tpUBAvH.jpg"
+    endpoint = "http://movie-poster-svc-b76s6utvi44xo.graywater-74a15be5.francecentral.azurecontainerapps.io/movie_poster/describe/moana2?url=https://image.tmdb.org/t/p/w600_and_h900_bestv2/yh64qw9mgXBvlaWDi7Q9tpUBAvH.jpg"
     
     logger.info("Calling endpoint %s", endpoint)
 

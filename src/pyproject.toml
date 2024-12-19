@@ -30,7 +30,8 @@ dependencies = [
     "uvicorn",
     "gunicorn",
     "jinja2",
-    "python-multipart"
+    "python-multipart",
+    "requests"
     ]
 
 [build-system]

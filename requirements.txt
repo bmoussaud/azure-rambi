@@ -17,4 +17,5 @@ pyyaml
 opentelemetry-instrumentation-flask  
 opentelemetry-instrumentation-requests
 dc-schema
+requests
 

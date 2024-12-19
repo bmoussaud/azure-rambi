@@ -305,7 +305,7 @@ resource uaiRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 @description('Creates an Azure Container App.')
-resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-03-01' = {
+resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   name: containerMoviePosterSvcName
   location: location
   identity: {
@@ -334,23 +334,65 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-03-01' = {
           server: containerRegistry.properties.loginServer
         }
       ]
-      probes: {
-        liveness: {
-          httpGet: {
-              path: '/liveness'
-          }
-        }
-        readiness: {
-          httpGet: {  
-            path: '/readiness'
-          }
-        }
     }
     template: {
       containers: [
         {
           name: 'azrambi-container'
           image: '${containerRegistry.properties.loginServer}/azure-rambi/movie_poster_svc:latest'
+          env: [
+            {
+              name: 'OPENAI_API_VERSION'
+              value: '2024-08-01-preview'
+            }
+            {
+              name: 'AZURE_OPENAI_API_KEY'
+              //secretRef: 'string' TODO
+              value: '-1'
+            }
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              //secretRef: 'string'
+              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+            }
+            {
+              name: 'API_SUBSCRIPTION_KEY'
+              value: apiManagement.outputs.apiAdminSubscriptionKey
+            }
+            {
+              name: 'APIM_ENDPOINT'
+              value: apiManagement.outputs.apiManagementProxyHostName
+            }
+            {
+              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+              value: applicationInsights.outputs.instrumentationKey
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: applicationInsights.outputs.connectionString
+            }
+            {
+              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+              value: '~3'
+            }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/liveness'
+                port: 80
+              }
+            }
+
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/readiness'
+                port: 80
+              }
+            }
+          ]
         }
       ]
     }
@@ -360,4 +402,3 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-03-01' = {
 output application_url string = appServiceApp.properties.hostNames[0]
 output application_name string = appServiceApp.name
 output containerAppFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
-//output containerImage string = acrImportImage.outputs.importedImages[0].acrHostedImage

@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - 'src/movie_poster_svc/**'
-      - 'requirements.txt'
       - '.github/workflows/deploy_movie_poster_service.yml'
     branches:
       - main

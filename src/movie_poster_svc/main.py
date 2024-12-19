@@ -1,6 +1,4 @@
-from fastapi import FastAPI, Form, Request, status
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import uvicorn

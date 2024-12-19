@@ -84,6 +84,11 @@ class MoviePoster(BaseModel):
     description: str | None = None
     url: str | None = None
 
+@app.get('/')
+async def root(request: Request):
+    """Function to show the environment variables."""
+    return "Welcome to the Movie Poster Service"
+
 @app.get('/movie_poster/env')
 async def env(request: Request):
     """Function to show the environment variables."""

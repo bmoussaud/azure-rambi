@@ -16,6 +16,9 @@ env:
 jobs:
  build-and-deploy:
   runs-on: ubuntu-latest
+  permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repositories
   steps:
   # checkout the repo 
   - uses: actions/checkout@v3
@@ -26,13 +29,12 @@ jobs:
     with:
       creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-
-    
   - name: Build and Deploy Container App
     uses: azure/container-apps-deploy-action@v1
     with:
-      appSourcePath: ${{ github.workspace }}/src/movie_poster_svc
+      appSourcePath: ${{ github.workspace }}src/movie_poster_svc
       acrName: ${{ env.ACR_NAME }}
       imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi/movie_poster_svc:${{ github.sha }}
       containerAppEnvironment: azrambi-env-b76s6utvi44xo
       containerAppName: movie-poster-svc-b76s6utvi44xo
+      resourceGroup: azrambi

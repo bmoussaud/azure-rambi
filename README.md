@@ -83,3 +83,20 @@ We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+```
+  - name: Build the image in the Azure Containe Registry
+    id: acr
+    uses: azure/acr-build@v1
+    with:
+      service_principal: ${{ secrets.AZURE_SERVICE_PRINCIPAL_ID }}
+      service_principal_password: ${{ secrets.AZURE_SERVICE_PRINCIPAL_PASSWORD }}
+      tenant: ${{ secrets.AZURE_TENANT_ID }}
+      registry: ${{ env.ACR_NAME }}
+      repository: azure-rambi
+      image: movie_poster_svc
+      tag: ${{ github.sha }}
+      folder: src/movie_poster_svc
+      git_access_token: ${{ secrets.GITHUB_TOKEN }}
+      branch: main
+```      

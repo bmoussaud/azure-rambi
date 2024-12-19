@@ -26,17 +26,13 @@ jobs:
     with:
       creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-  - name: Build the image in the Azure Containe Registry
-    id: acr
-    uses: azure/acr-build@v1
+
+    
+  - name: Build and Deploy Container App
+    uses: azure/container-apps-deploy-action@v1
     with:
-      service_principal: ${{ secrets.AZURE_SERVICE_PRINCIPAL_ID }}
-      service_principal_password: ${{ secrets.AZURE_SERVICE_PRINCIPAL_PASSWORD }}
-      tenant: ${{ secrets.AZURE_TENANT_ID }}
-      registry: ${{ env.ACR_NAME }}
-      repository: azure-rambi
-      image: movie_poster_svc
-      tag: latest                                         ##${{ github.sha }}:
-      folder: src/movie_poster_svc
-      git_access_token: ${{ secrets.GITHUB_TOKEN }}
-      branch: main
+      appSourcePath: ${{ github.workspace }}/src/movie_poster_svc
+      acrName: ${{ env.ACR_NAME }}
+      imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi/movie_poster_svc:${{ github.sha }}
+      containerAppEnvironment: azrambi-env-b76s6utvi44xo
+      containerAppName: movie-poster-svc-b76s6utvi44xo

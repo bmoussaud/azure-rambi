@@ -92,12 +92,18 @@ async def env(request: Request):
     return   templates.TemplateResponse('env.html', {"request": request,"AZURE_OPENAI_API_KEY": os.getenv("AZURE_OPENAI_API_KEY"), "OPENAI_API_VERSION": os.getenv("OPENAI_API_VERSION"), "AZURE_OPENAI_ENDPOINT": os.getenv("AZURE_OPENAI_ENDPOINT")})
 
 @app.get('/movie_poster/describe/{movie_title}')
-async def movie_describe_poster(movie_title: str, url: str):
+async def movie_poster_describe(movie_title: str, url: str):
     """Function to show the movie poster description."""
     return GenAiMovieService().describe_poster(movie_title, url)
 
 @app.post('/movie_poster/generate')
-async def movie_generate_poster(poster: MoviePoster) -> MoviePoster:
+async def movie_poster_generate(poster: MoviePoster) -> MoviePoster:
+    """Function to show the movie poster description."""
+    poster.url = GenAiMovieService().generate_poster(poster.description)
+    return poster
+
+@app.get('/movie_poster/generateget')
+async def movie_poster_generateget(poster: MoviePoster) -> MoviePoster:
     """Function to show the movie poster description."""
     poster.url = GenAiMovieService().generate_poster(poster.description)
     return poster

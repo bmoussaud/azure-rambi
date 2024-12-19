@@ -1,4 +1,4 @@
-name: Build and deploy Movie Poster Service to Azure Container Apps - azure-movie-poster-service
+name: Build Movie Poster Service Image using ACR
 
 on:
   push:

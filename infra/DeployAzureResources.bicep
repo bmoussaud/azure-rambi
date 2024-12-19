@@ -334,6 +334,17 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-03-01' = {
           server: containerRegistry.properties.loginServer
         }
       ]
+      probes: {
+        liveness: {
+          httpGet: {
+              path: '/liveness'
+          }
+        }
+        readiness: {
+          httpGet: {  
+            path: '/readiness'
+          }
+        }
     }
     template: {
       containers: [

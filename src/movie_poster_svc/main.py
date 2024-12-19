@@ -101,7 +101,18 @@ async def movie_generate_poster(poster: MoviePoster) -> MoviePoster:
     """Function to show the movie poster description."""
     poster.url = GenAiMovieService().generate_poster(poster.description)
     return poster
-    
+
+@app.get('/liveness')
+async def liveness():
+    """Function to check the liveness of the service."""
+    return  "liveness"
+
+@app.get('/readiness')
+async def readiness():
+    """Function to check the readiness of the service."""
+    return  "readiness"
+
+
 if __name__ == '__main__':
     uvicorn.run('main:app', host='0.0.0.0', port=8000)
 

@@ -1,2 +1,3 @@
 gunicorn.*.log
 run_docker.sh
+logs.txt

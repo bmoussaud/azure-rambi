@@ -8,8 +8,10 @@ import openai
 import uvicorn
 
 from fastapi import FastAPI, Request
+from fastapi.openapi.utils import get_openapi
 from fastapi.templating import Jinja2Templates
 from fastapi_logger.logger import log_request
+
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -103,6 +105,25 @@ class GenAiMovieService:
             logger.error("generate_poster: %s", e)
             url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return url
+
+def custom_openapi():
+    """Customize the OpenAPI schema."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Movie Poster Service",
+        version="0.0.1",
+        summary="The Famous Movie Poster Service OpenAPI schema",
+        description="This is the OpenAPI schema for the Movie Poster Service",
+        routes=app.routes,
+    )
+    openapi_schema["info"]["x-logo"] = {
+        "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 @app.get('/')
 @log_request

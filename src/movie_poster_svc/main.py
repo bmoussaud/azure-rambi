@@ -111,21 +111,21 @@ async def racine(request: Request):
     logger_uvicorn.info("racine")
     return "Welcome to the Movie Poster Service"
 
-@app.get('/movie_poster/env')
+@app.get('/env')
 @log_request
 async def env(request: Request):
     """Function to show the environment variables."""
     logger_uvicorn.info("env")
     return   templates.TemplateResponse('env.html', {"request": request,"AZURE_OPENAI_API_KEY": os.getenv("AZURE_OPENAI_API_KEY"), "OPENAI_API_VERSION": os.getenv("OPENAI_API_VERSION"), "AZURE_OPENAI_ENDPOINT": os.getenv("AZURE_OPENAI_ENDPOINT")})
 
-@app.get('/movie_poster/describe/{movie_title}')
+@app.get('/describe/{movie_title}')
 @log_request
 async def movie_poster_describe(request: Request, movie_title: str, url: str):
     """Function to show the movie poster description."""
     logger_uvicorn.info("movie_poster_describe")
     return GenAiMovieService().describe_poster(movie_title, url)
 
-@app.post('/movie_poster/generate')
+@app.post('/generate')
 @log_request
 async def movie_poster_generate(request: Request, poster: MoviePoster) -> MoviePoster:
     """Function to show the movie poster description."""

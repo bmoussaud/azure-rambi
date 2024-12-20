@@ -274,11 +274,22 @@ var containerAppEnvName = 'azrambi-venv-${uniqueString(resourceGroup().id)}'
 var containerMoviePosterSvcName = 'movie-poster-svc-${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure Container Apps Environment.')
-resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
+resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
   name: containerAppEnvName
   location: location
 
   properties: {
+    appInsightsConfiguration: {
+      connectionString: applicationInsights.outputs.connectionString
+    }
+    openTelemetryConfiguration: {
+      tracesConfiguration: {
+        destinations: ['appInsights']
+      }
+      logsConfiguration: {
+        destinations: ['appInsights']
+      }
+    }
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {

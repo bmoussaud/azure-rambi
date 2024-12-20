@@ -270,13 +270,14 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
   }
 }
 
-var containerAppEnvName = 'azrambi-env-${uniqueString(resourceGroup().id)}'
+var containerAppEnvName = 'azrambi-venv-${uniqueString(resourceGroup().id)}'
 var containerMoviePosterSvcName = 'movie-poster-svc-${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure Container Apps Environment.')
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: containerAppEnvName
   location: location
+
   properties: {
     appLogsConfiguration: {
       destination: 'log-analytics'
@@ -285,6 +286,14 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
         sharedKey: logAnalyticsWorkspace.outputs.primarySharedKey
       }
     }
+    workloadProfiles: [
+      {
+        name: 'default'
+        workloadProfileType: 'D4'
+        minimumCount: 1
+        maximumCount: 5
+      }
+    ]
   }
 }
 
@@ -316,6 +325,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
   }
   properties: {
     managedEnvironmentId: containerAppsEnv.id
+    workloadProfileName: 'default'
     configuration: {
       ingress: {
         external: true
@@ -395,6 +405,10 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           ]
         }
       ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 3
+      }
     }
   }
 }

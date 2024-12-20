@@ -129,6 +129,10 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
           value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
         }
         {
+          name: 'MOVIE_POSTER_ENDPOINT'
+          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/movie_poster'
+        }
+        {
           name: 'API_SUBSCRIPTION_KEY'
           value: apiManagement.outputs.apiAdminSubscriptionKey
         }
@@ -375,11 +379,6 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
               name: 'AZURE_OPENAI_ENDPOINT'
               //secretRef: 'string'
               value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-            }
-            {
-              name: 'MOVIE_POSTER_ENDPOINT'
-              //secretRef: 'string'
-              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/movie_poster'
             }
             {
               name: 'API_SUBSCRIPTION_KEY'

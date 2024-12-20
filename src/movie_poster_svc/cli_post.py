@@ -17,13 +17,14 @@ logger.setLevel(logging.INFO)
 def generate_image(poster: dict):
     """Placeholder function to describe the image"""
     logger.info("generate_image of image at %s", poster['title'])
-    endpoint = "http://movie-poster-svc-b76s6utvi44xo.graywater-74a15be5.francecentral.azurecontainerapps.io/movie_poster/generate"
-    #endpoint = "http://localhost:8000/movie_poster/generate"
+    #endpoint = "http://movie-poster-svc-b76s6utvi44xo.graywater-74a15be5.francecentral.azurecontainerapps.io/movie_poster/generate"
+    endpoint = "http://localhost:3100/movie_poster/generate"
 
     logger.info("Calling endpoint %s", endpoint)
     logger.info(json.dumps(poster))
 
-    response = requests.post(endpoint, json=poster, timeout=100)
+    response = requests.post(endpoint, json=poster, timeout=1000)
+    logger.info("Response: %s", response)
     if response.status_code == 200:
         return response.json()
     else:

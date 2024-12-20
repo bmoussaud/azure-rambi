@@ -1,8 +1,7 @@
 {
-    "openapi": "3.1.0",
+    "openapi": "3.0.0",
     "info": {
         "title": "Movie Poster Service",
-        "summary": "The Famous Movie Poster Service OpenAPI schema",
         "description": "This is the OpenAPI schema for the Movie Poster Service",
         "version": "0.0.1",
         "x-logo": {
@@ -190,9 +189,6 @@
                         "anyOf": [
                             {
                                 "type": "string"
-                            },
-                            {
-                                "type": "null"
                             }
                         ],
                         "title": "Description"
@@ -201,9 +197,6 @@
                         "anyOf": [
                             {
                                 "type": "string"
-                            },
-                            {
-                                "type": "null"
                             }
                         ],
                         "title": "Url"

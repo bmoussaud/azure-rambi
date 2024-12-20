@@ -44,3 +44,21 @@ module openaiApi 'modules/api.bicep' = {
     aiLoggerName: 'aiLogger'
   }
 }
+
+var containerMoviePosterSvcName = 'movie-poster-svc-${uniqueString(resourceGroup().id)}'
+resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' existing = {
+  name: containerMoviePosterSvcName
+}
+module moviePoster 'modules/api.bicep' = {
+  name: 'moviePoster'
+  params: {
+    apimName: apiManagementServiceName
+    apiName: 'moviePoster'
+    apiPath: '/movie_poster'
+    openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/movie_poster.json'
+    openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/movie_poster.xml'
+    serviceUrlPrimary: 'http:///${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
+    apiSubscriptionName: 'azure-rambi-sub'
+    aiLoggerName: 'aiLogger'
+  }
+}

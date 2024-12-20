@@ -3,6 +3,7 @@ import os
 import json
 import logging
 from dataclasses import dataclass
+from azurerambi.movie_poster import MoviePosterClient
 from pydantic import BaseModel
 import requests
 from openai import AzureOpenAI
@@ -80,51 +81,26 @@ class GenAiMovieService:
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
 
+        self._movie_poster_client = MoviePosterClient()
+
     def describe_poster(self, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
-        logger.info("describe_poster called with %s", poster_url) 
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": [
-                    {
-                        "type": "text",
-                        "text": "Describe this movie poster:"
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                                "url": poster_url
-                        }
-                    }
-                ]}
-            ],
-            max_tokens=2000
-        )
-        # Return the generated description
-        logger.info("describe_poster: %s", response.choices[0].message.content)
-        return response.choices[0].message.content
+        logger.info("describe_poster called with %s", poster_url)
+        content = self._movie_poster_client.describe_poster("movie", poster_url)
+        logger.info("describe_poster: %s", content)
+        return content
 
     def generate_poster(self, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
         try:
-            client = AzureOpenAI()
-            response = client.images.generate(
-                model="dall-e-3",
-                prompt="Generate a movie poster based on this description: "+poster_description,
-                n=1,
-                size='1024x1792'
-            )
-            json_response = json.loads(response.model_dump_json())
-            url = json_response["data"][0]["url"]
+           url = self._movie_poster_client.generate_poster(poster_description)
         except Exception as e:
             logger.error("generate_poster: %s", e)
             url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
+        logger.info("generate_poster: %s", url)
         return url
-
-  
+       
     def generate_movie2(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
         """ Generate a new movie based on the two movies 
             https://openai.com/index/introducing-structured-outputs-in-the-api/

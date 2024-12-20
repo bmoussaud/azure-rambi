@@ -12,7 +12,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.templating import Jinja2Templates
 from fastapi_logger.logger import log_request
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
+from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from openai import AzureOpenAI
 
 openai.log = "debug"
+OpenAIInstrumentor().instrument()
 
 load_dotenv()
 
@@ -38,7 +39,6 @@ handler.setFormatter(formatter)
 root.addHandler(handler)
 
 app = FastAPI()
-FastAPIInstrumentor.instrument_app(app)
 FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 templates = Jinja2Templates(directory="templates")
 

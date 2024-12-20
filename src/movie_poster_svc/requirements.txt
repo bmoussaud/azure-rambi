@@ -9,3 +9,4 @@ requests
 fastapi-logger
 opentelemetry-instrumentation-requests
 opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-openai

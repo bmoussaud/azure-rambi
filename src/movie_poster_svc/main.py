@@ -39,6 +39,7 @@ root.addHandler(handler)
 
 app = FastAPI()
 FastAPIInstrumentor.instrument_app(app)
+FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 templates = Jinja2Templates(directory="templates")
 
 logger_uvicorn = logging.getLogger('uvicorn.error')

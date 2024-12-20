@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.templating import Jinja2Templates
 from fastapi_logger.logger import log_request
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 
 from dotenv import load_dotenv
@@ -37,6 +38,7 @@ handler.setFormatter(formatter)
 root.addHandler(handler)
 
 app = FastAPI()
+FastAPIInstrumentor.instrument_app(app)
 templates = Jinja2Templates(directory="templates")
 
 logger_uvicorn = logging.getLogger('uvicorn.error')

@@ -7,3 +7,5 @@ openai
 python-dotenv  
 requests
 fastapi-logger
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-fastapi

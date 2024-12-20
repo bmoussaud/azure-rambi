@@ -57,7 +57,7 @@ module moviePoster 'modules/api.bicep' = {
     apiPath: '/movie_poster'
     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/movie_poster.json'
     openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/movie_poster.xml'
-    serviceUrlPrimary: 'http:///${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
+    serviceUrlPrimary: 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerName: 'aiLogger'
   }

@@ -1,5 +1,6 @@
 <policies>
     <inbound>
+        <set-backend-service id="apim-generated-policy" backend-id="moviePoster-primary-backend" />
         <base />
     </inbound>
     <backend>

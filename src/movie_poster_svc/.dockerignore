@@ -2,3 +2,5 @@
 **/*.pyc
 .venv/
 __pycache__
+gunicorn.*.log
+run_docker.sh

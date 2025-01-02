@@ -21,7 +21,8 @@
             "userUid": "1000",
             "userGid": "1000",
             "upgradePackages": "true"
-        }
+        },
+        "kubectl-helm-minikube": {}
     },
     "customizations": {
         "vscode": {

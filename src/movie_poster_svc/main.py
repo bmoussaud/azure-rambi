@@ -11,8 +11,16 @@ from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.templating import Jinja2Templates
 from fastapi_logger.logger import log_request
+
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import trace
+from opentelemetry.trace import (
+    get_tracer_provider,
+)
+
+
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -24,6 +32,8 @@ OpenAIInstrumentor().instrument()
 
 load_dotenv()
 
+tracer = trace.get_tracer(__name__)
+
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
@@ -32,17 +42,24 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 root.addHandler(handler)
+logger_uvicorn = logging.getLogger('uvicorn.error')
+
+if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+    logger_uvicorn.info("configure_azure_monitor")
+    configure_azure_monitor()
+    
 
 app = FastAPI()
 FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 templates = Jinja2Templates(directory="templates")
 
-logger_uvicorn = logging.getLogger('uvicorn.error')
+
 
 class MoviePoster(BaseModel):
     """ Class to manage the movie poster """

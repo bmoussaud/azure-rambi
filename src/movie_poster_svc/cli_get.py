@@ -14,7 +14,9 @@ logger.setLevel(logging.INFO)
 def describe_image2(poster_url):
     """Placeholder function to describe the image"""
     logger.info("Description of image at %s", poster_url)
-    endpoint = "http://movie-poster-svc-b76s6utvi44xo.graywater-74a15be5.francecentral.azurecontainerapps.io/movie_poster/describe/moana2?url=https://image.tmdb.org/t/p/w600_and_h900_bestv2/yh64qw9mgXBvlaWDi7Q9tpUBAvH.jpg"
+    
+    endpoint = "https://movie-poster-svc-b76s6utvi44xo.thankfuldesert-efbc16f5.francecentral.azurecontainerapps.io/movie_poster/describe/moana2?url=https://image.tmdb.org/t/p/w600_and_h900_bestv2/yh64qw9mgXBvlaWDi7Q9tpUBAvH.jpg"
+    endpoint = "http://localhost:3100/describe/moana2?url=https://image.tmdb.org/t/p/w600_and_h900_bestv2/yh64qw9mgXBvlaWDi7Q9tpUBAvH.jpg"
     
     logger.info("Calling endpoint %s", endpoint)
 

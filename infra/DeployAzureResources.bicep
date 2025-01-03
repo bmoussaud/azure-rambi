@@ -305,7 +305,7 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
       {
         name: 'default'
         workloadProfileType: 'D4'
-        minimumCount: 1
+        minimumCount: 0
         maximumCount: 5
       }
     ]

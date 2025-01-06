@@ -29,8 +29,6 @@ OpenAIInstrumentor().instrument()
 
 load_dotenv()
 
-tracer = trace.get_tracer(__name__)
-
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 

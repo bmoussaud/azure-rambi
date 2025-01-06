@@ -8,8 +8,10 @@ from pydantic import BaseModel
 import requests
 from openai import AzureOpenAI
 import openai
+from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 
 openai.log = "debug"
+OpenAIInstrumentor().instrument()
 
 # Create a logger for this module
 logger = logging.getLogger(__name__)

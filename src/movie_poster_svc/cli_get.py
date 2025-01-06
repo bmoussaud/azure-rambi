@@ -11,8 +11,6 @@ logger.setLevel(logging.INFO)
 #https://azrambi-openai-b76s6utvi44xo.openai.azure.com                /openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview 
 #https://azure-rambi-apim-b76s6utvi44xo.azure-api.net/azure-openai-api/openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview 
 
-
-
 def describe_image2(poster_url):
     """Placeholder function to describe the image"""
     logger.info("Description of image at %s", poster_url)

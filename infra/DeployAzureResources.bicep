@@ -157,7 +157,7 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
   }
 }
 
-resource symbolicname 'Microsoft.Web/sites/config@2022-09-01' = {
+resource websiteConfig 'Microsoft.Web/sites/config@2022-09-01' = {
   name: 'logs'
   kind: 'string'
   parent: appServiceApp
@@ -312,18 +312,18 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
   }
 }
 
-resource uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+resource uaiContainerMoviePosterSvcApp 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
   name: 'id-${containerMoviePosterSvcName}'
   location: location
 }
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 
 @description('This allows the managed identity of the container app to access the registry, note scope is applied to the wider ResourceGroup not the ACR')
-resource uaiRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, uai.id, acrPullRole)
+resource uaiRbacAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, uaiContainerMoviePosterSvcApp.id, acrPullRole)
   properties: {
     roleDefinitionId: acrPullRole
-    principalId: uai.properties.principalId
+    principalId: uaiContainerMoviePosterSvcApp.properties.principalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -335,7 +335,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${uai.id}': {}
+      '${uaiContainerMoviePosterSvcApp.id}': {}
     }
   }
   properties: {
@@ -355,7 +355,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
       }
       registries: [
         {
-          identity: uai.id
+          identity: uaiContainerMoviePosterSvcApp.id
           server: containerRegistry.properties.loginServer
         }
       ]

@@ -34,7 +34,8 @@
                 "ms-python.vscode-pylance",
                 "ms-python.pylint",
                 "GitHub.vscode-github-actions",
-                "GitHub.copilot"
+                "GitHub.copilot",
+                "ms-azuretools.vscode-azure-github-copilot"
             ]
         }
     },

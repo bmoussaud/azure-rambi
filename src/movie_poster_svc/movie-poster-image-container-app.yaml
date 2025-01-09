@@ -1,0 +1,32 @@
+properties:
+  managedEnvironmentId: /subscriptions/SUBSCRIPTION_ID/resourceGroup/RESOURCE_GROUP/providers/Microsoft.App/managedEnvironments/CONTAINER_APP_ENVIRONMENT
+  configuration:
+    ingress:
+      external: true
+      allowInsecure: false
+      targetPort: 80
+  template:
+    containers:
+      - image: ${ACR_NAME}.azurecr.io/azure-rambi/movie_poster_svc:${github.sha}
+        name: azrambi-container
+        env:
+          - name: 'OPENAI_API_VERSION'
+            value: '2024-08-01-preview'
+          - name: 'SECRET'
+            
+        probes:
+        - type: Liveness
+          httpGet:
+            path: "/liveness"
+            port: 3100
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        - type: Readiness
+          httpGet:
+            path: "/readiness"
+            port: 3100
+          initialDelaySeconds: 3
+          periodSeconds: 3
+    scale:
+      minReplicas: 1
+      maxReplicas: 5

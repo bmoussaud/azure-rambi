@@ -276,7 +276,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
 
 var containerAppEnvName = 'azrambi-venv-${uniqueString(resourceGroup().id)}'
 var containerMoviePosterSvcName = 'movie-poster-svc-${uniqueString(resourceGroup().id)}'
-
+var containerGuiSvcName = 'gui-${uniqueString(resourceGroup().id)}'
 @description('Creates an Azure Container Apps Environment.')
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
   name: containerAppEnvName
@@ -305,8 +305,8 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
       {
         name: 'default'
         workloadProfileType: 'D4'
-        minimumCount: 0
-        maximumCount: 5
+        minimumCount: 1
+        maximumCount: 2
       }
     ]
   }
@@ -328,7 +328,72 @@ resource uaiRbacAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
-@description('Creates an Azure Container App.')
+/*
+@description('Creates an Azure Key Vault.')
+resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
+  name: 'azrambi-kv'
+  location: location
+  properties: {
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true
+
+    sku: {
+      name: 'standard'
+      family: 'A'
+    }
+    networkAcls: {
+      defaultAction: 'Allow'
+      bypass: 'AzureServices'
+    }
+    publicNetworkAccess: 'Disabled'
+  }
+}
+
+@description('Creates an Azure Key Vault Secret AZURE-OPENAI-ENDPOINT.')
+resource secretAzureOpenAIEndPoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'AZURE-OPENAI-ENDPOINT'
+  properties: {
+    value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+  }
+}
+
+@description('Creates an Azure Key Vault Secret API-SUBSCRIPTION-KEY.')
+resource secretApimSubKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'API-SUBSCRIPTIONKEY'
+  properties: {
+    value: apiManagement.outputs.apiAdminSubscriptionKey
+  }
+}
+@description('Creates an Azure Key Vault Secret APPINSIGHTH-INSTRUMENTATIONKEY.')
+resource secretAppInsightInstKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'APPINSIGHTS-INSTRUMENTATIONKEY'
+  properties: {
+    value: applicationInsights.outputs.instrumentationKey
+  }
+}
+@description('Creates an Azure Key Vault Secret APPLICATIONINSIGHTS-CONNECTION-STRING.')
+resource secretAppInsightCS 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'APPLICATIONINSIGHTS-CONNECTIONSTRING'
+  properties: {
+    value: applicationInsights.outputs.connectionString
+  }
+}
+
+@description('Creates an Azure Key Vault Secret APIM-ENDPOINT.')
+resource secretApimEndpoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'APIM-ENDPOINT'
+  properties: {
+    value: apiManagement.outputs.apiManagementProxyHostName
+  }
+}
+  */
+
+@description('Creates an Movie Poster SVC Azure Container App.')
 resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   name: containerMoviePosterSvcName
   location: location
@@ -338,6 +403,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
       '${uaiContainerMoviePosterSvcApp.id}': {}
     }
   }
+  tags: { 'azd-service-name': 'mv_poster_svc' }
   properties: {
     managedEnvironmentId: containerAppsEnv.id
     workloadProfileName: 'default'
@@ -353,6 +419,28 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           }
         ]
       }
+      secrets: [
+        {
+          name: 'azure-openai-endpoint'
+          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+        }
+        {
+          name: 'appinsight-inst-key'
+          value: applicationInsights.outputs.instrumentationKey
+        }
+        {
+          name: 'applicationinsights-connection-string'
+          value: applicationInsights.outputs.connectionString
+        }
+        {
+          name: 'apim-subscription-key'
+          value: apiManagement.outputs.apiAdminSubscriptionKey
+        }
+        {
+          name: 'apim-endpoint'
+          value: apiManagement.outputs.apiManagementProxyHostName
+        }
+      ]
       registries: [
         {
           identity: uaiContainerMoviePosterSvcApp.id
@@ -363,7 +451,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
     template: {
       containers: [
         {
-          name: 'azrambi-container'
+          name: 'movie-poster-svc'
           image: '${containerRegistry.properties.loginServer}/azure-rambi/movie_poster_svc:latest'
           env: [
             {
@@ -372,33 +460,39 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             }
             {
               name: 'AZURE_OPENAI_API_KEY'
-              //secretRef: 'string' TODO
               value: '-1'
             }
             {
               name: 'AZURE_OPENAI_ENDPOINT'
-              //secretRef: 'string'
-              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+              secretRef: 'azure-openai-endpoint'
             }
             {
               name: 'API_SUBSCRIPTION_KEY'
-              value: apiManagement.outputs.apiAdminSubscriptionKey
+              secretRef: 'apim-subscription-key'
             }
             {
               name: 'APIM_ENDPOINT'
-              value: apiManagement.outputs.apiManagementProxyHostName
+              secretRef: 'apim-endpoint'
             }
             {
               name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-              value: applicationInsights.outputs.instrumentationKey
+              secretRef: 'appinsight-inst-key'
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              value: applicationInsights.outputs.connectionString
+              secretRef: 'applicationinsights-connection-string'
             }
             {
               name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
               value: '~3'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'movie_poster_svc'
+            }
+            {
+              name: 'OTEL_RESOURCE_ATTRIBUTES'
+              value: 'service.namespace=azure-rambi,service.instance.id=${containerMoviePosterSvcName}'
             }
           ]
           probes: [
@@ -428,6 +522,132 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
   }
 }
 
+@description('Creates an Movie Poster SVC Azure Container App.')
+resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+  name: containerGuiSvcName
+  location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uaiContainerMoviePosterSvcApp.id}': {}
+    }
+  }
+  tags: { 'azd-service-name': 'gui' }
+  properties: {
+    managedEnvironmentId: containerAppsEnv.id
+    workloadProfileName: 'default'
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8000
+        allowInsecure: false
+        traffic: [
+          {
+            latestRevision: true
+            weight: 100
+          }
+        ]
+      }
+      secrets: [
+        {
+          name: 'azure-openai-endpoint'
+          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+        }
+        {
+          name: 'movie-poster-endpoint'
+          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/movie_poster'
+        }
+        {
+          name: 'appinsight-inst-key'
+          value: applicationInsights.outputs.instrumentationKey
+        }
+        {
+          name: 'applicationinsights-connection-string'
+          value: applicationInsights.outputs.connectionString
+        }
+        {
+          name: 'apim-subscription-key'
+          value: apiManagement.outputs.apiAdminSubscriptionKey
+        }
+        {
+          name: 'apim-endpoint'
+          value: apiManagement.outputs.apiManagementProxyHostName
+        }
+      ]
+      registries: [
+        {
+          identity: uaiContainerMoviePosterSvcApp.id
+          server: containerRegistry.properties.loginServer
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'gui'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'OPENAI_API_VERSION'
+              value: '2024-08-01-preview'
+            }
+            {
+              name: 'AZURE_OPENAI_API_KEY'
+              value: '-1'
+            }
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              secretRef: 'azure-openai-endpoint'
+            }
+            {
+              name: 'MOVIE_POSTER_ENDPOINT'
+              secretRef: 'movie-poster-endpoint'
+            }
+            {
+              name: 'API_SUBSCRIPTION_KEY'
+              secretRef: 'apim-subscription-key'
+            }
+            {
+              name: 'APIM_ENDPOINT'
+              secretRef: 'apim-endpoint'
+            }
+            {
+              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+              secretRef: 'appinsight-inst-key'
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              secretRef: 'applicationinsights-connection-string'
+            }
+            {
+              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+              value: '~3'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'gui'
+            }
+            {
+              name: 'OTEL_RESOURCE_ATTRIBUTES'
+              value: 'service.namespace=azure-rambi,service.instance.id=${containerGuiSvcName}'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 2
+      }
+    }
+  }
+}
+
 output application_url string = appServiceApp.properties.hostNames[0]
 output application_name string = appServiceApp.name
-output containerAppFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
+output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
+output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
+output AZURE_LOCATION string = location
+
+output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name
+output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer

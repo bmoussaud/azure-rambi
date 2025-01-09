@@ -33,7 +33,7 @@ jobs:
     with:
       subscriptionId:  ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       resourceGroupName: ${{ env.AZ_RESOURCE_GROUP }}
-      template: infra/DeployAzureResources.bicep
+      template: infra/main.bicep
       failOnStdErr: false
       scope: resourcegroup        
   # Azure Logout

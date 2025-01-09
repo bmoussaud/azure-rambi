@@ -1,0 +1,23 @@
+#requirements.txt
+#needed by Azure App Service
+# filepath: /requirements.txt
+Flask
+Flask-WTF
+werkzeug  
+gunicorn
+uvicorn  
+uvloop>=0.16
+httptools  
+watchfiles  
+openai  
+azure-identity  
+aiohttp  
+python-dotenv  
+pyyaml  
+opentelemetry-instrumentation-flask  
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-openai
+dc-schema
+requests
+azure-monitor-opentelemetry 
+

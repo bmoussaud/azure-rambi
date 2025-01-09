@@ -3,22 +3,24 @@ import os
 import json
 import logging
 from dataclasses import dataclass
-from azurerambi.movie_poster import MoviePosterClient
+from movie_poster import MoviePosterClient
 from pydantic import BaseModel
 import requests
 from openai import AzureOpenAI
 import openai
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
+RequestsInstrumentor().instrument()
 
 # Create a logger for this module
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class Movie(BaseModel):
-    """ Data class for Movie2 """
+    """ Data class for Movie """
     title: str
     plot: str
     poster_url: str
@@ -113,7 +115,7 @@ class GenAiMovieService:
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
 
-        with open("azurerambi/prompts/structured_new_movie_short.txt", "r", encoding="utf-8") as file:
+        with open("prompts/structured_new_movie_short.txt", "r", encoding="utf-8") as file:
             prompt_template = file.read()
 
         #print("Prompt template: ", prompt_template)
@@ -171,5 +173,3 @@ class GenAiMovieService:
         movie.prompt= prompt
         movie.poster_url = None
         return movie
-
-

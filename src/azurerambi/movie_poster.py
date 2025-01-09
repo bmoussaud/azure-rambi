@@ -4,9 +4,13 @@ import logging
 import os
 import json
 
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+RequestsInstrumentor().instrument()
 
 class MoviePosterClient:
     """CLI class for the movie poster generator."""

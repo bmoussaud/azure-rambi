@@ -47,9 +47,16 @@ python src/azurerambi/app.py
 
 ## Azure Resources
 
+### AZD
+
+```
+azd auth login
+azd up
+````
+
 ### Azure Infrastructue
 
-The [infra/DeployAzureResources.bicep](infra/DeployAzureResources.bicep)
+The [infra/main.bicep](infra/main.bicep)
 * CognitiveServices 
     *  Open AI gpt-4
     * Open AI dall-e-3

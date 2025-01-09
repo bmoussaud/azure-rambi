@@ -3,15 +3,17 @@ from dataclasses import dataclass
 import dataclasses
 from typing import List
 import logging
-import sys
 import os
 
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
+import uvicorn
 from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
-from azurerambi.movie_service import GenAiMovieService, Movie, TMDBService
+from movie_service import TMDBService, Movie, GenAiMovieService
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
 import openai
 
 
@@ -25,6 +27,14 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'azure_rambi'
+
+
+if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING") is not None:
+    logger.info("configure_azure_monitor")
+    configure_azure_monitor()
+
+logger.info("Instrumenting Flask app")
+FlaskInstrumentor().instrument_app(app)
 
 
 genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
@@ -41,8 +51,6 @@ class GitHubContext:
     run_number: str = os.getenv('GITHUB_RUN_NUMBER')
     repository: str = "https://github.com/bmoussaud/azure-rambi"
 
-
-
 @dataclass
 class RambiModel:
     """ Data class for RambiModel """
@@ -50,17 +58,21 @@ class RambiModel:
     movie2: Movie
     default_genres: List[str] = dataclasses.field(default_factory=lambda: genre_list)
 
-
 class TwoMoviesForm(FlaskForm):
     """Form for find tow movies."""
     movie1Title = StringField('Movie 1', validators=[DataRequired()])
     movie2Title = StringField('Movie 2', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
-
 def tmdb_service() -> TMDBService:
     """ Function to get the TMDBService """
     return TMDBService(os.getenv("APIM_ENDPOINT"), api_key=os.getenv('API_SUBSCRIPTION_KEY'))
+
+
+@ app.route('/env', methods=['GET', 'POST'])
+def env():
+    """Function printing python version."""
+    return render_template('env.html', env=os.environ,github=GitHubContext())
 
 @ app.route('/', methods=['GET', 'POST'])
 def home():
@@ -123,4 +135,4 @@ def movie_generate():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=5100)

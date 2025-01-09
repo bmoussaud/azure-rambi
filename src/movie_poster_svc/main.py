@@ -36,8 +36,6 @@ root.setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
-
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -48,13 +46,11 @@ logger_uvicorn = logging.getLogger('uvicorn.error')
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     logger_uvicorn.info("configure_azure_monitor")
     configure_azure_monitor()
-    
+
 
 app = FastAPI()
 FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 templates = Jinja2Templates(directory="templates")
-
-
 
 class MoviePoster(BaseModel):
     """ Class to manage the movie poster """

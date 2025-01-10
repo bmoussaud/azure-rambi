@@ -33,9 +33,6 @@ var apimSku = 'Basicv2'
 var apimSkuCount = 1
 var apimPublisherName = 'Azure Rambi Suites'
 
-var webAppNameMain = 'azrambi-${uniqueString(resourceGroup().id)}'
-var webAppSku = 'S1'
-var appServicePlanName = 'azrambi-asp-${uniqueString(resourceGroup().id)}'
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 var acrName = 'azrambiacr${uniqueString(resourceGroup().id)}'
 

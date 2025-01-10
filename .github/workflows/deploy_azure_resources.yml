@@ -15,6 +15,7 @@ on:
 
 env:
   AZ_RESOURCE_GROUP: azrambi                  # set this to your resource group name
+  ACR_NAME: azrambiacrb76s6utvi44xo
  
 jobs:
  deploy-azure-resources:
@@ -28,14 +29,32 @@ jobs:
     with:
       creds: ${{ secrets.AZURE_CREDENTIALS }}
   # **Deploy Azure Resources using Bicep**
-  - name: Deploy Bicep file
+  - name: Deploy Infrastructure layer
     uses: azure/arm-deploy@v1
     with:
       subscriptionId:  ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       resourceGroupName: ${{ env.AZ_RESOURCE_GROUP }}
       template: infra/main.bicep
       failOnStdErr: false
-      scope: resourcegroup        
+      scope: resourcegroup      
+  - name: Build and Deploy Movie Poster Service
+    uses: azure/container-apps-deploy-action@v1
+    with:
+      appSourcePath: ${{ github.workspace }}/src/movie_poster_svc
+      acrName: ${{ env.ACR_NAME }}
+      imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
+      containerAppEnvironment: azrambi-env-b76s6utvi44xo
+      containerAppName: movie-poster-svc-b76s6utvi44xo
+      resourceGroup: ${{ env.AZ_RESOURCE_GROUP }} 
+  - name: Build and Deploy GUI
+    uses: azure/container-apps-deploy-action@v1
+    with:
+      appSourcePath: ${{ github.workspace }}/src/azurerambi
+      acrName: ${{ env.ACR_NAME }}
+      imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
+      containerAppEnvironment: azrambi-env-b76s6utvi44xo
+      containerAppName: gui-b76s6utvi44xo
+      resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}   
   # Azure Logout
   - name: Azure Logout
     if: always()

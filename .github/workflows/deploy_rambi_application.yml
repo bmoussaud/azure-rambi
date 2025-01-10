@@ -5,13 +5,13 @@
 name: Build and deploy Python app to Azure Web App - azure-rambi
 
 on:
-  push:
-    paths:
-      - 'src/azurerambi/**'
-      - 'requirements.txt'
-      - '.github/workflows/deploy_rambi_application.yml'
-    branches:
-      - main
+  #push:
+  #  paths:
+  #    - 'src/azurerambi/**'
+  #    - 'requirements.txt'
+  #    - '.github/workflows/deploy_rambi_application.yml'
+  #  branches:
+  #    - main
   workflow_dispatch:
 
 

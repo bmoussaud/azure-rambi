@@ -19,7 +19,7 @@ services:
     docker:
       remoteBuild: true
 
-  mv_poster_svc:
+  movie_poster_svc:
     language: python
     project: src/movie_poster_svc
     host: containerapp

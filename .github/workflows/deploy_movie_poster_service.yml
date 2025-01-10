@@ -1,14 +1,13 @@
 name: Build Movie Poster Service Image using ACR
 
 on:
-  push:
-    paths:
-      - 'src/movie_poster_svc/**'
-      - '.github/workflows/deploy_movie_poster_service.yml'
-    branches:
-      - main
+  #push:
+  #  paths:
+  #    - 'src/movie_poster_svc/**'
+  #    - '.github/workflows/deploy_movie_poster_service.yml'
+  #  branches:
+  #    - main
   workflow_dispatch:
-
 
 env:
   ACR_NAME: azrambiacrb76s6utvi44xo    # set this to your ACR's name

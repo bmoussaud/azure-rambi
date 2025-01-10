@@ -281,7 +281,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
       '${uaiContainerMoviePosterSvcApp.id}': {}
     }
   }
-  tags: { 'azd-service-name': 'mv_poster_svc' }
+  tags: { 'azd-service-name': 'movie_poster_svc' }
   properties: {
     managedEnvironmentId: containerAppsEnv.id
     workloadProfileName: 'default'
@@ -330,7 +330,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
       containers: [
         {
           name: 'movie-poster-svc'
-          image: '${containerRegistry.properties.loginServer}/azure-rambi/movie_poster_svc:latest'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
           env: [
             {
               name: 'OPENAI_API_VERSION'
@@ -520,8 +520,6 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   }
 }
 
-output application_url string = appServiceApp.properties.hostNames[0]
-output application_name string = appServiceApp.name
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
 output AZURE_LOCATION string = location

@@ -187,6 +187,14 @@ module applicationInsights 'modules/app-insights.bicep' = {
   ]
 }
 
+module redis 'modules/redis.bicep' = {
+  name: 'redis-cache'
+  params: {
+    location: location
+    redisCacheName: 'azure-rambi-redis-${uniqueString(resourceGroup().id)}'
+  }
+}
+
 @description('Creates an Azure Container Registry.')
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
   name: acrName
@@ -301,6 +309,18 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           name: 'apim-endpoint'
           value: apiManagement.outputs.apiManagementProxyHostName
         }
+        {
+          name: 'redis-host'
+          value: redis.outputs.redisHost
+        }
+        {
+          name: 'redis-port'
+          value: redis.outputs.redisPort
+        }
+        {
+          name: 'redis-password'
+          value: redis.outputs.redisPassword
+        }
       ]
       registries: [
         {
@@ -354,6 +374,18 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             {
               name: 'OTEL_RESOURCE_ATTRIBUTES'
               value: 'service.namespace=azure-rambi,service.instance.id=movie-poster-svc'
+            }
+            {
+              name: 'REDIS_HOST'
+              secretRef: 'redis-host'
+            }
+            {
+              name: 'REDIS_PORT'
+              secretRef: 'redis-port'
+            }
+            {
+              name: 'REDIS_PASSWORD'
+              secretRef: 'redis-password'
             }
           ]
           probes: [

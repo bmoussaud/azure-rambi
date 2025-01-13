@@ -408,7 +408,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
         }
       ]
       scale: {
-        minReplicas: 0
+        minReplicas: 1
         maxReplicas: 2
       }
     }
@@ -528,7 +528,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
         }
       ]
       scale: {
-        minReplicas: 0
+        minReplicas: 1
         maxReplicas: 2
       }
     }

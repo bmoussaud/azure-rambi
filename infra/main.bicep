@@ -191,7 +191,7 @@ module redis 'modules/redis.bicep' = {
   name: 'redis-cache'
   params: {
     location: location
-    redisCacheName: 'azure-rambi-redis-${uniqueString(resourceGroup().id)}'
+    redisCacheName: 'azure-rambi-cache-${uniqueString(resourceGroup().id)}'
   }
 }
 

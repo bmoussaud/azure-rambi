@@ -44,7 +44,7 @@ jobs:
       acrName: ${{ env.ACR_NAME }}
       imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
       containerAppEnvironment: azrambi-env-b76s6utvi44xo
-      containerAppName: movie-poster-svc-b76s6utvi44xo
+      containerAppName: movie-poster-svc
       resourceGroup: ${{ env.AZ_RESOURCE_GROUP }} 
   - name: Build and Deploy GUI
     uses: azure/container-apps-deploy-action@v1
@@ -53,7 +53,7 @@ jobs:
       acrName: ${{ env.ACR_NAME }}
       imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
       containerAppEnvironment: azrambi-env-b76s6utvi44xo
-      containerAppName: gui-b76s6utvi44xo
+      containerAppName: gui-svc
       resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}   
   # Azure Logout
   - name: Azure Logout

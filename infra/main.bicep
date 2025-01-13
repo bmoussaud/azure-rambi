@@ -187,6 +187,7 @@ module applicationInsights 'modules/app-insights.bicep' = {
   ]
 }
 
+/*
 module redis 'modules/redis.bicep' = {
   name: 'redis-cache'
   params: {
@@ -194,6 +195,7 @@ module redis 'modules/redis.bicep' = {
     redisCacheName: 'azure-rambi-cache-${uniqueString(resourceGroup().id)}'
   }
 }
+*/
 
 @description('Creates an Azure Container Registry.')
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
@@ -235,6 +237,7 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
         sharedKey: logAnalyticsWorkspace.outputs.primarySharedKey
       }
     }
+
     workloadProfiles: [
       {
         name: 'default'
@@ -311,15 +314,15 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
         }
         {
           name: 'redis-host'
-          value: redis.outputs.redisHost
+          value: redisSvc.name
         }
         {
           name: 'redis-port'
-          value: redis.outputs.redisPort
+          value: '6379'
         }
         {
           name: 'redis-password'
-          value: redis.outputs.redisPassword
+          value: 'maFiZMyPsPq72KRFZFg3ylOmXmas73rIifatguUsz07LjcxJToHU4o40mibAOdM1KVX36OY0TRG8D3OAN1z5CP11UlahdUlPPiKGFQpt4TO'
         }
       ]
       registries: [
@@ -535,8 +538,53 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   }
 }
 
+@description('Creates an GUI SVC Azure Container App.')
+resource redisSvc 'Microsoft.App/containerApps@2024-10-02-preview' = {
+  name: 'redis-svc'
+  location: location
+  tags: { 'azd-service-name': 'redis' }
+  properties: {
+    managedEnvironmentId: containerAppsEnv.id
+    workloadProfileName: 'default'
+    configuration: {
+      ingress: {
+        external: false
+        targetPort: 6379
+        allowInsecure: false
+        traffic: [
+          {
+            latestRevision: true
+            weight: 100
+          }
+        ]
+      }
+      service: {
+        type: 'redis'
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'redis'
+          image: 'mcr.microsoft.com/azure-redis-cache/redis:7.0.12-alpine'
+          command: [
+            'redis-server'
+            '--requirepass'
+            'maFiZMyPsPq72KRFZFg3ylOmXmas73rIifatguUsz07LjcxJToHU4o40mibAOdM1KVX36OY0TRG8D3OAN1z5CP11UlahdUlPPiKGFQpt4TO'
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 0
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
+output redisFQDN string = redisSvc.properties.configuration.ingress.fqdn
 output AZURE_LOCATION string = location
 
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name

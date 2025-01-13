@@ -78,6 +78,7 @@ class GenAiMovieService:
         """describe the movie poster using gp4o model"""
         logger.info("describe_poster called with %s", poster_url)
         cache_key = f"poster_description:{movie_title}:{poster_url}"  # P6bc8
+        logger.info("cache key %s", cache_key)  # P6bc8
         cached_description = self.redis_client.get(cache_key)  # P6bc8
         if cached_description:  # P6bc8
             logger.info("Cache hit for %s", cache_key)  # P6bc8

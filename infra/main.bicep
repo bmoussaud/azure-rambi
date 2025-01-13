@@ -130,11 +130,6 @@ module tmdbApiKey 'modules/nv.bicep' = {
   }
 }
 
-//var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
-//resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
-//  name: openAIName
-//}
-
 module openaiApi 'modules/api.bicep' = {
   name: 'apiOpenAI'
   params: {
@@ -149,10 +144,6 @@ module openaiApi 'modules/api.bicep' = {
   }
 }
 
-//var containerMoviePosterSvcName = 'movie-poster-svc-${uniqueString(resourceGroup().id)}'
-//resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' existing = {
-//  name: containerMoviePosterSvcName
-//}
 module moviePoster 'modules/api.bicep' = {
   name: 'moviePoster'
   params: {
@@ -247,86 +238,21 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
   }
 }
 
-resource uaiContainerMoviePosterSvcApp 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
-  name: 'id-acr-pull-movie-poster-svc'
+resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+  name: 'azure-rambi-acr-pull'
   location: location
 }
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 
 @description('This allows the managed identity of the container app to access the registry, note scope is applied to the wider ResourceGroup not the ACR')
 resource uaiRbacAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, uaiContainerMoviePosterSvcApp.id, acrPullRole)
+  name: guid(resourceGroup().id, uaiAzureRambiAcrPull.id, acrPullRole)
   properties: {
     roleDefinitionId: acrPullRole
-    principalId: uaiContainerMoviePosterSvcApp.properties.principalId
+    principalId: uaiAzureRambiAcrPull.properties.principalId
     principalType: 'ServicePrincipal'
   }
 }
-
-/*
-@description('Creates an Azure Key Vault.')
-resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
-  name: 'azrambi-kv'
-  location: location
-  properties: {
-    tenantId: subscription().tenantId
-    enableRbacAuthorization: true
-
-    sku: {
-      name: 'standard'
-      family: 'A'
-    }
-    networkAcls: {
-      defaultAction: 'Allow'
-      bypass: 'AzureServices'
-    }
-    publicNetworkAccess: 'Disabled'
-  }
-}
-
-@description('Creates an Azure Key Vault Secret AZURE-OPENAI-ENDPOINT.')
-resource secretAzureOpenAIEndPoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
-  parent: kv
-  name: 'AZURE-OPENAI-ENDPOINT'
-  properties: {
-    value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-  }
-}
-
-@description('Creates an Azure Key Vault Secret API-SUBSCRIPTION-KEY.')
-resource secretApimSubKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
-  parent: kv
-  name: 'API-SUBSCRIPTIONKEY'
-  properties: {
-    value: apiManagement.outputs.apiAdminSubscriptionKey
-  }
-}
-@description('Creates an Azure Key Vault Secret APPINSIGHTH-INSTRUMENTATIONKEY.')
-resource secretAppInsightInstKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
-  parent: kv
-  name: 'APPINSIGHTS-INSTRUMENTATIONKEY'
-  properties: {
-    value: applicationInsights.outputs.instrumentationKey
-  }
-}
-@description('Creates an Azure Key Vault Secret APPLICATIONINSIGHTS-CONNECTION-STRING.')
-resource secretAppInsightCS 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
-  parent: kv
-  name: 'APPLICATIONINSIGHTS-CONNECTIONSTRING'
-  properties: {
-    value: applicationInsights.outputs.connectionString
-  }
-}
-
-@description('Creates an Azure Key Vault Secret APIM-ENDPOINT.')
-resource secretApimEndpoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
-  parent: kv
-  name: 'APIM-ENDPOINT'
-  properties: {
-    value: apiManagement.outputs.apiManagementProxyHostName
-  }
-}
-  */
 
 @description('Creates an Movie Poster SVC Azure Container App.')
 resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
@@ -335,7 +261,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${uaiContainerMoviePosterSvcApp.id}': {}
+      '${uaiAzureRambiAcrPull.id}': {}
     }
   }
   tags: { 'azd-service-name': 'movie_poster_svc' }
@@ -378,7 +304,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
       ]
       registries: [
         {
-          identity: uaiContainerMoviePosterSvcApp.id
+          identity: uaiAzureRambiAcrPull.id
           server: containerRegistry.properties.loginServer
         }
       ]
@@ -464,7 +390,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${uaiContainerMoviePosterSvcApp.id}': {}
+      '${uaiAzureRambiAcrPull.id}': {}
     }
   }
   tags: { 'azd-service-name': 'gui' }
@@ -511,7 +437,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
       ]
       registries: [
         {
-          identity: uaiContainerMoviePosterSvcApp.id
+          identity: uaiAzureRambiAcrPull.id
           server: containerRegistry.properties.loginServer
         }
       ]
@@ -536,7 +462,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
             }
             {
               name: 'MOVIE_POSTER_ENDPOINT'
-              secretRef: 'movie-poster-endpoint'
+              value: 'movie-poster-svc'
             }
             {
               name: 'API_SUBSCRIPTION_KEY'

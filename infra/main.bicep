@@ -462,7 +462,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
             }
             {
               name: 'MOVIE_POSTER_ENDPOINT'
-              value: 'movie-poster-svc'
+              value: 'http://movie-poster-svc'
             }
             {
               name: 'API_SUBSCRIPTION_KEY'

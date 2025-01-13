@@ -3,6 +3,7 @@ import os
 import sys
 import logging
 import json
+import redis  # P9f38
 
 import openai
 import uvicorn
@@ -71,10 +72,17 @@ class GenAiMovieService:
             api_version=os.getenv("OPENAI_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
+        self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"))  # P951a
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
         logger.info("describe_poster called with %s", poster_url)
+        cache_key = f"poster_description:{movie_title}:{poster_url}"  # P6bc8
+        cached_description = self.redis_client.get(cache_key)  # P6bc8
+        if cached_description:  # P6bc8
+            logger.info("Cache hit for %s", cache_key)  # P6bc8
+            return cached_description.decode("utf-8")  # P6bc8
+
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -95,8 +103,10 @@ class GenAiMovieService:
             max_tokens=2000
         )
         # Return the generated description
-        logger.info("describe_poster: %s", response.choices[0].message.content)
-        return response.choices[0].message.content
+        description = response.choices[0].message.content  # Pd900
+        self.redis_client.set(cache_key, description, ex=3600)  # Pd900
+        logger.info("describe_poster: %s", description)
+        return description
 
     def generate_poster(self, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """

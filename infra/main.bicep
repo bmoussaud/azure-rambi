@@ -212,12 +212,9 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
   }
 }
 
-var containerAppEnvName = 'azrambi-venv-${uniqueString(resourceGroup().id)}'
-var containerMoviePosterSvcName = 'movie-poster-svc-${uniqueString(resourceGroup().id)}'
-var containerGuiSvcName = 'gui-${uniqueString(resourceGroup().id)}'
 @description('Creates an Azure Container Apps Environment.')
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
-  name: containerAppEnvName
+  name: 'azure-rambi'
   location: location
 
   properties: {
@@ -251,7 +248,7 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
 }
 
 resource uaiContainerMoviePosterSvcApp 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
-  name: 'id-${containerMoviePosterSvcName}'
+  name: 'id-acr-pull-movie-poster-svc'
   location: location
 }
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
@@ -333,7 +330,7 @@ resource secretApimEndpoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-previe
 
 @description('Creates an Movie Poster SVC Azure Container App.')
 resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
-  name: containerMoviePosterSvcName
+  name: 'movie-poster-svc'
   location: location
   identity: {
     type: 'UserAssigned'
@@ -430,7 +427,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             }
             {
               name: 'OTEL_RESOURCE_ATTRIBUTES'
-              value: 'service.namespace=azure-rambi,service.instance.id=${containerMoviePosterSvcName}'
+              value: 'service.namespace=azure-rambi,service.instance.id=movie-poster-svc'
             }
           ]
           probes: [
@@ -453,16 +450,16 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 3
+        minReplicas: 0
+        maxReplicas: 2
       }
     }
   }
 }
 
-@description('Creates an Movie Poster SVC Azure Container App.')
+@description('Creates an GUI SVC Azure Container App.')
 resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
-  name: containerGuiSvcName
+  name: 'gui-svc'
   location: location
   identity: {
     type: 'UserAssigned'
@@ -567,13 +564,13 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
             }
             {
               name: 'OTEL_RESOURCE_ATTRIBUTES'
-              value: 'service.namespace=azure-rambi,service.instance.id=${containerGuiSvcName}'
+              value: 'service.namespace=azure-rambi,service.instance.id=gui-svc'
             }
           ]
         }
       ]
       scale: {
-        minReplicas: 1
+        minReplicas: 0
         maxReplicas: 2
       }
     }

@@ -17,6 +17,7 @@ env:
   AZ_RESOURCE_GROUP: azrambi                  # set this to your resource group name
   ACR_NAME: azrambiacrb76s6utvi44xo
  
+  
 jobs:
  deploy-azure-resources:
   runs-on: ubuntu-latest
@@ -43,7 +44,7 @@ jobs:
       appSourcePath: ${{ github.workspace }}/src/movie_poster_svc
       acrName: ${{ env.ACR_NAME }}
       imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
-      containerAppEnvironment: azrambi-env-b76s6utvi44xo
+      containerAppEnvironment: azure-rambi
       containerAppName: movie-poster-svc
       resourceGroup: ${{ env.AZ_RESOURCE_GROUP }} 
   - name: Build and Deploy GUI
@@ -52,7 +53,7 @@ jobs:
       appSourcePath: ${{ github.workspace }}/src/azurerambi
       acrName: ${{ env.ACR_NAME }}
       imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
-      containerAppEnvironment: azrambi-env-b76s6utvi44xo
+      containerAppEnvironment: azure-rambi
       containerAppName: gui-svc
       resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}   
   # Azure Logout

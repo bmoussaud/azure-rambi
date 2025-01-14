@@ -135,10 +135,10 @@ def movie_generate():
     movie1 = tmdb_svc.get_movie_by_title(movie1_title)
     movie2 = tmdb_svc.get_movie_by_title(movie2_title)
 
-
+    endpoint = os.getenv("MOVIE_GENERATOR_ENDPOINT","http://movie-generator-svc")
     try:
         response = requests.post(
-            "http://movie-generator-svc:8000/generate",
+            f"{endpoint}/generate",
             json={
                 "movie1": movie1.dict(),
                 "movie2": movie2.dict(),

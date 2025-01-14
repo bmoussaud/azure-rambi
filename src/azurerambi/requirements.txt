@@ -1,6 +1,3 @@
-#requirements.txt
-#needed by Azure App Service
-# filepath: /requirements.txt
 Flask
 Flask-WTF
 werkzeug  

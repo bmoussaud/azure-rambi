@@ -6,6 +6,7 @@ import logging
 import os
 from collections import OrderedDict
 import requests
+import json
 
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
@@ -17,7 +18,7 @@ from movie_service import TMDBService, Movie
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 import openai
-
+from movie_poster import MoviePosterClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -104,7 +105,7 @@ def poster_description():
     tmdb_svc = tmdb_service()
     movie = tmdb_svc.get_movie_by_title(movie_title)
     try:
-        poster_desc = GenAiMovieService().describe_poster(movie.poster_url)
+        poster_desc = MoviePosterClient().describe_poster(movie.title, movie.poster_url)
     except openai.OpenAIError as e:
         logger.error("Error in describe_poster: %s", e)
         poster_desc = f"Error in describe_poster: {e}"
@@ -120,7 +121,7 @@ def poster_description():
 def poster_generate():
     """Function to generate a new movie poster."""
     desc = request.form.get('poster_description')
-    generated_poster = GenAiMovieService().generate_poster(desc)
+    generated_poster = MoviePosterClient().generate_poster(desc)
     return render_template('poster.html', url=generated_poster)
 
 
@@ -133,9 +134,17 @@ def movie_generate():
 
     tmdb_svc = tmdb_service()
     movie1 = tmdb_svc.get_movie_by_title(movie1_title)
+    logger.info("movie1: %s", movie1)
     movie2 = tmdb_svc.get_movie_by_title(movie2_title)
-
+    logger.info("movie2: %s", movie2)
     endpoint = os.getenv("MOVIE_GENERATOR_ENDPOINT","http://movie-generator-svc")
+    logger.info("Calling movie_generate service at %s", endpoint)
+    data = {
+        "movie1": movie1.dict(),
+        "movie2": movie2.dict(),
+        "genre": genre
+    }
+    logger.info("data: %s", json.dumps(data))
     try:
         response = requests.post(
             f"{endpoint}/generate",
@@ -148,6 +157,7 @@ def movie_generate():
         )
         response.raise_for_status()
         generated_movie = response.json()
+        logger.info("Generated movie: %s", generated_movie)
     except requests.RequestException as e:
         logger.error("Error in calling movie_generate service: %s", e)
         generated_movie = {

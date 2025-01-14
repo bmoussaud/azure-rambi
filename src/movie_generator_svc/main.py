@@ -61,6 +61,9 @@ app = FastAPI()
 FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 templates = Jinja2Templates(directory="templates")
 
+
+
+
 class Movie(BaseModel):
     """ Data class for Movie """
     title: str
@@ -72,6 +75,12 @@ class GenAIMovie(Movie):
     """ Data class for GenAIMovie """
     prompt: str = None
 
+class MoviePayload(BaseModel):
+    """ Data class for MoviePayload """
+    movie1: Movie
+    movie2: Movie
+    genre: str
+
 class GenAiMovieService:
     """ Class to manage the access to OpenAI API to generate a new movie """
 
@@ -81,6 +90,7 @@ class GenAiMovieService:
                     os.getenv("AZURE_OPENAI_API_KEY"), os.getenv("OPENAI_API_VERSION"), os.getenv("AZURE_OPENAI_ENDPOINT"))
 
         self._endpoint = os.getenv("MOVIE_POSTER_ENDPOINT")
+        self._headers= {    }
 
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
@@ -203,10 +213,10 @@ async def env(request: Request):
 
 @app.post('/generate')
 @log_request
-async def movie_generate(request: Request, movie1: Movie, movie2: Movie, genre: str) -> Movie:
+async def movie_generate(request: Request,payload:MoviePayload) -> Movie:
     """Function to generate a new movie."""
     logger_uvicorn.info("movie_generate")
-    return GenAiMovieService().generate_movie(movie1, movie2, genre)
+    return GenAiMovieService().generate_movie(payload.movie1, payload.movie2, payload.genre)
 
 @app.get('/liveness')
 @log_request
@@ -221,4 +231,4 @@ async def readiness(request: Request):
     return  "readiness"
 
 if __name__ == '__main__':
-    uvicorn.run('main:app')
+    uvicorn.run('main:app', host='0.0.0.0', port=8001)

@@ -59,7 +59,8 @@ class TMDBService:
                     return Movie(
                         title=movie["title"],
                         plot=movie["overview"],
-                        poster_url=f"https://image.tmdb.org/t/p/original/{movie['poster_path']}"
+                        poster_url=f"https://image.tmdb.org/t/p/original/{movie['poster_path']}",
+                        poster_description=" "
                     )
             else:
                 logger.error("Movie not found %s %s",title, response.status_code)

@@ -24,6 +24,12 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - uses: Azure/CLI@v1
+        with:
+          inlineScript: |
+            #!/bin/bash
+            find /home/runner/work/azure-rambi -ls 
+            echo "-----------------------------------"
       # **Deploy Azure Resources using Bicep**
       - name: Deploy Infrastructure layer
         uses: azure/arm-deploy@v1

@@ -482,7 +482,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               secretRef: 'apim-subscription-key'
             }
             {
-              name: 'APIM_ENDPOINT'
+              name: 'TMDB_ENDPOINT'
               value: apiManagement.outputs.apiManagementProxyHostName
             }
             {
@@ -623,7 +623,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
               type: 'Liveness'
               httpGet: {
                 path: '/liveness'
-                port: 3100
+                port: 8001
               }
             }
 
@@ -631,7 +631,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
               type: 'Readiness'
               httpGet: {
                 path: '/readiness'
-                port: 3100
+                port: 8001
               }
             }
           ]

@@ -15,10 +15,11 @@ from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
 from movie_service import TMDBService, Movie
+from movie_poster import MoviePosterClient
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
-import openai
-from movie_poster import MoviePosterClient
+
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -74,8 +75,7 @@ class TwoMoviesForm(FlaskForm):
 
 def tmdb_service() -> TMDBService:
     """ Function to get the TMDBService """
-    return TMDBService(os.getenv("APIM_ENDPOINT"), api_key=os.getenv('API_SUBSCRIPTION_KEY'))
-
+    return TMDBService(os.getenv("TMDB_ENDPOINT"), api_key=os.getenv('API_SUBSCRIPTION_KEY'))
 
 @ app.route('/env', methods=['GET', 'POST'])
 def env():
@@ -106,9 +106,6 @@ def poster_description():
     movie = tmdb_svc.get_movie_by_title(movie_title)
     try:
         poster_desc = MoviePosterClient().describe_poster(movie.title, movie.poster_url)
-    except openai.OpenAIError as e:
-        logger.error("Error in describe_poster: %s", e)
-        poster_desc = f"Error in describe_poster: {e}"
     except Exception as e:
         logger.error("Other Error in describe_poster: %s", e)
         poster_desc = f"Error in describe_poster: {e}"
@@ -165,8 +162,6 @@ def movie_generate():
             "plot": f"Error in calling movie_generate service: {e}",
             "poster_url": ""
         }
-
-
     return render_template('generated_movie.html', generated_movie=generated_movie)
 
 

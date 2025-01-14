@@ -13,7 +13,7 @@ python-dotenv
 pyyaml  
 opentelemetry-instrumentation-flask  
 opentelemetry-instrumentation-requests
-opentelemetry-instrumentation-openai
+
 dc-schema
 requests
 azure-monitor-opentelemetry 

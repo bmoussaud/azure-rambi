@@ -22,12 +22,11 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Set the logging level to WARNING for the azure.core.pipeline.policies.http_logging_policy logger
-http_logging_policy_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')
-http_logging_policy_logger.setLevel(logging.WARNING)
+logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
+logging.getLogger('azure.monitor.opentelemetry.exporter').setLevel(logging.WARNING)
 
 # Set the logging level to WARNING for the urllib3.connectionpool logger
-urllib3_logger = logging.getLogger('urllib3.connectionpool')
-urllib3_logger.setLevel(logging.WARNING)
+logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
 
 load_dotenv()
 

@@ -533,18 +533,24 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   }
 }
 
-@description('Creates an GUI SVC Azure Container App.')
-resource redisSvc 'Microsoft.App/containerApps@2024-10-02-preview' = {
-  name: 'redis-svc'
+@description('Creates an Movie Generator SVC Azure Container App.')
+resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+  name: 'movie-generator-svc'
   location: location
-  tags: { 'azd-service-name': 'redis' }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uaiAzureRambiAcrPull.id}': {}
+    }
+  }
+  tags: { 'azd-service-name': 'movie_generator_svc' }
   properties: {
     managedEnvironmentId: containerAppsEnv.id
     workloadProfileName: 'default'
     configuration: {
       ingress: {
-        external: false
-        targetPort: 6379
+        external: true
+        targetPort: 3100
         allowInsecure: false
         traffic: [
           {
@@ -553,25 +559,104 @@ resource redisSvc 'Microsoft.App/containerApps@2024-10-02-preview' = {
           }
         ]
       }
-      service: {
-        type: 'redis'
-      }
+      secrets: [
+        {
+          name: 'azure-openai-endpoint'
+          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+        }
+        {
+          name: 'appinsight-inst-key'
+          value: applicationInsights.outputs.instrumentationKey
+        }
+        {
+          name: 'applicationinsights-connection-string'
+          value: applicationInsights.outputs.connectionString
+        }
+        {
+          name: 'apim-subscription-key'
+          value: apiManagement.outputs.apiAdminSubscriptionKey
+        }
+        {
+          name: 'apim-endpoint'
+          value: apiManagement.outputs.apiManagementProxyHostName
+        }
+      ]
+      registries: [
+        {
+          identity: uaiAzureRambiAcrPull.id
+          server: containerRegistry.properties.loginServer
+        }
+      ]
     }
     template: {
       containers: [
         {
-          name: 'redis'
-          image: 'mcr.microsoft.com/azure-redis-cache/redis:7.0.12-alpine'
-          command: [
-            'redis-server'
-            '--requirepass'
-            'maFiZMyPsPq72KRFZFg3ylOmXmas73rIifatguUsz07LjcxJToHU4o40mibAOdM1KVX36OY0TRG8D3OAN1z5CP11UlahdUlPPiKGFQpt4TO'
+          name: 'movie-poster-svc'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'OPENAI_API_VERSION'
+              value: '2024-08-01-preview'
+            }
+            {
+              name: 'AZURE_OPENAI_API_KEY'
+              value: '-1'
+            }
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              secretRef: 'azure-openai-endpoint'
+            }
+            {
+              name: 'API_SUBSCRIPTION_KEY'
+              secretRef: 'apim-subscription-key'
+            }
+            {
+              name: 'APIM_ENDPOINT'
+              secretRef: 'apim-endpoint'
+            }
+            {
+              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+              secretRef: 'appinsight-inst-key'
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              secretRef: 'applicationinsights-connection-string'
+            }
+            {
+              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+              value: '~3'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'movie_poster_svc'
+            }
+            {
+              name: 'OTEL_RESOURCE_ATTRIBUTES'
+              value: 'service.namespace=azure-rambi,service.instance.id=movie-poster-svc'
+            }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/liveness'
+                port: 3100
+              }
+            }
+
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/readiness'
+                port: 3100
+              }
+            }
           ]
         }
       ]
       scale: {
-        minReplicas: 0
-        maxReplicas: 1
+        minReplicas: 1
+        maxReplicas: 2
       }
     }
   }
@@ -579,7 +664,7 @@ resource redisSvc 'Microsoft.App/containerApps@2024-10-02-preview' = {
 
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
-output redisFQDN string = redisSvc.properties.configuration.ingress.fqdn
+output moviegeneratorFQDN string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
 output AZURE_LOCATION string = location
 
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name

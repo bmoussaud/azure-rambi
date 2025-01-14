@@ -3,7 +3,7 @@ import os
 import sys
 import logging
 import json
-import redis
+import requests
 from collections import OrderedDict
 
 import openai
@@ -80,58 +80,37 @@ class GenAiMovieService:
         logger.info("Initializing AzureOpenAI with api_key: %s, api_version: %s, azure_endpoint: %s",
                     os.getenv("AZURE_OPENAI_API_KEY"), os.getenv("OPENAI_API_VERSION"), os.getenv("AZURE_OPENAI_ENDPOINT"))
 
+        self._endpoint = os.getenv("MOVIE_POSTER_ENDPOINT")
+
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
             api_version=os.getenv("OPENAI_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
-        self._use_cache = os.getenv("USE_CACHE", None) is not None
-        if self._use_cache: 
-            logger.info("Initializing Redis client")
-            self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True ) 
-            logger.info("Redis ping: %s", self.redis_client.ping()) 
 
-    def describe_poster(self, poster_url: str) -> str:
-        """describe the movie poster using gp4o model"""
-        logger.info("describe_poster called with %s", poster_url)
-        if self._use_cache: 
-            cache_key = f"poster_description:{poster_url}" 
-            logger.info("cache key %s", cache_key) 
-            cached_description = self.redis_client.get(cache_key)
-            if cached_description: 
-                logger.info("Cache hit for %s", cache_key)
-                return cached_description.decode("utf-8") 
-            
-        logger.info("ask gpt4o")
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": [
-                    {
-                        "type": "text",
-                        "text": f"Describe the movie poster at this URL: {poster_url}"
-                    }
-                ]}
-            ],
-            max_tokens=2000
-        )
-        # Return the generated description
-        description = response.choices[0].message.content 
-        if self._use_cache:
-            logger.info("set cache for %s", cache_key) 
-            self.redis_client.set(cache_key, description, ex=3600) 
-        
-        logger.info("describe_poster: %s", description)
-        return description
+    def describe_poster(self, name: str, poster_url: str) -> str:
+        """ Describe the poster based on the URL """
+        # Call the movie-poster-svc describe poster service
+      
+        logger.info("%s Description of image at %s", name, poster_url)
+        endpoint = f"{self._endpoint}/describe/{name}?url={poster_url}"
+
+        logger.info("Calling endpoint %s", endpoint)
+        response = requests.get(endpoint, headers=self._headers, timeout=300)
+        if response.status_code == 200:
+            logger.info("Response: %s", response.content)
+            return response.content.decode('UTF-8')
+        else:
+            logger.error("Failed to retrieve data: %s %s", response.status_code, response.text)
+            raise Exception(f"Failed to retrieve the poster description: {response.status_code} {response.text}")
 
     def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
         """ Generate a new movie based on the two movies """ 
 
         logger.info(
             "generate_movie called based on two movies %s and %s, genre: %s", movie1.title, movie2.title, genre)
-        movie1.poster_description = self.describe_poster(movie1.poster_url)
-        movie2.poster_description = self.describe_poster(movie2.poster_url)
+        movie1.poster_description = self.describe_poster(movie1.title, movie1.poster_url)
+        movie2.poster_description = self.describe_poster(movie2.title, movie2.poster_url)
 
         with open("prompts/structured_new_movie_short.txt", "r", encoding="utf-8") as file:
             prompt_template = file.read()

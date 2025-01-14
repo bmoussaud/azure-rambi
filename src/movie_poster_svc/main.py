@@ -37,7 +37,7 @@ root.setLevel(logging.INFO)
 
 # Create a logger for this module
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 # Set the logging level to WARNING for the azure.core.pipeline.policies.http_logging_policy logger
 http_logging_policy_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')

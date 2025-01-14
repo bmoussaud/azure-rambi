@@ -19,7 +19,7 @@ import openai
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 # Set the logging level to WARNING for the azure.core.pipeline.policies.http_logging_policy logger
 http_logging_policy_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')

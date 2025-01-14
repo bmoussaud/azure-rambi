@@ -313,7 +313,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
 
         {
           name: 'redis-password'
-          value: redis.outputs.redisHost
+          value: redis.outputs.redisPassword
         }
       ]
       registries: [

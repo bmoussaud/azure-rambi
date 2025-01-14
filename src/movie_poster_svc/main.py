@@ -84,7 +84,7 @@ class GenAiMovieService:
         self._use_cache = os.getenv("USE_CACHE", None) is not None
         if self._use_cache: 
             logger.info("Initializing Redis client")
-            self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"))  # P951a
+            self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True )  # P951a
             logger.info("Redis ping: %s", self.redis_client.ping())  # P951a
 
 

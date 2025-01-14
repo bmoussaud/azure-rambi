@@ -4,6 +4,7 @@ import sys
 import logging
 import json
 import redis  # P9f38
+from collections import OrderedDict  # Pf79b
 
 import openai
 import uvicorn
@@ -178,7 +179,8 @@ async def racine(request: Request):
 async def env(request: Request):
     """Function to show the environment variables."""
     logger_uvicorn.info("env")
-    return templates.TemplateResponse('env.html', {"request": request, "env": os.environ})
+    sorted_env = OrderedDict(sorted(os.environ.items()))  # P81f1
+    return templates.TemplateResponse('env.html', {"request": request, "env": sorted_env})  # P81f1
 
 @app.get('/describe/{movie_title}')
 @log_request

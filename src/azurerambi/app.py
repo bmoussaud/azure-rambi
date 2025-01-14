@@ -4,6 +4,7 @@ import dataclasses
 from typing import List
 import logging
 import os
+from collections import OrderedDict
 
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
@@ -77,7 +78,8 @@ def tmdb_service() -> TMDBService:
 @ app.route('/env', methods=['GET', 'POST'])
 def env():
     """Function printing python version."""
-    return render_template('env.html', env=os.environ,github=GitHubContext())
+    sorted_env = OrderedDict(sorted(os.environ.items()))
+    return render_template('env.html', env=sorted_env, github=GitHubContext())
 
 @ app.route('/', methods=['GET', 'POST'])
 def home():

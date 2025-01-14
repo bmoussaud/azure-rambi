@@ -81,20 +81,25 @@ class GenAiMovieService:
             api_version=os.getenv("OPENAI_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
-        self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"))  # P951a
-        logger.info("Redis ping: %s", self.redis_client.ping())  # P951a
+        self._use_cache = os.getenv("USE_CACHE", None) is not None
+        if self._use_cache: 
+            logger.info("Initializing Redis client")
+            self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"))  # P951a
+            logger.info("Redis ping: %s", self.redis_client.ping())  # P951a
 
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
         logger.info("describe_poster called with %s", poster_url)
-        cache_key = f"poster_description:{movie_title}:{poster_url}"  # P6bc8
-        logger.info("cache key %s", cache_key)  # P6bc8
-        cached_description = self.redis_client.get(cache_key)  # P6bc8
-        if cached_description:  # P6bc8
-            logger.info("Cache hit for %s", cache_key)  # P6bc8
-            return cached_description.decode("utf-8")  # P6bc8
-        logger.info("Cache miss for %s, ask gpt4o", cache_key)
+        if self._use_cache: 
+            cache_key = f"poster_description:{movie_title}:{poster_url}" 
+            logger.info("cache key %s", cache_key) 
+            cached_description = self.redis_client.get(cache_key)
+            if cached_description: 
+                logger.info("Cache hit for %s", cache_key)
+                return cached_description.decode("utf-8") 
+            
+        logger.info("ask gpt4o")
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -115,9 +120,11 @@ class GenAiMovieService:
             max_tokens=2000
         )
         # Return the generated description
-        description = response.choices[0].message.content  # Pd900
-        logger.info("set cache for %s", cache_key)  # Pd900
-        self.redis_client.set(cache_key, description, ex=3600)  # Pd900
+        description = response.choices[0].message.content 
+        if self._use_cache:
+            logger.info("set cache for %s", cache_key) 
+            self.redis_client.set(cache_key, description, ex=3600) 
+        
         logger.info("describe_poster: %s", description)
         return description
 

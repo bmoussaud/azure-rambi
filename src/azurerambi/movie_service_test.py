@@ -16,5 +16,5 @@ movie1 = tmdb_svc.get_movie_by_title(movie1_title)
 movie2 = tmdb_svc.get_movie_by_title(movie2_title)
 
 genai_movie_service = GenAiMovieService()
-generated_movie = genai_movie_service.generate_movie2(movie1, movie2, genre)
+generated_movie = genai_movie_service.generate_movie(movie1, movie2, genre)
 print ("Generated movie: ", generated_movie)

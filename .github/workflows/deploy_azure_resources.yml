@@ -76,6 +76,32 @@ jobs:
         if: always()
         run: az logout
 
+  deploy-movie-generate-service:
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout to the branch
+      # **Azure Login**
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # **Build and Deploy Movie Generate Service**
+      - name: Build and Deploy Movie Generate Service
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/src/movie_generate_svc
+          acrName: ${{ env.ACR_NAME }}
+          imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_generate_svc:${{ github.sha }}
+          containerAppEnvironment: azure-rambi
+          containerAppName: movie-generate-svc
+          resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}
+      # Azure Logout
+      - name: Azure Logout
+        if: always()
+        run: az logout
+
   deploy-gui:
     runs-on: ubuntu-latest
     needs: deploy-infrastructure

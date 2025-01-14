@@ -86,6 +86,49 @@ Note: The bicep files come from: https://github.com/microsoft/AzureOpenAI-with-A
 #### TMDB
 
 The OpenAPI json file is available here: https://developer.themoviedb.org/openapi. You'll find the file for [v3](https://developer.themoviedb.org/openapi/64542913e1f86100738e227f) and [v4](https://developer.themoviedb.org/openapi/6453cc549c91cf004cd2a015) version
+
+### Movie Generate Service
+
+The `generate_movie` method has been moved to a new FastAPI service located in `src/movie_generate_svc`. This service is configured to run in Azure Container Apps.
+
+#### Deployment
+
+To deploy the new `movie_generate_svc` service, follow these steps:
+
+1. Build the Docker image:
+    ```bash
+    docker build -t movie_generate_svc:latest src/movie_generate_svc
+    ```
+
+2. Push the Docker image to your container registry:
+    ```bash
+    docker tag movie_generate_svc:latest <your-container-registry>/movie_generate_svc:latest
+    docker push <your-container-registry>/movie_generate_svc:latest
+    ```
+
+3. Update the Azure Container Apps configuration to use the new image.
+
+#### Usage
+
+To use the new `movie_generate_svc` service, make a POST request to the `/generate` endpoint with the following JSON payload:
+```json
+{
+    "movie1": {
+        "title": "Movie 1 Title",
+        "plot": "Movie 1 Plot",
+        "poster_url": "Movie 1 Poster URL"
+    },
+    "movie2": {
+        "title": "Movie 2 Title",
+        "plot": "Movie 2 Plot",
+        "poster_url": "Movie 2 Poster URL"
+    },
+    "genre": "Desired Genre"
+}
+```
+
+The service will return a JSON response with the generated movie details.
+
 ## Contributing
 
 We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING.md) for more details.

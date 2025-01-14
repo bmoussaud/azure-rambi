@@ -15,6 +15,7 @@ from fastapi_logger.logger import log_request
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+from azure.ai.inference.tracing import AIInferenceInstrumentor 
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 
@@ -27,6 +28,7 @@ from openai import AzureOpenAI
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
+AIInferenceInstrumentor().instrument() 
 
 load_dotenv()
 

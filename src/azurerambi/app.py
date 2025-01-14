@@ -17,11 +17,17 @@ from opentelemetry.instrumentation.flask import FlaskInstrumentor
 import openai
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-#handler = logging.StreamHandler(sys.stdout)
-#logger.addHandler(handler)
+logger.setLevel(logging.WARNING)
+
+# Set the logging level to WARNING for the azure.core.pipeline.policies.http_logging_policy logger
+http_logging_policy_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')
+http_logging_policy_logger.setLevel(logging.WARNING)
+
+# Set the logging level to WARNING for the urllib3.connectionpool logger
+urllib3_logger = logging.getLogger('urllib3.connectionpool')
+urllib3_logger.setLevel(logging.WARNING)
 
 load_dotenv()
 

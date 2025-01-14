@@ -31,11 +31,19 @@ OpenAIInstrumentor().instrument()
 load_dotenv()
 
 root = logging.getLogger()
-root.setLevel(logging.DEBUG)
+root.setLevel(logging.INFO)
 
 # Create a logger for this module
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
+
+# Set the logging level to WARNING for the azure.core.pipeline.policies.http_logging_policy logger
+http_logging_policy_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')
+http_logging_policy_logger.setLevel(logging.WARNING)
+
+# Set the logging level to WARNING for the urllib3.connectionpool logger
+urllib3_logger = logging.getLogger('urllib3.connectionpool')
+urllib3_logger.setLevel(logging.WARNING)
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)

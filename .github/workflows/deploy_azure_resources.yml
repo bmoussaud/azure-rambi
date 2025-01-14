@@ -9,6 +9,7 @@ on:
     paths:
       - 'infra/**'
       - '.github/workflows/deploy_azure_resources.yml'
+      - 'src/**'
     branches:
       - main
   workflow_dispatch:
@@ -17,7 +18,6 @@ env:
   AZ_RESOURCE_GROUP: azrambi                  # set this to your resource group name
   ACR_NAME: azrambiacrb76s6utvi44xo
  
-  
 jobs:
  deploy-azure-resources:
   runs-on: ubuntu-latest

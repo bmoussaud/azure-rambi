@@ -82,6 +82,8 @@ class GenAiMovieService:
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
         self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"))  # P951a
+        logger.info("Redis ping: %s", self.redis_client.ping())  # P951a
+
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
@@ -92,7 +94,7 @@ class GenAiMovieService:
         if cached_description:  # P6bc8
             logger.info("Cache hit for %s", cache_key)  # P6bc8
             return cached_description.decode("utf-8")  # P6bc8
-
+        logger.info("Cache miss for %s, ask gpt4o", cache_key)
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -114,6 +116,7 @@ class GenAiMovieService:
         )
         # Return the generated description
         description = response.choices[0].message.content  # Pd900
+        logger.info("set cache for %s", cache_key)  # Pd900
         self.redis_client.set(cache_key, description, ex=3600)  # Pd900
         logger.info("describe_poster: %s", description)
         return description

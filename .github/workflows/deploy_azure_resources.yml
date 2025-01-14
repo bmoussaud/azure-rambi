@@ -15,25 +15,25 @@ env:
   ACR_NAME: azrambiacrb76s6utvi44xo
 
 jobs:
-  
-  deploy-infrastructure:
+  prepare:
     runs-on: ubuntu-latest
     steps:
-      # **Azure Login**
+      - uses: actions/checkout@v3
+        name: Checkout to the branch
+
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - uses: Azure/CLI@v1
+
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
         with:
-          inlineScript: |
-            #!/bin/bash
-            find /home/runner/work/azure-rambi -ls 
-            find /home/runner/work/azure-rambi/azure-rambi -ls 
-            echo "-----------------------------------"
-            echo "Following symbolic links:"
-            find /home/runner/work/azure-rambi/azure-rambi -type l -ls
-            echo "-----------------------------------"
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
       # **Deploy Azure Resources using Bicep**
       - name: Deploy Infrastructure layer
         uses: azure/arm-deploy@v1

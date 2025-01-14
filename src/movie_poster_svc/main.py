@@ -159,7 +159,7 @@ async def racine(request: Request):
 async def env(request: Request):
     """Function to show the environment variables."""
     logger_uvicorn.info("env")
-    return   templates.TemplateResponse('env.html', {"request": request,"AZURE_OPENAI_API_KEY": os.getenv("AZURE_OPENAI_API_KEY"), "OPENAI_API_VERSION": os.getenv("OPENAI_API_VERSION"), "AZURE_OPENAI_ENDPOINT": os.getenv("AZURE_OPENAI_ENDPOINT")})
+    return templates.TemplateResponse('env.html', {"request": request, "env": os.environ})
 
 @app.get('/describe/{movie_title}')
 @log_request

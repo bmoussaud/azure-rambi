@@ -105,13 +105,13 @@ class GenAiMovieService:
         logger.info("generate_poster: %s", url)
         return url
        
-    def generate_movie2(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
+    def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
         """ Generate a new movie based on the two movies 
             https://openai.com/index/introducing-structured-outputs-in-the-api/
         """ 
 
         logger.info(
-            "generate_movie2 called based on two movies %s and %s, genre: %s", movie1.title, movie2.title, genre)
+            "generate_movie called based on two movies %s and %s, genre: %s", movie1.title, movie2.title, genre)
         movie1.poster_description = self.describe_poster(movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.poster_url)
 

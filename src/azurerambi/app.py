@@ -103,8 +103,7 @@ def poster_description():
     tmdb_svc = tmdb_service()
     movie = tmdb_svc.get_movie_by_title(movie_title)
     try:
-        genai_movie_service = GenAiMovieService()
-        poster_desc = genai_movie_service.describe_poster(movie.poster_url)
+        poster_desc = GenAiMovieService().describe_poster(movie.poster_url)
     except openai.OpenAIError as e:
         logger.error("Error in describe_poster: %s", e)
         poster_desc = f"Error in describe_poster: {e}"
@@ -136,7 +135,7 @@ def movie_generate():
     movie2 = tmdb_svc.get_movie_by_title(movie2_title)
 
     genai_movie_service = GenAiMovieService()
-    generated_movie = genai_movie_service.generate_movie2(movie1, movie2, genre)
+    generated_movie = genai_movie_service.generate_movie(movie1, movie2, genre)
 
     return render_template('generated_movie.html', generated_movie=generated_movie)
 

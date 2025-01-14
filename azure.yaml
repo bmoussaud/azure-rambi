@@ -26,3 +26,9 @@ services:
     docker:
       remoteBuild: true
 
+  movie_generate_svc:
+    language: python
+    project: src/movie_generate_svc
+    host: containerapp
+    docker:
+      remoteBuild: true

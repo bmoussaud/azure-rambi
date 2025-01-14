@@ -20,4 +20,3 @@ opentelemetry-instrumentation-openai
 dc-schema
 requests
 azure-monitor-opentelemetry 
-

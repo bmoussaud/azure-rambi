@@ -5,6 +5,7 @@ from typing import List
 import logging
 import os
 from collections import OrderedDict
+import requests
 
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
@@ -12,7 +13,7 @@ import uvicorn
 from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
-from movie_service import TMDBService, Movie, GenAiMovieService
+from movie_service import TMDBService, Movie
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 import openai
@@ -86,7 +87,7 @@ def home():
     """Function printing python version."""
     twomovieform = TwoMoviesForm()
     rambimodel = None
-    if twomovieform.validate_on_submit():
+    if (twomovieform.validate_on_submit()):
         tmdb_svc = tmdb_service()
         movie1 = tmdb_svc.get_movie_by_title(
             twomovieform.movie1Title.data)
@@ -135,8 +136,25 @@ def movie_generate():
     movie1 = tmdb_svc.get_movie_by_title(movie1_title)
     movie2 = tmdb_svc.get_movie_by_title(movie2_title)
 
-    genai_movie_service = GenAiMovieService()
-    generated_movie = genai_movie_service.generate_movie2(movie1, movie2, genre)
+    try:
+        response = requests.post(
+            "http://movie-generate-svc:8000/generate",
+            json={
+                "movie1": movie1.dict(),
+                "movie2": movie2.dict(),
+                "genre": genre
+            },
+            timeout=1000
+        )
+        response.raise_for_status()
+        generated_movie = response.json()
+    except requests.RequestException as e:
+        logger.error("Error in calling movie_generate service: %s", e)
+        generated_movie = {
+            "title": "Error",
+            "plot": f"Error in calling movie_generate service: {e}",
+            "poster_url": ""
+        }
 
     return render_template('generated_movie.html', generated_movie=generated_movie)
 

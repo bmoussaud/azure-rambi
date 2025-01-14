@@ -533,7 +533,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
     configuration: {
       ingress: {
         external: true
-        targetPort: 3100
+        targetPort: 8001
         allowInsecure: false
         traffic: [
           {

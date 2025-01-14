@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 import openai
 import uvicorn
-
+from typing import Optional
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.templating import Jinja2Templates
@@ -69,7 +69,7 @@ class Movie(BaseModel):
     title: str
     plot: str
     poster_url: str
-    poster_description: str = None
+    poster_description: Optional[str] = None
 
 class GenAIMovie(Movie):
     """ Data class for GenAIMovie """

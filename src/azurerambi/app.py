@@ -138,7 +138,7 @@ def movie_generate():
 
     try:
         response = requests.post(
-            "http://movie-generate-svc:8000/generate",
+            "http://movie-generator-svc:8000/generate",
             json={
                 "movie1": movie1.dict(),
                 "movie2": movie2.dict(),

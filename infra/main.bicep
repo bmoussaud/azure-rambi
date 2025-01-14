@@ -291,10 +291,6 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
       }
       secrets: [
         {
-          name: 'azure-openai-endpoint'
-          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-        }
-        {
           name: 'appinsight-inst-key'
           value: applicationInsights.outputs.instrumentationKey
         }
@@ -306,11 +302,6 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           name: 'apim-subscription-key'
           value: apiManagement.outputs.apiAdminSubscriptionKey
         }
-        {
-          name: 'apim-endpoint'
-          value: apiManagement.outputs.apiManagementProxyHostName
-        }
-
         {
           name: 'redis-password'
           value: redis.outputs.redisPassword
@@ -339,7 +330,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             }
             {
               name: 'AZURE_OPENAI_ENDPOINT'
-              secretRef: 'azure-openai-endpoint'
+              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
             }
             {
               name: 'API_SUBSCRIPTION_KEY'
@@ -347,7 +338,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             }
             {
               name: 'APIM_ENDPOINT'
-              secretRef: 'apim-endpoint'
+              value: apiManagement.outputs.apiManagementProxyHostName
             }
             {
               name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -441,14 +432,6 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
       }
       secrets: [
         {
-          name: 'azure-openai-endpoint'
-          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-        }
-        {
-          name: 'movie-poster-endpoint'
-          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/movie_poster'
-        }
-        {
           name: 'appinsight-inst-key'
           value: applicationInsights.outputs.instrumentationKey
         }
@@ -459,10 +442,6 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
         {
           name: 'apim-subscription-key'
           value: apiManagement.outputs.apiAdminSubscriptionKey
-        }
-        {
-          name: 'apim-endpoint'
-          value: apiManagement.outputs.apiManagementProxyHostName
         }
       ]
       registries: [
@@ -488,7 +467,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
             }
             {
               name: 'AZURE_OPENAI_ENDPOINT'
-              secretRef: 'azure-openai-endpoint'
+              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
             }
             {
               name: 'MOVIE_POSTER_ENDPOINT'
@@ -500,7 +479,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
             }
             {
               name: 'APIM_ENDPOINT'
-              secretRef: 'apim-endpoint'
+              value: apiManagement.outputs.apiManagementProxyHostName
             }
             {
               name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -576,10 +555,6 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
           name: 'apim-subscription-key'
           value: apiManagement.outputs.apiAdminSubscriptionKey
         }
-        {
-          name: 'apim-endpoint'
-          value: apiManagement.outputs.apiManagementProxyHostName
-        }
       ]
       registries: [
         {
@@ -599,6 +574,10 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
               value: '2024-08-01-preview'
             }
             {
+              name: 'MOVIE_POSTER_ENDPOINT'
+              value: 'http://movie-poster-svc'
+            }
+            {
               name: 'AZURE_OPENAI_API_KEY'
               value: '-1'
             }
@@ -612,7 +591,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
             }
             {
               name: 'APIM_ENDPOINT'
-              secretRef: 'apim-endpoint'
+              value: apiManagement.outputs.apiManagementProxyHostName
             }
             {
               name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -628,11 +607,11 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
             }
             {
               name: 'OTEL_SERVICE_NAME'
-              value: 'movie_poster_svc'
+              value: 'movie_generator_svc'
             }
             {
               name: 'OTEL_RESOURCE_ATTRIBUTES'
-              value: 'service.namespace=azure-rambi,service.instance.id=movie-poster-svc'
+              value: 'service.namespace=azure-rambi,service.instance.id=movie-generator-svc'
             }
           ]
           probes: [

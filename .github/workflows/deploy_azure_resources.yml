@@ -1,7 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
 name: Deploy Azure Resources - azure-rambi
 
 on:
@@ -17,47 +13,86 @@ on:
 env:
   AZ_RESOURCE_GROUP: azrambi                  # set this to your resource group name
   ACR_NAME: azrambiacrb76s6utvi44xo
- 
+
 jobs:
- deploy-azure-resources:
-  runs-on: ubuntu-latest
-  steps:
-  # checkout the repo 
-  - uses: actions/checkout@v3
-  # **Azure Login**
-  - name: Azure Login
-    uses: azure/login@v1
-    with:
-      creds: ${{ secrets.AZURE_CREDENTIALS }}
-  # **Deploy Azure Resources using Bicep**
-  - name: Deploy Infrastructure layer
-    uses: azure/arm-deploy@v1
-    with:
-      subscriptionId:  ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      resourceGroupName: ${{ env.AZ_RESOURCE_GROUP }}
-      template: infra/main.bicep
-      failOnStdErr: false
-      scope: resourcegroup      
-  - name: Build and Deploy Movie Poster Service
-    uses: azure/container-apps-deploy-action@v1
-    with:
-      appSourcePath: ${{ github.workspace }}/src/movie_poster_svc
-      acrName: ${{ env.ACR_NAME }}
-      imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
-      containerAppEnvironment: azure-rambi
-      containerAppName: movie-poster-svc
-      resourceGroup: ${{ env.AZ_RESOURCE_GROUP }} 
-  - name: Build and Deploy GUI
-    uses: azure/container-apps-deploy-action@v1
-    with:
-      appSourcePath: ${{ github.workspace }}/src/azurerambi
-      acrName: ${{ env.ACR_NAME }}
-      imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
-      containerAppEnvironment: azure-rambi
-      containerAppName: gui-svc
-      resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}   
-  # Azure Logout
-  - name: Azure Logout
-    if: always()
-    run: az logout
- 
+  checkout-and-login:
+    runs-on: ubuntu-latest
+    steps:
+      # checkout the repo 
+      - uses: actions/checkout@v3
+      # **Azure Login**
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    needs: checkout-and-login
+    steps:
+      # **Azure Login**
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # **Deploy Azure Resources using Bicep**
+      - name: Deploy Infrastructure layer
+        uses: azure/arm-deploy@v1
+        with:
+          subscriptionId:  ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ env.AZ_RESOURCE_GROUP }}
+          template: infra/main.bicep
+          failOnStdErr: false
+          scope: resourcegroup
+      # Azure Logout
+      - name: Azure Logout
+        if: always()
+        run: az logout
+
+  deploy-movie-poster-service:
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    steps:
+      # **Azure Login**
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # **Build and Deploy Movie Poster Service**
+      - name: Build and Deploy Movie Poster Service
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/src/movie_poster_svc
+          acrName: ${{ env.ACR_NAME }}
+          imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
+          containerAppEnvironment: azure-rambi
+          containerAppName: movie-poster-svc
+          resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}
+      # Azure Logout
+      - name: Azure Logout
+        if: always()
+        run: az logout
+
+  deploy-gui:
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    steps:
+      # **Azure Login**
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # **Build and Deploy GUI**
+      - name: Build and Deploy GUI
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/src/azurerambi
+          acrName: ${{ env.ACR_NAME }}
+          imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
+          containerAppEnvironment: azure-rambi
+          containerAppName: gui-svc
+          resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}
+      # Azure Logout
+      - name: Azure Logout
+        if: always()
+        run: az logout

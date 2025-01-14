@@ -53,6 +53,7 @@ python src/azurerambi/app.py
 azd auth login
 azd up
 ````
+Warning: the provision phases include an APIM and A Redis Cache that can take a veryyyyyyy loooooong time to become available. Patience !
 
 ### Azure Infrastructue
 

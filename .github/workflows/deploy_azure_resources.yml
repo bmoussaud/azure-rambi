@@ -29,6 +29,10 @@ jobs:
           inlineScript: |
             #!/bin/bash
             find /home/runner/work/azure-rambi -ls 
+            find /home/runner/work/azure-rambi/azure-rambi -ls 
+            echo "-----------------------------------"
+            echo "Following symbolic links:"
+            find /home/runner/work/azure-rambi/azure-rambi -type l -ls
             echo "-----------------------------------"
       # **Deploy Azure Resources using Bicep**
       - name: Deploy Infrastructure layer

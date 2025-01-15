@@ -645,9 +645,131 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
   }
 }
 
+@description('Creates an Generated Movie SVC Azure Container App.')
+resource containerGeneratedMovieSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+  name: 'generated-movie-svc'
+  location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uaiAzureRambiAcrPull.id}': {}
+    }
+  }
+  tags: { 'azd-service-name': 'generated_movie_svc' }
+  properties: {
+    managedEnvironmentId: containerAppsEnv.id
+    workloadProfileName: 'default'
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8002
+        allowInsecure: false
+        traffic: [
+          {
+            latestRevision: true
+            weight: 100
+          }
+        ]
+      }
+      secrets: [
+        {
+          name: 'appinsight-inst-key'
+          value: applicationInsights.outputs.instrumentationKey
+        }
+        {
+          name: 'applicationinsights-connection-string'
+          value: applicationInsights.outputs.connectionString
+        }
+        {
+          name: 'apim-subscription-key'
+          value: apiManagement.outputs.apiAdminSubscriptionKey
+        }
+      ]
+      registries: [
+        {
+          identity: uaiAzureRambiAcrPull.id
+          server: containerRegistry.properties.loginServer
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'generated-movie-svc'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'OPENAI_API_VERSION'
+              value: '2024-08-01-preview'
+            }
+            {
+              name: 'AZURE_OPENAI_API_KEY'
+              value: '-1'
+            }
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+            }
+            {
+              name: 'API_SUBSCRIPTION_KEY'
+              secretRef: 'apim-subscription-key'
+            }
+            {
+              name: 'APIM_ENDPOINT'
+              value: apiManagement.outputs.apiManagementProxyHostName
+            }
+            {
+              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+              secretRef: 'appinsight-inst-key'
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              secretRef: 'applicationinsights-connection-string'
+            }
+            {
+              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+              value: '~3'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'generated_movie_svc'
+            }
+            {
+              name: 'OTEL_RESOURCE_ATTRIBUTES'
+              value: 'service.namespace=azure-rambi,service.instance.id=generated-movie-svc'
+            }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/liveness'
+                port: 8002
+              }
+            }
+
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/readiness'
+                port: 8002
+              }
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 2
+      }
+    }
+  }
+}
+
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
 output moviegeneratorFQDN string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
+output generatedMovieFQDN string = containerGeneratedMovieSvcApp.properties.configuration.ingress.fqdn
 output AZURE_LOCATION string = location
 
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name

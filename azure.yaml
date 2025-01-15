@@ -32,3 +32,10 @@ services:
     host: containerapp
     docker:
       remoteBuild: true
+
+  generated_movie_svc:
+    language: python
+    project: src/generated_movie_svc
+    host: containerapp
+    docker:
+      remoteBuild: true

@@ -1,19 +1,12 @@
 {% block content %}
-<div class="container mt-5" id="generated_movie_container">
-    <div class="row">
-        <div class="col-md-6">
-            {% with movie=generated_movie %}
-            {% include "movie.html" %}
-            {% endwith %}
-        </div>
-        <div class="col-md-6">
-            <div class="card-body">
-                <h5 class="card-title">Pitch Generation Prompt</h5>
-                <p class="card-text">
-                    <md-block>{{generated_movie.prompt}}</md-block>
-                </p>
-            </div>
-        </div>
+<div id="generated_movie_container">
+    <div>
+
+        {% with movie=generated_movie %}
+        {% include "movie.html" %}
+        {% endwith %}
+
+
     </div>
 </div>
 {% endblock %}

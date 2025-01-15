@@ -19,51 +19,69 @@
     </div>
     {% endif %}
     {% if rambimodel %}
+
     <div class="container mt-5" id="movieResults">
-        <div class="row">
-            <div class="col-md-6">
+        <div class="row h-100 p-3 bg-body-tertiary border rounded-3">
+            <div class="col-sm" id="action">
+                <form>
+                    <div class="container ">
+                        <div class="row">
+                            <div class="col-sm">
+                                <div class="form-group">
+                                    <label for="exampleFormControlInput1">Generate a new movie (title,a pitch, a poster)
+                                        based
+                                        on
+                                        the 2
+                                        selected movies</label>
+
+                                    <input type="hidden" id="rambimodel" name="movie1Title"
+                                        value="{{ rambimodel.movie1.title }}">
+                                    <input type="hidden" id="rambimodel" name="movie2Title"
+                                        value="{{ rambimodel.movie2.title }}">
+                                </div>
+                            </div>
+                            <div class="col-sm">
+                                <div class="form-group">
+                                    <select class="form-select" id="genreSelect" name="genre">
+                                        {% for genre in rambimodel.default_genres %}
+                                        <option value="{{ genre }}">{{ genre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm">
+                                <button class="btn btn-primary" type="button" id="btn-trigger-aigenerate-movie"
+                                    hx-post="/movie/generate" hx-target="#aimovieresults"
+                                    hx-include="[name='movie1Title'],[name='movie2Title'],[name='genre']">
+                                    Generate Movie
+                                    <span class="htmx-indicator spinner-border spinner-border-sm" role="status"
+                                        aria-hidden="true"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="row h-100 p-3 bg-body-tertiary border rounded-3">
+            <div class="col-sm">
                 {% with movie=rambimodel.movie1 %}
                 {% include "movie.html" %}
                 {% endwith %}
             </div>
-            <div class="col-md-6">
+            <div class="col-sm">
                 {% with movie=rambimodel.movie2 %}
                 {% include "movie.html" %}
                 {% endwith %}
             </div>
-        </div>
-    </div>
-    <div class="container mt-5">
-        <div class="h-100 p-5 bg-body-tertiary border rounded-3">
-            <div class="row">
-                <div class="col-sm">
-                    <h2>Generate</h2>
-                    <p>Generate a new movie title and a pitch based on the 2 selected movies</p>
-                    <input type="hidden" id="rambimodel" name="movie1Title" value="{{ rambimodel.movie1.title }}">
-                    <input type="hidden" id="rambimodel" name="movie2Title" value="{{ rambimodel.movie2.title }}">
-                    <button class="btn btn-primary" type="button" id="btn-trigger-aigenerate-movie"
-                        hx-post="/movie/generate" hx-target="#aimovieresults"
-                        hx-include="[name='movie1Title'],[name='movie2Title'],[name='genre']">
-                        Generate Movie
-                        <span class="htmx-indicator spinner-border spinner-border-sm" role="status"
-                            aria-hidden="true"></span>
-                    </button>
-                </div>
-                <div class="col-sm">
-                    <h3>Genres</h3>
-                    <select class="form-select" id="genreSelect" name="genre">
-                        {% for genre in rambimodel.default_genres %}
-                        <option value="{{ genre }}">{{ genre }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="col-sm" id="aimovieresults">
+
             </div>
         </div>
     </div>
-    <div class="container mt-5">
-        <div id="aimovieresults">
 
-        </div>
+    <div class="container mt-5">
+
     </div>
     {% endif %}
 </section>

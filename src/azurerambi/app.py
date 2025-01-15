@@ -122,48 +122,56 @@ def poster_generate():
     return render_template('poster.html', url=generated_poster)
 
 
+ui_design = os.getenv("UI_DESIGN", "xxx")
 @ app.route('/movie/generate', methods=['POST'])
 def movie_generate():
     """Generate a new movie based on the two movies."""
-    movie1_title = request.form.get('movie1Title')
-    movie2_title = request.form.get('movie2Title')
-    genre = request.form.get('genre')
+    if ui_design == "bootstrap":
+        generated_movie = Movie(title="Barb-a-Bambi: Forest Frenzy",
+            plot="In this high-octane adventure, the enchanted forest is in jeopardy, and it’s up to Bambi and the Barbapapa family to save their home. Young prince Bambi, alongside his ever-energetic friends Thumper and Flower, embarks on a mission to rally all the forest creatures. They are joined by the shape-shifting Barbapapa family, each member bringing a unique ability essential for confronting the impending threat. As they race against time, Bambi must learn to harness leadership beyond his fawnhood, while the Barbapapas morph into incredible tools and forms, aiding in the action-packed and comical rescue mission. Together, they discover the true strength of unity and creativity in the face of adversity, ensuring the woods remain a vibrant, peaceful sanctuary for all.",
+            poster_url="",
+            poster_description="A poster of a deer and a pink blob")
+        return render_template('generated_movie.html', generated_movie=generated_movie)
+    else:
+        movie1_title = request.form.get('movie1Title')
+        movie2_title = request.form.get('movie2Title')
+        genre = request.form.get('genre')
 
-    tmdb_svc = tmdb_service()
-    movie1 = tmdb_svc.get_movie_by_title(movie1_title)
-    logger.info("movie1: %s", movie1)
-    movie2 = tmdb_svc.get_movie_by_title(movie2_title)
-    logger.info("movie2: %s", movie2)
-    endpoint = os.getenv("MOVIE_GENERATOR_ENDPOINT","http://movie-generator-svc")
-    logger.info("Calling movie_generate service at %s", endpoint)
-    data = {
-        "movie1": movie1.dict(),
-        "movie2": movie2.dict(),
-        "genre": genre
-    }
-    logger.info("data: %s", json.dumps(data))
-    try:
-        response = requests.post(
-            f"{endpoint}/generate",
-            json={
-                "movie1": movie1.dict(),
-                "movie2": movie2.dict(),
-                "genre": genre
-            },
-            timeout=1000
-        )
-        response.raise_for_status()
-        generated_movie = response.json()
-        logger.info("Generated movie: %s", generated_movie)
-    except requests.RequestException as e:
-        logger.error("Error in calling movie_generate service: %s", e)
-        generated_movie = {
-            "title": "Error",
-            "plot": f"Error in calling movie_generate service: {e}",
-            "poster_url": ""
+        tmdb_svc = tmdb_service()
+        movie1 = tmdb_svc.get_movie_by_title(movie1_title)
+        logger.info("movie1: %s", movie1)
+        movie2 = tmdb_svc.get_movie_by_title(movie2_title)
+        logger.info("movie2: %s", movie2)
+        endpoint = os.getenv("MOVIE_GENERATOR_ENDPOINT","http://movie-generator-svc")
+        logger.info("Calling movie_generate service at %s", endpoint)
+        data = {
+            "movie1": movie1.dict(),
+            "movie2": movie2.dict(),
+            "genre": genre
         }
-    return render_template('generated_movie.html', generated_movie=generated_movie)
+        logger.info("data: %s", json.dumps(data))
+        try:
+            response = requests.post(
+                f"{endpoint}/generate",
+                json={
+                    "movie1": movie1.dict(),
+                    "movie2": movie2.dict(),
+                    "genre": genre
+                },
+                timeout=1000
+            )
+            response.raise_for_status()
+            generated_movie = response.json()
+            logger.info("Generated movie: %s", generated_movie)
+        except requests.RequestException as e:
+            logger.error("Error in calling movie_generate service: %s", e)
+            generated_movie = {
+                "title": "Error",
+                "plot": f"Error in calling movie_generate service: {e}",
+                "poster_url": ""
+            }
+        return render_template('generated_movie.html', generated_movie=generated_movie)
 
 
 if __name__ == '__main__':
-    uvicorn.run("app:app", host="0.0.0.0", port=5100)
+    app.run( debug=True)

@@ -145,19 +145,15 @@ def movie_generate():
         endpoint = os.getenv("MOVIE_GENERATOR_ENDPOINT","http://movie-generator-svc")
         logger.info("Calling movie_generate service at %s", endpoint)
         data = {
-            "movie1": movie1.dict(),
-            "movie2": movie2.dict(),
+            "movie1": movie1.model_dump(),
+            "movie2": movie2.model_dump(),
             "genre": genre
         }
         logger.info("data: %s", json.dumps(data))
         try:
             response = requests.post(
                 f"{endpoint}/generate",
-                json={
-                    "movie1": movie1.dict(),
-                    "movie2": movie2.dict(),
-                    "genre": genre
-                },
+                json=data,
                 timeout=1000
             )
             response.raise_for_status()

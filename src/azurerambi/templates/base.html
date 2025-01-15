@@ -26,7 +26,7 @@
     <header class="my-3">
         <div class="row">
             <h1 class="col-12 text-center">
-                <a href="/">Azure Rambi: the AI Movie Generator Project {{github_job}}</a>
+                <a href="/">Azure Rambi: the AI Movie Generator Project</a>
             </h1>
         </div>
     </header>
@@ -42,25 +42,26 @@
             <div class="row">
                 <div class="col-sm">
                     <p id="githubcontext" class="fw-light fs-6">
-                    <span class="text-secondary">
-                        Repository: {{ github.repository }}<br>
-                        Run Number: #{{ github.run_number }}<br>
-                        Commit SHA: {{ github.sha }}
-                    </span>
+                        <span class="text-secondary">
+                            Repository: {{ github.repository }}<br>
+                            Run Number: #{{ github.run_number }}<br>
+                            Commit SHA: {{ github.sha }}
+                        </span>
                     </p>
                 </div>
                 <div class="col-sm">
                     <p id="powered-by" class="text-secondary text-end">
                         <span class="me-1">powered by</span>
-                        <img src="{{ url_for('static', filename='images/azure.png') }}" alt="Azure" width="90" height="50" />
+                        <img src="{{ url_for('static', filename='images/azure.png') }}" alt="Azure" width="90"
+                            height="50" />
                     </p>
                 </div>
             </div>
         </div>
-            
-     
-        <a class="github-fork-ribbon right-up fixed" href="{{github.repository}}"
-            data-ribbon="Fork me on GitHub" title="Fork me on GitHub ">Fork</a>
+
+
+        <a class="github-fork-ribbon right-up fixed" href="{{github.repository}}" data-ribbon="Fork me on GitHub"
+            title="Fork me on GitHub ">Fork</a>
 
     </footer>
 

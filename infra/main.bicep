@@ -25,8 +25,7 @@ param deployments array = [
 param restore bool = false
 
 @description('The email address of the owner of the service')
-@minLength(1)
-param apimPublisherEmail string = 'support@contososuites.com'
+var apimPublisherEmail = 'azure-rambi@contososuites.com'
 
 var apiManagementServiceName = 'azure-rambi-apim-${uniqueString(resourceGroup().id)}'
 var apimSku = 'Basicv2'
@@ -35,6 +34,7 @@ var apimPublisherName = 'Azure Rambi Suites'
 
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 var acrName = 'azrambiacr${uniqueString(resourceGroup().id)}'
+var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure OpenAI resource.')
 resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
@@ -306,6 +306,10 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           name: 'redis-password'
           value: redis.outputs.redisPassword
         }
+        {
+          name: 'storage-account-connection-string'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+        }
       ]
       registries: [
         {
@@ -375,6 +379,10 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             {
               name: 'USE_CACHE'
               value: 'oui'
+            }
+            {
+              name: 'STORAGE_ACCOUNT_CONNECTION_STRING'
+              secretRef: 'storage-account-connection-string'
             }
           ]
           probes: [
@@ -645,6 +653,26 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
   }
 }
 
+@description('Creates an Azure Storage Account.')
+resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    accessTier: 'Hot'
+    publicNetworkAccess: 'Disabled'
+    networkAcls: {
+      bypass: 'AzureServices'
+      virtualNetworkRules: []
+      ipRules: []
+      defaultAction: 'Allow'
+    }
+  }
+}
+
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
 output moviegeneratorFQDN string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
@@ -653,3 +681,7 @@ output AZURE_LOCATION string = location
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
+
+output STORAGE_ACCOUNT_KEY string = storageAccount.listKeys().keys[0].value
+output STORAGE_ACCOUNT_NAME string = storageAccount.name
+output STORAGE_ACCOUNT_CONNECTION_STRING string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'

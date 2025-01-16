@@ -3,8 +3,11 @@ import os
 import sys
 import logging
 import json
-import redis  # P9f38
-from collections import OrderedDict  # Pf79b
+import redis
+import requests
+import uuid
+from datetime import datetime, timedelta
+from collections import OrderedDict
 
 import openai
 import uvicorn
@@ -20,12 +23,15 @@ from azure.ai.inference.tracing import AIInferenceInstrumentor
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 
-
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from azure.storage.blob._shared.base_client import parse_connection_str
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from openai import AzureOpenAI
+
+
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
@@ -85,9 +91,24 @@ class GenAiMovieService:
         self._use_cache = os.getenv("USE_CACHE", None) is not None
         if self._use_cache: 
             logger.info("Initializing Redis client")
-            self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True )  # P951a
-            logger.info("Redis ping: %s", self.redis_client.ping())  # P951a
+            self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True )
+            logger.info("Redis ping: %s", self.redis_client.ping())
 
+        logger.info("Initializing Azure Blob Storage client")
+        self.blob_service_client = BlobServiceClient.from_connection_string(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"))
+        
+        p,s,c = parse_connection_str(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"), None, 'blob')
+        logger.info("p: %s", p)
+        logger.info("s: %s", s)
+        logger.info("c: %s", c)
+        self._account_name = c['account_name']
+        self._account_key = c['account_key']
+        self.container_name = "movieposters"
+
+        logger.info("Container name: %s", self.container_name) 
+        self.container_client = self.blob_service_client.get_container_client(self.container_name) 
+        if not self.container_client.exists(): 
+            self.container_client.create_container() 
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
@@ -129,6 +150,29 @@ class GenAiMovieService:
         logger.info("describe_poster: %s", description)
         return description
 
+    def store_poster(self, url: str) -> str:
+        """ Store the generated poster in Azure Blob Storage and return a sas url"""
+        # Upload the generated poster to Azure Blob Storage
+        logger.info("Uploading poster to Azure Blob Storage")
+        blob_name = f"azure-rambi-poster-{uuid.uuid4()}.png"
+        logger.info("Blob name: %s", blob_name)
+        blob_client = self.container_client.get_blob_client(blob_name)  
+        blob_client.upload_blob(requests.get(url,timeout=100).content, overwrite=True)
+        blob_url = blob_client.url
+        logger.info("Uploaded poster to Azure Blob Storage: %s", blob_url)
+
+        sas_token = generate_blob_sas(
+            account_name=self._account_name,
+            container_name=self.container_name,
+            blob_name=blob_name,
+            account_key=self._account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.utcnow() + timedelta(hours=1))
+        
+        blob_url_with_sas = f"https://{self._account_name}.blob.core.windows.net/{self.container_name}/{blob_name}?{sas_token}"
+        logger.info("Blob URL with SAS: %s", blob_url_with_sas)
+        return blob_url_with_sas
+
     def generate_poster(self, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
@@ -143,10 +187,12 @@ class GenAiMovieService:
             json_response = json.loads(response.model_dump_json())
             url = json_response["data"][0]["url"]
             logger.info("generate_poster: %s", url)
+            blob_url = self.store_poster(url)
+            return blob_url
         except Exception as e:
             logger.error("generate_poster: %s", e)
-            url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
-        return url
+            blob_url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
+        return blob_url  
 
 def custom_openapi():
     """Customize the OpenAPI schema."""
@@ -179,8 +225,8 @@ async def racine(request: Request):
 async def env(request: Request):
     """Function to show the environment variables."""
     logger_uvicorn.info("env")
-    sorted_env = OrderedDict(sorted(os.environ.items()))  # P81f1
-    return templates.TemplateResponse('env.html', {"request": request, "env": sorted_env})  # P81f1
+    sorted_env = OrderedDict(sorted(os.environ.items()))
+    return templates.TemplateResponse('env.html', {"request": request, "env": sorted_env})
 
 @app.get('/describe/{movie_title}')
 @log_request
@@ -193,7 +239,7 @@ async def movie_poster_describe(request: Request, movie_title: str, url: str):
 @log_request
 async def movie_poster_generate(request: Request, poster: MoviePoster) -> MoviePoster:
     """Function to show the movie poster description."""
-    logger_uvicorn.info("movie_poster_generate")
+    logger.info("movie_poster_generate %s", poster.title)
     poster.url = GenAiMovieService().generate_poster(poster.description)
     return poster
 

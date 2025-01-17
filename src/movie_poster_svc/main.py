@@ -98,17 +98,14 @@ class GenAiMovieService:
         self.blob_service_client = BlobServiceClient.from_connection_string(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"))
         
         p,s,c = parse_connection_str(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"), None, 'blob')
-        logger.info("p: %s", p)
-        logger.info("s: %s", s)
-        logger.info("c: %s", c)
         self._account_name = c['account_name']
         self._account_key = c['account_key']
         self.container_name = "movieposters"
 
         logger.info("Container name: %s", self.container_name) 
         self.container_client = self.blob_service_client.get_container_client(self.container_name) 
-        if not self.container_client.exists(): 
-            self.container_client.create_container() 
+        #if not self.container_client.exists(): 
+        #    self.container_client.create_container() 
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""

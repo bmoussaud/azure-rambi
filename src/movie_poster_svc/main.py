@@ -6,7 +6,7 @@ import json
 import redis
 import requests
 import uuid
-from datetime import datetime, timedelta
+import datetime
 from collections import OrderedDict
 
 import openai
@@ -23,15 +23,25 @@ from azure.ai.inference.tracing import AIInferenceInstrumentor
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 
-from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
-from azure.storage.blob._shared.base_client import parse_connection_str
-
+from azure.storage.blob import (
+    BlobServiceClient,
+    ContainerClient,
+    BlobClient,
+    BlobSasPermissions,
+    ContainerSasPermissions,
+    ResourceTypes,
+    AccountSasPermissions,
+    UserDelegationKey,
+    generate_account_sas,
+    generate_container_sas,
+    generate_blob_sas
+)
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from openai import AzureOpenAI
 
-
+from azure.identity import DefaultAzureCredential
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
@@ -77,35 +87,28 @@ class MoviePoster(BaseModel):
 
 class GenAiMovieService:
     """ Class to manage the access to OpenAI API to generate a new movie """
-
     def __init__(self):
         logger.info("Initializing GenAiMovieService")
         logger.info("Initializing AzureOpenAI with api_key: %s, api_version: %s, azure_endpoint: %s",
-                    os.getenv("AZURE_OPENAI_API_KEY"), os.getenv("OPENAI_API_VERSION"), os.getenv("AZURE_OPENAI_ENDPOINT"))
+                    os.getenv("AZURE_OPENAI_API_KEY","-1"), os.getenv("OPENAI_API_VERSION","2024-08-01-preview"), os.getenv("AZURE_OPENAI_ENDPOINT"))
 
         self.client = AzureOpenAI(
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version=os.getenv("OPENAI_API_VERSION"),
+            api_key=os.getenv("AZURE_OPENAI_API_KEY","-1"),
+            api_version=os.getenv("OPENAI_API_VERSION","2024-08-01-preview"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
         self._use_cache = os.getenv("USE_CACHE", None) is not None
-        if self._use_cache: 
+        if self._use_cache:
             logger.info("Initializing Redis client")
             self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True )
             logger.info("Redis ping: %s", self.redis_client.ping())
 
         logger.info("Initializing Azure Blob Storage client")
         self.blob_service_client = BlobServiceClient.from_connection_string(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"))
-        
-        p,s,c = parse_connection_str(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"), None, 'blob')
-        self._account_name = c['account_name']
-        self._account_key = c['account_key']
         self.container_name = "movieposters"
+        logger.info("Container name: %s", self.container_name)
+        self.container_client = self.blob_service_client.get_container_client(self.container_name)
 
-        logger.info("Container name: %s", self.container_name) 
-        self.container_client = self.blob_service_client.get_container_client(self.container_name) 
-        #if not self.container_client.exists(): 
-        #    self.container_client.create_container() 
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
@@ -153,20 +156,17 @@ class GenAiMovieService:
         logger.info("Uploading poster to Azure Blob Storage")
         blob_name = f"azure-rambi-poster-{uuid.uuid4()}.png"
         logger.info("Blob name: %s", blob_name)
-        blob_client = self.container_client.get_blob_client(blob_name)  
-        blob_client.upload_blob(requests.get(url,timeout=100).content, overwrite=True)
-        blob_url = blob_client.url
-        logger.info("Uploaded poster to Azure Blob Storage: %s", blob_url)
+        blob_client = self.container_client.get_blob_client(blob_name)
+        blob_client.upload_blob(requests.get(url,timeout=100).content, overwrite=True,blob_type="BlockBlob" )
+        logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
 
-        sas_token = generate_blob_sas(
-            account_name=self._account_name,
-            container_name=self.container_name,
-            blob_name=blob_name,
-            account_key=self._account_key,
-            permission=BlobSasPermissions(read=True),
-            expiry=datetime.utcnow() + timedelta(hours=1))
-        
-        blob_url_with_sas = f"https://{self._account_name}.blob.core.windows.net/{self.container_name}/{blob_name}?{sas_token}"
+        # Generate a SAS token for the blob
+        sas_token = self.create_service_sas_blob(blob_client=blob_client, account_key=self.blob_service_client.credential.account_key)
+        logger.info("Account SAS: %s", sas_token)
+        #sas_token = self.create_user_delegation_sas_blob(blob_client=blob_client, user_delegation_key=user_delegation_key)
+        # The SAS token string can be appended to the resource URL with a ? delimiter
+        # or passed as the credential argument to the client constructor
+        blob_url_with_sas = f"{blob_client.url}?{sas_token}"
         logger.info("Blob URL with SAS: %s", blob_url_with_sas)
         return blob_url_with_sas
 
@@ -174,8 +174,7 @@ class GenAiMovieService:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
         try:
-            client = AzureOpenAI()
-            response = client.images.generate(
+            response = self.client.images.generate(
                 model="dall-e-3",
                 prompt="Generate a movie poster based on this description: "+poster_description,
                 n=1,
@@ -189,7 +188,26 @@ class GenAiMovieService:
         except Exception as e:
             logger.error("generate_poster: %s", e)
             blob_url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
-        return blob_url  
+        return blob_url
+    
+    def create_service_sas_blob(self, blob_client: BlobClient, account_key: str):
+        """Create a SAS token that's valid for one day, as an example"""
+        start_time = datetime.datetime.now(datetime.timezone.utc)
+        expiry_time = start_time + datetime.timedelta(days=1)
+
+        sas_token = generate_blob_sas(
+            account_name=blob_client.account_name,
+            container_name=blob_client.container_name,
+            blob_name=blob_client.blob_name,
+            account_key=account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=expiry_time,
+            start=start_time
+        )
+
+        return sas_token
+    
+    
 
 def custom_openapi():
     """Customize the OpenAPI schema."""

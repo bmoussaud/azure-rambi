@@ -1,9 +1,13 @@
 from azure.storage.blob import BlobServiceClient
 from azure.storage.blob._shared.base_client import parse_connection_str
 import uuid
+import os
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 # Your Azure Storage connection string
-connection_string = "xxx"
+connection_string = os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING")
 
 
 # Create a BlobServiceClient using the parsed connection string

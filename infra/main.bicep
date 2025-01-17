@@ -662,14 +662,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   }
   kind: 'StorageV2'
   properties: {
-    accessTier: 'Hot'
-    publicNetworkAccess: 'Disabled'
-    networkAcls: {
-      bypass: 'AzureServices'
-      virtualNetworkRules: []
-      ipRules: []
-      defaultAction: 'Allow'
-    }
+    
   }
 }
 // Create a blob service in the storage account
@@ -682,9 +675,7 @@ resource moviepostersStorageService 'Microsoft.Storage/storageAccounts/blobServi
 resource moviepostersStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
   name: 'movieposters'
   parent: moviepostersStorageService
-  properties: {
-    publicAccess: 'Container'
-  }
+  
 }
 
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn

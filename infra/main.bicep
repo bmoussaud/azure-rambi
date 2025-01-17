@@ -672,10 +672,16 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
     }
   }
 }
+// Create a blob service in the storage account
+resource moviepostersStorageService 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
+  name: 'default'
+  parent: storageAccount
+}
 
 //Create a container in the storage account
 resource moviepostersStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
-  name: '${storageAccountName}/movieposters'
+  name: 'movieposters'
+  parent: moviepostersStorageService
   properties: {
     publicAccess: 'Container'
   }

@@ -10,9 +10,14 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  AZ_RESOURCE_GROUP: azrdev                  
+env:               
   ACR_NAME: azurerambitfnbpycbnkdum
+
+# Set up permissions for deploying with secretless Azure federated credentials
+# https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-portal%2Clinux#set-up-azure-login-with-openid-connect-authentication
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   prepare:
@@ -24,8 +29,10 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          
   deploy-infrastructure:
     runs-on: ubuntu-latest
     needs: prepare
@@ -35,13 +42,16 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       # **Deploy Azure Resources using Bicep**
       - name: Deploy Infrastructure layer
         uses: azure/arm-deploy@v1
         with:
-          subscriptionId:  ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ env.AZ_RESOURCE_GROUP }}
+          subscriptionId:  ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP }}
           template: infra/main.bicep
           failOnStdErr: false
           scope: resourcegroup
@@ -60,7 +70,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       # **Build and Deploy Movie Poster Service**
       - name: Build and Deploy Movie Poster Service
         uses: azure/container-apps-deploy-action@v1
@@ -70,7 +82,7 @@ jobs:
           imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
           containerAppEnvironment: azure-rambi
           containerAppName: movie-poster-svc
-          resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
       # Azure Logout
       - name: Azure Logout
         if: always()
@@ -86,7 +98,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       # **Build and Deploy Movie Generate Service**
       - name: Build and Deploy Movie Generate Service
         uses: azure/container-apps-deploy-action@v1
@@ -96,7 +110,7 @@ jobs:
           imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_generator_svc:${{ github.sha }}
           containerAppEnvironment: azure-rambi
           containerAppName: movie-generator-svc
-          resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
       # Azure Logout
       - name: Azure Logout
         if: always()
@@ -122,7 +136,7 @@ jobs:
           imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
           containerAppEnvironment: azure-rambi
           containerAppName: gui-svc
-          resourceGroup: ${{ env.AZ_RESOURCE_GROUP }}
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
       # Azure Logout
       - name: Azure Logout
         if: always()

@@ -33,7 +33,7 @@ var apimSkuCount = 1
 var apimPublisherName = 'Azure Rambi Suites'
 
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
-var acrName = 'azrambiacr${uniqueString(resourceGroup().id)}'
+var acrName = 'azurerambi${uniqueString(resourceGroup().id)}'
 var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure OpenAI resource.')
@@ -661,21 +661,18 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
     name: 'Standard_LRS'
   }
   kind: 'StorageV2'
-  properties: {
-    
-  }
+  properties: {}
 }
-// Create a blob service in the storage account
+
+// Create a Blob service in the storage account
 resource moviepostersStorageService 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
   name: 'default'
   parent: storageAccount
 }
-
 //Create a container in the storage account
 resource moviepostersStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
   name: 'movieposters'
   parent: moviepostersStorageService
-  
 }
 
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn

@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZ_RESOURCE_GROUP: azrambi                  # set this to your resource group name
-  ACR_NAME: azrambiacrb76s6utvi44xo
+  AZ_RESOURCE_GROUP: azrdev                  
+  ACR_NAME: azurerambitfnbpycbnkdum
 
 jobs:
   prepare:

@@ -192,7 +192,6 @@ class GenAiMovieService:
             logger.error("generate_poster: %s", e)
             blob_url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return blob_url
-<<<<<<< HEAD
     
     def create_service_sas_blob(self, blob_client: BlobClient, account_key: str):
         """Create a SAS token that's valid for one day, as an example"""
@@ -212,8 +211,6 @@ class GenAiMovieService:
         return sas_token
     
     
-=======
->>>>>>> 4de239c (fix error in TMDB logic)
 
 def custom_openapi():
     """Customize the OpenAPI schema."""

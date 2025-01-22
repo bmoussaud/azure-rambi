@@ -47,9 +47,12 @@ class TMDBService:
                         plot=movie["overview"],
                         poster_url=f"https://image.tmdb.org/t/p/original/{movie['poster_path']}"
                     )
+                else:
+                    logger.error("Movie not found %s in the TMDB database",title)
+                    return Movie(title=title, plot=f"Movie not found {title} in the TMDB database",poster_url="https://placehold.co/150x220?text=Movie%20Not%20Found")
             else:
                 logger.error("Movie not found %s %s",title, response.status_code)
-                return None
+                return Movie(title=title, plot=f"Movie not found {title} {response.status_code}",poster_url="https://placehold.co/150x220?text=Movie%20Not%20Found%20Error")
         except Exception as e:
             logger.error("get_movie_by_title: %s", e)
             return Movie(title=title, plot=str(e), poster_url="https://placehold.co/150x220?text=TMDB%20Error")

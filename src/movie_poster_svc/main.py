@@ -113,41 +113,44 @@ class GenAiMovieService:
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
         logger.info("describe_poster called with %s", poster_url)
-        if self._use_cache: 
-            cache_key = f"poster_description:{movie_title}:{poster_url}" 
+        if self._use_cache:
+            cache_key = f"poster_description:{movie_title}:{poster_url}"
             logger.info("cache key %s", cache_key) 
             cached_description = self.redis_client.get(cache_key)
             if cached_description: 
                 logger.info("Cache hit for %s", cache_key)
-                return cached_description.decode("utf-8") 
-            
-        logger.info("ask gpt4o")
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": [
-                    {
-                        "type": "text",
-                        "text": f"This is the '{movie_title}' movie poster. Describe it:"
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                                "url": poster_url
+                return cached_description.decode("utf-8")
+        try:
+            logger.info("ask gpt4o")
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": [
+                        {
+                            "type": "text",
+                            "text": f"This is the '{movie_title}' movie poster. Describe it:"
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                    "url": poster_url
+                            }
                         }
-                    }
-                ]}
-            ],
-            max_tokens=2000
-        )
-        # Return the generated description
-        description = response.choices[0].message.content 
-        if self._use_cache:
-            logger.info("set cache for %s", cache_key) 
-            self.redis_client.set(cache_key, description, ex=3600) 
-        
-        logger.info("describe_poster: %s", description)
+                    ]}
+                ],
+                max_tokens=2000
+            )
+            # Return the generated description
+            description = response.choices[0].message.content
+            if self._use_cache:
+                logger.info("set cache for %s", cache_key)
+                self.redis_client.set(cache_key, description, ex=3600)
+            
+            logger.info("describe_poster: %s", description)
+        except Exception as e:
+            logger.error("describe_poster: %s", e)
+            description = f"Unable to describe the movie poster for {movie_title}: {e}"
         return description
 
     def store_poster(self, url: str) -> str:
@@ -189,6 +192,7 @@ class GenAiMovieService:
             logger.error("generate_poster: %s", e)
             blob_url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return blob_url
+<<<<<<< HEAD
     
     def create_service_sas_blob(self, blob_client: BlobClient, account_key: str):
         """Create a SAS token that's valid for one day, as an example"""
@@ -208,6 +212,8 @@ class GenAiMovieService:
         return sas_token
     
     
+=======
+>>>>>>> 4de239c (fix error in TMDB logic)
 
 def custom_openapi():
     """Customize the OpenAPI schema."""

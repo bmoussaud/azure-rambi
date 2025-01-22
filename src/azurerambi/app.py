@@ -102,9 +102,13 @@ def home():
 def poster_description():
     """Function to show the movie poster description."""
     movie_title = request.form.get('movie_title')
-    tmdb_svc = tmdb_service()
-    movie = tmdb_svc.get_movie_by_title(movie_title)
     try:
+        tmdb_svc = tmdb_service()
+        logger.info("get_movie_by_title: %s", movie_title)
+        movie = tmdb_svc.get_movie_by_title(movie_title)
+        logger.info("movie: %s", movie)
+        logger.info("movie.poster_url: %s", movie.poster_url)
+        logger.info("movie.title: %s", movie.title)
         poster_desc = MoviePosterClient().describe_poster(movie.title, movie.poster_url)
     except Exception as e:
         logger.error("Other Error in describe_poster: %s", e)
@@ -162,7 +166,7 @@ def movie_generate():
         except requests.RequestException as e:
             logger.error("Error in calling movie_generate service: %s", e)
             generated_movie = {
-                "title": "Error",
+                "title": "Generation Movie Error",
                 "plot": f"Error in calling movie_generate service: {e}",
                 "poster_url": ""
             }

@@ -75,7 +75,7 @@ class TwoMoviesForm(FlaskForm):
 
 def tmdb_service() -> TMDBService:
     """ Function to get the TMDBService """
-    return TMDBService(os.getenv("TMDB_ENDPOINT"), api_key=os.getenv('API_SUBSCRIPTION_KEY'))
+    return TMDBService(os.getenv("TMDB_ENDPOINT"), api_key=os.getenv('APIM_SUBSCRIPTION_KEY'))
 
 @ app.route('/env', methods=['GET', 'POST'])
 def env():

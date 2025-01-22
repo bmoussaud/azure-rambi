@@ -23,7 +23,7 @@ class TMDBService:
     """ Class to manage the access to TMDB API """
 
     def __init__(self, end_point: str = None, api_key: str = None, ):
-        logger.info("Initializing TMDBService")
+        logger.info("Initializing TMDBService %s", end_point)
         self._api_key = api_key
         self._end_point = end_point
        
@@ -32,7 +32,7 @@ class TMDBService:
         try:
             logger.info("Fetching movie with title: %s", title)
             _headers = {
-                'Ocp-Apim-Subscription-Key': self._api_key
+                'api-key': self._api_key
             }
             url = f"https://{self._end_point}/tmdb/3/search/movie?query={title}"
             logger.info("url: %s", url)

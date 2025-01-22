@@ -207,11 +207,8 @@ class GenAiMovieService:
             expiry=expiry_time,
             start=start_time
         )
-
         return sas_token
     
-    
-
 def custom_openapi():
     """Customize the OpenAPI schema."""
     if app.openapi_schema:

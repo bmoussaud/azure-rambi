@@ -35,6 +35,7 @@ var apimPublisherName = 'Azure Rambi Suites'
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 var acrName = 'azurerambi${uniqueString(resourceGroup().id)}'
 var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
+var kvName = 'azrambikv${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure OpenAI resource.')
 resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
@@ -70,8 +71,94 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01
   }
 ]
 
-//Cognitive Services OpenAI User
+@description('Creates an Azure Key Vault.')
+resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
+  name: kvName
+  location: location
+  properties: {
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true
+    sku: {
+      name: 'standard'
+      family: 'A'
+    }
+    networkAcls: {
+      defaultAction: 'Allow'
+      bypass: 'AzureServices'
+    }
+    publicNetworkAccess: 'Disabled'
+  }
+}
 
+resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: 'azure-rambi-vault-access'
+  location: location
+}
+
+@description('This is the built-in Key Vault Administrator role. See https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#key-vault-administrator')
+resource keyVaultAdministratorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  name: '00482a5a-887f-4fb3-b363-3b7fe8e74483'
+}
+
+@description('This is the built-in Key Vault Secrets Officer role. See https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-officer')
+resource keyVaultSecretsOfficerRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  name: 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
+}
+
+@description('Assigns the API Management service the role to browse and read the keys of the Key Vault.')
+resource apiManagementKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(kv.id, 'apiManagement', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')
+  scope: kv
+  properties: {
+    roleDefinitionId: keyVaultSecretsOfficerRoleDefinition.id
+    principalId: apiManagement.outputs.apiManagementIdentityPrincipalId
+  }
+}
+
+resource secretAzureOpenAIEndPoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'AZURE-OPENAI-ENDPOINT'
+  properties: {
+    value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+  }
+}
+
+@description('Creates an Azure Key Vault Secret API-SUBSCRIPTION-KEY.')
+resource secretApimSubKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'APIM-SUBSCRIPTIONKEY'
+  properties: {
+    value: apiManagement.outputs.apiAdminSubscriptionKey
+  }
+}
+@description('Creates an Azure Key Vault Secret APPINSIGHTH-INSTRUMENTATIONKEY.')
+resource secretAppInsightInstKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'APPINSIGHTS-INSTRUMENTATIONKEY'
+  properties: {
+    value: applicationInsights.outputs.instrumentationKey
+  }
+}
+@description('Creates an Azure Key Vault Secret APPLICATIONINSIGHTS-CONNECTION-STRING.')
+resource secretAppInsightCS 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'APPLICATIONINSIGHTS-CONNECTIONSTRING'
+  properties: {
+    value: applicationInsights.outputs.connectionString
+  }
+}
+@description('Creates an Azure Key Vault Secret APIM-ENDPOINT.')
+resource secretApimEndpoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'APIM-ENDPOINT'
+  properties: {
+    value: apiManagement.outputs.apiManagementProxyHostName
+  }
+}
+
+//Cognitive Services OpenAI User
 resource cognitiveServiceOpenAIUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: guid('Cognitive Services OpenAI User Role On API Management')
   scope: openAI
@@ -330,14 +417,14 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             }
             {
               name: 'AZURE_OPENAI_API_KEY'
-              value: '-1'
+              secretRef: 'apim-subscription-key'
             }
             {
               name: 'AZURE_OPENAI_ENDPOINT'
               value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
             }
             {
-              name: 'API_SUBSCRIPTION_KEY'
+              name: 'APIM_SUBSCRIPTION_KEY'
               secretRef: 'apim-subscription-key'
             }
             {
@@ -486,7 +573,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               value: 'http://movie-generator-svc'
             }
             {
-              name: 'API_SUBSCRIPTION_KEY'
+              name: 'APIM_SUBSCRIPTION_KEY'
               secretRef: 'apim-subscription-key'
             }
             {
@@ -591,14 +678,14 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
             }
             {
               name: 'AZURE_OPENAI_API_KEY'
-              value: '-1'
+              secretRef: 'apim-subscription-key'
             }
             {
               name: 'AZURE_OPENAI_ENDPOINT'
               secretRef: 'azure-openai-endpoint'
             }
             {
-              name: 'API_SUBSCRIPTION_KEY'
+              name: 'APIM_SUBSCRIPTION_KEY'
               secretRef: 'apim-subscription-key'
             }
             {
@@ -661,7 +748,9 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
     name: 'Standard_LRS'
   }
   kind: 'StorageV2'
-  properties: {}
+  properties: {
+    allowSharedKeyAccess: true
+  }
 }
 
 // Create a Blob service in the storage account
@@ -687,3 +776,8 @@ output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.l
 output STORAGE_ACCOUNT_KEY string = storageAccount.listKeys().keys[0].value
 output STORAGE_ACCOUNT_NAME string = storageAccount.name
 output STORAGE_ACCOUNT_CONNECTION_STRING string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
+output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
+output MOVIE_POSTER_ENDPOINT string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
+output MOVIE_GENERATOR_ENDPOINT string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
+output OPENAI_API_VERSION string = '2024-08-01-preview'

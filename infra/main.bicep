@@ -90,7 +90,7 @@ resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
   }
 }
 
-resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+resource vaultAccess 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'azure-rambi-vault-access'
   location: location
 }
@@ -358,6 +358,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
     type: 'UserAssigned'
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
+      '${azrStorageContributor.id}': {}
     }
   }
   tags: { 'azd-service-name': 'movie_poster_svc' }
@@ -764,6 +765,27 @@ resource moviepostersStorageContainer 'Microsoft.Storage/storageAccounts/blobSer
   parent: moviepostersStorageService
 }
 
+resource contributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  // This is the Storage Account Contributor role, which is the minimum role permission we can give. See https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#:~:text=17d1049b-9a84-46fb-8f53-869881c3d3ab
+  name: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
+}
+
+resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: 'azure-rambi-storage-contributor'
+  location: location
+}
+
+resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  scope: storageAccount
+  name: guid(resourceGroup().id, azrStorageContributor.id, contributorRoleDefinition.id)
+  properties: {
+    roleDefinitionId: contributorRoleDefinition.id
+    principalId: azrStorageContributor.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
 output moviegeneratorFQDN string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
@@ -781,3 +803,5 @@ output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
 output MOVIE_POSTER_ENDPOINT string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
 output MOVIE_GENERATOR_ENDPOINT string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
 output OPENAI_API_VERSION string = '2024-08-01-preview'
+output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey

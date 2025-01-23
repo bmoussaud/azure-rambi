@@ -106,7 +106,6 @@ class GenAiMovieService:
         logger.info("Initializing Azure Blob Storage client")
         self.blob_service_client = BlobServiceClient.from_connection_string(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"))
         self.container_name = "movieposters"
-        logger.info("Container name: %s", self.container_name)
         self.container_client = self.blob_service_client.get_container_client(self.container_name)
 
 
@@ -160,10 +159,12 @@ class GenAiMovieService:
         blob_name = f"azure-rambi-poster-{uuid.uuid4()}.png"
         logger.info("Blob name: %s", blob_name)
         blob_client = self.container_client.get_blob_client(blob_name)
+        logger.info("uploading.....")
         blob_client.upload_blob(requests.get(url,timeout=100).content, overwrite=True,blob_type="BlockBlob" )
         logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
 
         # Generate a SAS token for the blob
+        logger.info("Creating SAS token for the blob")
         sas_token = self.create_service_sas_blob(blob_client=blob_client, account_key=self.blob_service_client.credential.account_key)
         logger.info("Account SAS: %s", sas_token)
         #sas_token = self.create_user_delegation_sas_blob(blob_client=blob_client, user_delegation_key=user_delegation_key)
@@ -249,6 +250,13 @@ async def movie_poster_describe(request: Request, movie_title: str, url: str):
     """Function to show the movie poster description."""
     logger_uvicorn.info("movie_poster_describe")
     return GenAiMovieService().describe_poster(movie_title, url)
+
+@app.get('/store/{movie_title}')
+@log_request
+async def movie_poster_store(request: Request, movie_title: str, url: str):
+    """Function to store the movie poster."""
+    logger_uvicorn.info("movie_poster_describe")
+    return GenAiMovieService().store_poster(url)
 
 @app.post('/generate')
 @log_request

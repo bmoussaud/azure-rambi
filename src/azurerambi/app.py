@@ -98,14 +98,15 @@ def home():
     return render_template('index.html', form=twomovieform, rambimodel=rambimodel, github=GitHubContext())
 
 
-@ app.route('/movie/poster_description', methods=['POST'])
+@ app.route('/poster/description', methods=['POST'])
 def poster_description():
     """Function to show the movie poster description."""
-    movie_title = request.form.get('movie_title')
+    logger.info("poster_description")
+    movie_id = request.form.get('movie_id')
     try:
         tmdb_svc = tmdb_service()
-        logger.info("get_movie_by_title: %s", movie_title)
-        movie = tmdb_svc.get_movie_by_title(movie_title)
+        logger.info("getting movie by id: %s", movie_id)
+        movie = tmdb_svc.get_movie_by_id(movie_id)
         logger.info("movie: %s", movie)
         logger.info("movie.poster_url: %s", movie.poster_url)
         logger.info("movie.title: %s", movie.title)
@@ -121,6 +122,7 @@ def poster_description():
 @app.route('/poster/generate', methods=['POST'])
 def poster_generate():
     """Function to generate a new movie poster."""
+    logger.info("poster_generate")
     desc = request.form.get('poster_description')
     generated_poster = MoviePosterClient().generate_poster(desc)
     return render_template('poster.html', url=generated_poster)

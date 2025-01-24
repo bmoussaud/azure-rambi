@@ -106,7 +106,7 @@ resource keyVaultSecretUserRoleAssignment 'Microsoft.Authorization/roleAssignmen
 //https://praveenkumarsreeram.com/2024/12/12/introducing-az-deployer-objectid-in-bicep-track-object-principle-id-of-user-managed-identity/
 //https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-functions-deployment#deployer
 //Not implemented yet in AZD https://github.com/Azure/azure-dev/issues/4620
-@description('Assigns the API Management service the role to browse and read the keys of the Key Vault to the deployer')
+//@description('Assigns the API Management service the role to browse and read the keys of the Key Vault to the deployer')
 //Useful to check information about the KN in the Azure portal 
 //resource keyVaultSecretUserRoleAssignmentOnDeployer 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
 //  name: guid(kv.id, 'Deployer', keyVaultSecretsUserRoleDefinition.id)
@@ -811,8 +811,8 @@ output STORAGE_ACCOUNT_NAME string = storageAccount.name
 output STORAGE_ACCOUNT_CONNECTION_STRING string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
 output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
-output MOVIE_POSTER_ENDPOINT string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
-output MOVIE_GENERATOR_ENDPOINT string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
+output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
+output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
 output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey

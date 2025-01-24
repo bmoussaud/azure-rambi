@@ -6,12 +6,13 @@
             <div class="form-group">
                 {{ form.movie1Title.label }}
                 {{ form.movie1Title(class="form-control") }}
+
                 <small id="movie1Help" class="form-text text-muted">provide a movie title</small>
             </div>
             <div class="form-group">
                 {{ form.movie2Title.label }}
                 {{ form.movie2Title(class="form-control") }}
-                <small id=" movie2Help" class="form-text text-muted">provide another movie title</small>
+                <small id="movie2Help" class="form-text text-muted">provide another movie title</small>
             </div>
             <br>
             {{ form.submit(class="btn btn-primary") }}
@@ -32,8 +33,12 @@
                                         (title, pitch and poster) </label>
                                     <input type="hidden" id="rambimodel" name="movie1Title"
                                         value="{{ rambimodel.movie1.title }}">
+                                    <input type="hidden" id="rambimodel" name="movie1Id"
+                                        value="{{ rambimodel.movie1.id }}">
                                     <input type="hidden" id="rambimodel" name="movie2Title"
                                         value="{{ rambimodel.movie2.title }}">
+                                    <input type="hidden" id="rambimodel" name="movie2Id"
+                                        value="{{ rambimodel.movie2.id }}">
                                 </div>
                             </div>
                             <div class="col-sm">

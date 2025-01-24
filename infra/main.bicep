@@ -35,7 +35,7 @@ var apimPublisherName = 'Azure Rambi Suites'
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 var acrName = 'azurerambi${uniqueString(resourceGroup().id)}'
 var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
-var kvName = 'azrambikv${uniqueString(resourceGroup().id)}'
+var kvName = 'rambikv${uniqueString(resourceGroup().id)}'
 
 @description('Creates an Azure OpenAI resource.')
 resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
@@ -82,41 +82,42 @@ resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
       name: 'standard'
       family: 'A'
     }
-    networkAcls: {
-      defaultAction: 'Allow'
-      bypass: 'AzureServices'
-    }
-    publicNetworkAccess: 'Disabled'
+    //publicNetworkAccess: 'Enabled'
   }
 }
 
-resource vaultAccess 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
-  name: 'azure-rambi-vault-access'
-  location: location
-}
-
-@description('This is the built-in Key Vault Administrator role. See https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#key-vault-administrator')
-resource keyVaultAdministratorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+@description('This is the built-in Key Vault Secrets Officer role. See https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-user')
+resource keyVaultSecretsUserRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
   scope: subscription()
-  name: '00482a5a-887f-4fb3-b363-3b7fe8e74483'
+  name: '4633458b-17de-408a-b874-0445c86b69e6'
 }
 
-@description('This is the built-in Key Vault Secrets Officer role. See https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-officer')
-resource keyVaultSecretsOfficerRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  scope: subscription()
-  name: 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
-}
-
-@description('Assigns the API Management service the role to browse and read the keys of the Key Vault.')
-resource apiManagementKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name: guid(kv.id, 'apiManagement', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')
+//Key Value Secret User
+@description('Assigns the API Management service the role to browse and read the keys of the Key Vault to the APIM')
+resource keyVaultSecretUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(kv.id, 'ApiManagement', keyVaultSecretsUserRoleDefinition.id)
   scope: kv
   properties: {
-    roleDefinitionId: keyVaultSecretsOfficerRoleDefinition.id
+    roleDefinitionId: keyVaultSecretsUserRoleDefinition.id
     principalId: apiManagement.outputs.apiManagementIdentityPrincipalId
   }
 }
 
+//https://praveenkumarsreeram.com/2024/12/12/introducing-az-deployer-objectid-in-bicep-track-object-principle-id-of-user-managed-identity/
+//https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-functions-deployment#deployer
+//Not implemented yet in AZD https://github.com/Azure/azure-dev/issues/4620
+@description('Assigns the API Management service the role to browse and read the keys of the Key Vault to the deployer')
+//Useful to check information about the KN in the Azure portal 
+//resource keyVaultSecretUserRoleAssignmentOnDeployer 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+//  name: guid(kv.id, 'Deployer', keyVaultSecretsUserRoleDefinition.id)
+//  scope: kv
+//  properties: {
+//    roleDefinitionId: keyVaultSecretsUserRoleDefinition.id
+//    //Principal ID of the current user
+//    principalId: az.deployer().objectId
+//  }
+//}
+// add secrets to the key vault
 resource secretAzureOpenAIEndPoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
   parent: kv
   name: 'AZURE-OPENAI-ENDPOINT'
@@ -208,12 +209,22 @@ module tmdbApi 'modules/api.bicep' = {
   ]
 }
 
-module tmdbApiKey 'modules/nv.bicep' = {
+// add TMBD Apike secrets to the key vault
+resource secretTMDBApiKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
+  parent: kv
+  name: 'TMDB-API-KEY'
+  properties: {
+    value: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2OGQ0MGIxYjQwYzhiYTBjMTM3Mzc0Y2Y1ZGMzZTdhMSIsIm5iZiI6MTcxMzI1NDA2Mi43MjgsInN1YiI6IjY2MWUyZWFlZDE4ZmI5MDE3ZGNhNjcxMSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.LNNv4AbXo8asYhfL3Pjr9S-EOIe-Chu1iKSr-gRfmo4'
+  }
+}
+
+module tmdbApiKey 'modules/nvkv.bicep' = {
   name: 'tmdbApiKey'
   params: {
     apimName: apiManagementServiceName
     keyName: 'tmdb-api-key'
-    value: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2OGQ0MGIxYjQwYzhiYTBjMTM3Mzc0Y2Y1ZGMzZTdhMSIsIm5iZiI6MTcxMzI1NDA2Mi43MjgsInN1YiI6IjY2MWUyZWFlZDE4ZmI5MDE3ZGNhNjcxMSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.LNNv4AbXo8asYhfL3Pjr9S-EOIe-Chu1iKSr-gRfmo4'
+    keyVaultName: kvName
+    secretName: secretTMDBApiKey.name
   }
 }
 

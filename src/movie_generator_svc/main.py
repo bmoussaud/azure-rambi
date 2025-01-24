@@ -62,24 +62,26 @@ FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 templates = Jinja2Templates(directory="templates")
 
 
-
-
 class Movie(BaseModel):
     """ Data class for Movie """
+    id: int
     title: str
     plot: str
     poster_url: str
     poster_description: Optional[str] = None
-
-class GenAIMovie(Movie):
-    """ Data class for GenAIMovie """
-    prompt: str = None
 
 class MoviePayload(BaseModel):
     """ Data class for MoviePayload """
     movie1: Movie
     movie2: Movie
     genre: str
+
+class GenAIMovie(Movie):
+    """ Data class for GenAIMovie """
+    prompt: str = None
+    payload: MoviePayload = None
+
+
 
 class GenAiMovieService:
     """ Class to manage the access to OpenAI API to generate a new movie """
@@ -114,11 +116,13 @@ class GenAiMovieService:
             logger.error("Failed to retrieve data: %s %s", response.status_code, response.text)
             raise Exception(f"Failed to retrieve the poster description: {response.status_code} {response.text}")
 
-    def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> Movie:
+    def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> GenAIMovie:
         """ Generate a new movie based on the two movies """ 
 
         logger.info(
             "generate_movie called based on two movies %s and %s, genre: %s", movie1.title, movie2.title, genre)
+        logger.info("Movie 1: %s", movie1)
+        logger.info("Movie 2: %s", movie2)
         movie1.poster_description = self.describe_poster(movie1.title, movie1.poster_url)
         movie2.poster_description = self.describe_poster(movie2.title, movie2.poster_url)
 
@@ -172,10 +176,13 @@ class GenAiMovieService:
             ]
         )
         message = completion.choices[0].message
-        movie = GenAIMovie.model_validate(json.loads(message.content))
-        movie.prompt= prompt
-        movie.poster_url = None
-        return movie
+        logger.info("Message: %s", json.dumps(json.loads(message.content), indent=2))
+        generated_movie = GenAIMovie.model_validate(json.loads(message.content))
+        generated_movie.prompt= prompt
+        generated_movie.poster_url = None
+        generated_movie.payload = MoviePayload(movie1=movie1, movie2=movie2, genre=genre)
+        logger.info("Generated movie: %s", generated_movie)
+        return generated_movie
 
 def custom_openapi():
     """Customize the OpenAPI schema."""
@@ -213,7 +220,7 @@ async def env(request: Request):
 
 @app.post('/generate')
 @log_request
-async def movie_generate(request: Request,payload:MoviePayload) -> Movie:
+async def movie_generate(request: Request,payload:MoviePayload) -> GenAIMovie:
     """Function to generate a new movie."""
     logger_uvicorn.info("movie_generate")
     return GenAiMovieService().generate_movie(payload.movie1, payload.movie2, payload.genre)

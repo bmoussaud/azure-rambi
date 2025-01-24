@@ -158,7 +158,7 @@ def movie_generate():
             "movie2": movie2.model_dump(),
             "genre": genre
         }
-        logger.info("data: %s", json.dumps(data))
+        logger.info("data: %s", json.dumps(data, indent=2))
         try:
             response = requests.post(
                 f"{endpoint}/generate",
@@ -167,7 +167,7 @@ def movie_generate():
             )
             response.raise_for_status()
             generated_movie = response.json()
-            logger.info("Generated movie: %s", generated_movie)
+            logger.info("Generated movie: %s", json.dumps(generated_movie, indent=2))
         except requests.RequestException as e:
             logger.error("Error in calling movie_generate service: %s", e)
             generated_movie = {

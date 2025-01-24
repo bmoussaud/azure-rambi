@@ -4,8 +4,9 @@
     {% include "poster.html" %}
     {% endwith %}
     {% else %}
-    <div hx-post="/poster/generate" hx-trigger="load delay:1s" hx-include="find input">
+    <div hx-post="/poster/generate" hx-trigger="load delay:1s" hx-include="#movie_id, #poster_description">
         <input type="hidden" id="poster_description" name="poster_description" value="{{movie.poster_description}}" />
+        <input type="hidden" id="movie_id" name="movie_id" value="{{movie.id}}" />
         <img class="card-img-top" alt="Card image cap2"
             src="https://placehold.co/150x220?text=Generation%20in%20Progress" />
         <span class="htmx-indicator spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>

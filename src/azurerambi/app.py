@@ -18,6 +18,7 @@ from movie_service import TMDBService, Movie
 from movie_poster import MoviePosterClient
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
+import random
 
 
 
@@ -124,6 +125,8 @@ def poster_generate():
     """Function to generate a new movie poster."""
     logger.info("poster_generate")
     desc = request.form.get('poster_description')
+    movie_id = request.form.get('movie_id')
+    logger.info("movie_id: %s", movie_id)
     generated_poster = MoviePosterClient().generate_poster(desc)
     return render_template('poster.html', url=generated_poster)
 
@@ -167,6 +170,8 @@ def movie_generate():
             )
             response.raise_for_status()
             generated_movie = response.json()
+            genre_index = genre_list.index(genre) if genre in genre_list else -1
+            generated_movie['id'] = f"{genre_index}{movie1_id}{movie2_id}{random.randint(10000, 99999)}"
             logger.info("Generated movie: %s", json.dumps(generated_movie, indent=2))
         except requests.RequestException as e:
             logger.error("Error in calling movie_generate service: %s", e)

@@ -81,8 +81,9 @@ templates = Jinja2Templates(directory="templates")
 
 class MoviePoster(BaseModel):
     """ Class to manage the movie poster """
+    id: int | None = None
     title: str
-    description: str | None = None
+    description: str 
     url: str | None = None
 
 class GenAiMovieService:
@@ -152,11 +153,11 @@ class GenAiMovieService:
             description = f"Unable to describe the movie poster for {movie_title}: {e}"
         return description
 
-    def store_poster(self, url: str) -> str:
+    def store_poster(self, movie_id: int,  url: str) -> str:
         """ Store the generated poster in Azure Blob Storage and return a sas url"""
         # Upload the generated poster to Azure Blob Storage
-        logger.info("Uploading poster to Azure Blob Storage")
-        blob_name = f"azure-rambi-poster-{uuid.uuid4()}.png"
+        logger.info("store_poster %d %s", movie_id, url)
+        blob_name = f"{movie_id}.png"
         logger.info("Blob name: %s", blob_name)
         blob_client = self.container_client.get_blob_client(blob_name)
         logger.info("uploading.....")
@@ -174,7 +175,7 @@ class GenAiMovieService:
         logger.info("Blob URL with SAS: %s", blob_url_with_sas)
         return blob_url_with_sas
 
-    def generate_poster(self, poster_description: str) -> str:
+    def generate_poster(self, movie_id: int, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
         try:
@@ -186,8 +187,8 @@ class GenAiMovieService:
             )
             json_response = json.loads(response.model_dump_json())
             url = json_response["data"][0]["url"]
-            logger.info("generate_poster: %s", url)
-            blob_url = self.store_poster(url)
+            
+            blob_url = self.store_poster(movie_id, url)
             return blob_url
         except Exception as e:
             logger.error("generate_poster: %s", e)
@@ -251,19 +252,12 @@ async def movie_poster_describe(request: Request, movie_title: str, url: str):
     logger_uvicorn.info("movie_poster_describe")
     return GenAiMovieService().describe_poster(movie_title, url)
 
-@app.get('/store/{movie_title}')
-@log_request
-async def movie_poster_store(request: Request, movie_title: str, url: str):
-    """Function to store the movie poster."""
-    logger_uvicorn.info("movie_poster_describe")
-    return GenAiMovieService().store_poster(url)
-
 @app.post('/generate')
 @log_request
 async def movie_poster_generate(request: Request, poster: MoviePoster) -> MoviePoster:
     """Function to show the movie poster description."""
-    logger.info("movie_poster_generate %s", poster.title)
-    poster.url = GenAiMovieService().generate_poster(poster.description)
+    logger.info("movie_poster_generate called with %s", poster)
+    poster.url = GenAiMovieService().generate_poster(poster.id, poster.description)
     return poster
 
 @app.get('/liveness')

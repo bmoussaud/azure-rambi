@@ -1,9 +1,14 @@
 <policies>
     <inbound>
         <set-backend-service id="apim-generated-policy" backend-id="OpenAI-primary-backend" />
-        <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" allow-private-response-caching="false" must-revalidate="false" downstream-caching-type="none" />
+        <set-variable name="deploymentId" value="@(context.Request.Url.Path.Split('/').ElementAtOrDefault(3))" />
         <azure-openai-emit-token-metric>
+            <dimension name="API ID" />
             <dimension name="Subscription ID" />
+            <dimension name="User ID" />
+            <dimension name="Product ID" />
+            <!-- Add the extracted deployment ID as a custom dimension -->
+            <dimension name="Deployment ID" value="@(context.Variables.GetValueOrDefault<string>("deploymentId", "unknown"))" />
         </azure-openai-emit-token-metric>
         <authentication-managed-identity resource="https://cognitiveservices.azure.com/" />
         <base />
@@ -13,7 +18,6 @@
     </backend>
     <outbound>
         <base />
-        <cache-store duration="600"  />
     </outbound>
     <on-error>
         <base />

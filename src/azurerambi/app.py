@@ -8,7 +8,7 @@ from collections import OrderedDict
 import requests
 import json
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
 from flask_wtf import FlaskForm
 import uvicorn
 from wtforms.validators import DataRequired
@@ -130,6 +130,18 @@ def poster_generate():
     generated_poster = MoviePosterClient().generate_poster(movie_id, desc)
     return render_template('poster.html', url=generated_poster)
 
+@app.route('/poster/<movie_id>.png', methods=['GET'])
+def poster(movie_id):
+    """Function to show the movie poster."""
+    url = MoviePosterClient().redirect_poster_url(movie_id)
+    #stream the content of the url
+    response = requests.get(url, stream=True, timeout=100)
+    if response.status_code != 200:
+        return f"Failed to retrieve the image. /poster/{movie_id}.png", 500
+    def generate():
+        for chunk in response.iter_content(chunk_size=4096):
+            yield chunk
+    return app.response_class(generate(), content_type=response.headers['Content-Type'])
 
 ui_design = os.getenv("UI_DESIGN", "xxx")
 @ app.route('/movie/generate', methods=['POST'])

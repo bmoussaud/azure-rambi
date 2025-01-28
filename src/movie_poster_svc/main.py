@@ -5,14 +5,13 @@ import logging
 import json
 import redis
 import requests
-import uuid
-import datetime
+import io
 from collections import OrderedDict
 
 import openai
 import uvicorn
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.openapi.utils import get_openapi
 from fastapi.templating import Jinja2Templates
 from fastapi_logger.logger import log_request
@@ -21,27 +20,14 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 from azure.ai.inference.tracing import AIInferenceInstrumentor 
 from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry import trace
+from PIL import Image
 
-from azure.storage.blob import (
-    BlobServiceClient,
-    ContainerClient,
-    BlobClient,
-    BlobSasPermissions,
-    ContainerSasPermissions,
-    ResourceTypes,
-    AccountSasPermissions,
-    UserDelegationKey,
-    generate_account_sas,
-    generate_container_sas,
-    generate_blob_sas
-)
 from dotenv import load_dotenv
 from pydantic import BaseModel
-
 from openai import AzureOpenAI
 
 from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobServiceClient
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
@@ -104,11 +90,11 @@ class GenAiMovieService:
             self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True )
             logger.info("Redis ping: %s", self.redis_client.ping())
 
-        logger.info("Initializing Azure Blob Storage client")
-        self.blob_service_client = BlobServiceClient.from_connection_string(os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING"))
-        self.container_name = "movieposters"
-        self.container_client = self.blob_service_client.get_container_client(self.container_name)
-
+        sa_url = os.getenv("STORAGE_ACCOUNT_URL")
+        logger.info("Initializing Azure Blob Storage client with account_url: %s", sa_url)
+        self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=DefaultAzureCredential())
+        logger.info("* Blob Service Client: %s", self.blob_service_client)
+        self.container_client = self.blob_service_client.get_container_client("movieposters")
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
@@ -163,17 +149,7 @@ class GenAiMovieService:
         logger.info("uploading.....")
         blob_client.upload_blob(requests.get(url,timeout=100).content, overwrite=True,blob_type="BlockBlob" )
         logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
-
-        # Generate a SAS token for the blob
-        logger.info("Creating SAS token for the blob")
-        sas_token = self.create_service_sas_blob(blob_client=blob_client, account_key=self.blob_service_client.credential.account_key)
-        logger.info("Account SAS: %s", sas_token)
-        #sas_token = self.create_user_delegation_sas_blob(blob_client=blob_client, user_delegation_key=user_delegation_key)
-        # The SAS token string can be appended to the resource URL with a ? delimiter
-        # or passed as the credential argument to the client constructor
-        blob_url_with_sas = f"{blob_client.url}?{sas_token}"
-        logger.info("Blob URL with SAS: %s", blob_url_with_sas)
-        return blob_url_with_sas
+        return f"/poster/{movie_id}.png"
 
     def generate_poster(self, movie_id: int, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
@@ -195,21 +171,20 @@ class GenAiMovieService:
             blob_url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return blob_url
     
-    def create_service_sas_blob(self, blob_client: BlobClient, account_key: str):
-        """Create a SAS token that's valid for one day, as an example"""
-        start_time = datetime.datetime.now(datetime.timezone.utc)
-        expiry_time = start_time + datetime.timedelta(days=1)
+    def poster(self, movie_id: int) -> bytes:
+        """Retrieve the movie poster from Azure Blob Storage"""
+        logger.info("poster called with %s", movie_id)
+        blob_name = f"{movie_id}.png"
+        blob_client = self.container_client.get_blob_client(blob_name)
+        try:
+            blob_data = blob_client.download_blob().readall()
+            logger.info("Retrieved poster from Azure Blob Storage: %s", blob_client.url)
+            return blob_data
+        except Exception as e:
+            logger.error("poster: %s", e)
+            raise
 
-        sas_token = generate_blob_sas(
-            account_name=blob_client.account_name,
-            container_name=blob_client.container_name,
-            blob_name=blob_client.blob_name,
-            account_key=account_key,
-            permission=BlobSasPermissions(read=True),
-            expiry=expiry_time,
-            start=start_time
-        )
-        return sas_token
+
     
 def custom_openapi():
     """Customize the OpenAPI schema."""
@@ -252,6 +227,13 @@ async def movie_poster_describe(request: Request, movie_title: str, url: str):
     logger_uvicorn.info("movie_poster_describe")
     return GenAiMovieService().describe_poster(movie_title, url)
 
+@app.get('/store/{movie_title}')
+@log_request
+async def movie_poster_store(request: Request, movie_title: str, url: str):
+    """Function to show the movie poster description."""
+    logger_uvicorn.info("movie_poster_describe")
+    return GenAiMovieService().store_poster(10, url)
+
 @app.post('/generate')
 @log_request
 async def movie_poster_generate(request: Request, poster: MoviePoster) -> MoviePoster:
@@ -259,6 +241,32 @@ async def movie_poster_generate(request: Request, poster: MoviePoster) -> MovieP
     logger.info("movie_poster_generate called with %s", poster)
     poster.url = GenAiMovieService().generate_poster(poster.id, poster.description)
     return poster
+
+@app.get(
+    "/poster/{movie_id}.png",
+    # Set what the media type will be in the autogenerated OpenAPI specification.
+    # fastapi.tiangolo.com/advanced/additional-responses/#additional-media-types-for-the-main-response
+    responses = {
+        200: {
+            "content": {"image/png": {}}
+        }
+    },
+    # Prevent FastAPI from adding "application/json" as an additional
+    # response media type in the autogenerated OpenAPI specification.
+    # https://github.com/tiangolo/fastapi/issues/3258
+    response_class=Response
+)
+def get_image(request: Request, movie_id: str):
+    """Function to get the movie poster image."""
+    image_bytes: bytes = GenAiMovieService().poster(movie_id)
+    im = Image.open(io.BytesIO(image_bytes))
+     # save image to an in-memory bytes buffer
+    with io.BytesIO() as buf:
+        im.save(buf, format='PNG')
+        im_bytes = buf.getvalue()
+    headers = {'Content-Disposition': 'inline; filename=f"{movie_id}.png"'}
+    # media_type here sets the media type of the actual response sent to the client.
+    return Response(im_bytes, headers=headers, media_type='image/png')
 
 @app.get('/liveness')
 @log_request

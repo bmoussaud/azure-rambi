@@ -103,20 +103,6 @@ resource keyVaultSecretUserRoleAssignment 'Microsoft.Authorization/roleAssignmen
   }
 }
 
-//https://praveenkumarsreeram.com/2024/12/12/introducing-az-deployer-objectid-in-bicep-track-object-principle-id-of-user-managed-identity/
-//https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-functions-deployment#deployer
-//Not implemented yet in AZD https://github.com/Azure/azure-dev/issues/4620
-//@description('Assigns the API Management service the role to browse and read the keys of the Key Vault to the deployer')
-//Useful to check information about the KN in the Azure portal 
-//resource keyVaultSecretUserRoleAssignmentOnDeployer 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-//  name: guid(kv.id, 'Deployer', keyVaultSecretsUserRoleDefinition.id)
-//  scope: kv
-//  properties: {
-//    roleDefinitionId: keyVaultSecretsUserRoleDefinition.id
-//    //Principal ID of the current user
-//    principalId: az.deployer().objectId
-//  }
-//}
 // add secrets to the key vault
 resource secretAzureOpenAIEndPoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
   parent: kv
@@ -405,10 +391,6 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           name: 'redis-password'
           value: redis.outputs.redisPassword
         }
-        {
-          name: 'storage-account-connection-string'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
-        }
       ]
       registries: [
         {
@@ -480,8 +462,8 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
               value: 'oui'
             }
             {
-              name: 'STORAGE_ACCOUNT_CONNECTION_STRING'
-              secretRef: 'storage-account-connection-string'
+              name: 'STORAGE_ACCOUNT_URL'
+              value: storageAccount.properties.primaryEndpoints.blob
             }
           ]
           probes: [
@@ -761,7 +743,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   }
   kind: 'StorageV2'
   properties: {
-    allowSharedKeyAccess: true
+    allowSharedKeyAccess: false
+    networkAcls: {
+      bypass: 'AzureServices'
+      virtualNetworkRules: []
+      ipRules: []
+      defaultAction: 'Allow'
+    }
   }
 }
 
@@ -776,22 +764,21 @@ resource moviepostersStorageContainer 'Microsoft.Storage/storageAccounts/blobSer
   parent: moviepostersStorageService
 }
 
-resource contributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  scope: subscription()
-  // This is the Storage Account Contributor role, which is the minimum role permission we can give. See https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#:~:text=17d1049b-9a84-46fb-8f53-869881c3d3ab
-  name: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
-}
-
 resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'azure-rambi-storage-contributor'
   location: location
 }
+// Define the Storage Blob Data Contributor role
+resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+}
 
 resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   scope: storageAccount
-  name: guid(resourceGroup().id, azrStorageContributor.id, contributorRoleDefinition.id)
+  name: guid(resourceGroup().id, azrStorageContributor.id, storageBlobDataContributorRoleDefinition.id)
   properties: {
-    roleDefinitionId: contributorRoleDefinition.id
+    roleDefinitionId: storageBlobDataContributorRoleDefinition.id
     principalId: azrStorageContributor.properties.principalId
     principalType: 'ServicePrincipal'
   }

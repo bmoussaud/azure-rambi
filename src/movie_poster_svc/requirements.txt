@@ -17,3 +17,4 @@ redis
 azure-ai-inference
 azure-storage-blob
 azure-identity
+pillow

@@ -8,7 +8,7 @@
             <dimension name="Product ID" />
         </azure-openai-emit-token-metric>
         <authentication-managed-identity resource="https://cognitiveservices.azure.com/" />
-        <base />
+        <base/>
     </inbound>
     <backend>
         <base />

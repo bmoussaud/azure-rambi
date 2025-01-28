@@ -803,3 +803,4 @@ output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcAp
 output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
 output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
+output APIM_SERVICE_NAME string = apiManagementServiceName

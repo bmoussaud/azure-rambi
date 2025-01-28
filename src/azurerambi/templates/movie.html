@@ -21,9 +21,10 @@
     {% include "poster_description.html" %}
     {% endwith %}
     {% else %}
-    <div hx-post="/poster/description" hx-trigger="load delay:1s" hx-include="#movie_id, #movie_title">
-        <input type="hidden" id="movie_id" name="movie_id" value="{{movie.id}}" />
-        <input type="hidden" id="movie_title" name="movie_title" value="{{movie.title}}" />
+    <div hx-post="/poster/description" hx-trigger="load delay:1s"
+        hx-include="#movie_id_{{movie.id}}, #movie_title_{{movie.id}}">
+        <input type="hidden" id="movie_id_{{movie.id}}" name="movie_id" value="{{movie.id}}" />
+        <input type="hidden" id="movie_title_{{movie.id}}" name="movie_title" value="{{movie.title}}" />
         <p class="card-text"><small class="text-muted">LLM Query: get the poster description
                 <span class="htmx-indicator spinner-border spinner-border-sm" role="status"
                     aria-hidden="true"></span></small>

@@ -127,6 +127,7 @@ def poster_generate():
     desc = request.form.get('poster_description')
     movie_id = request.form.get('movie_id')
     logger.info("movie_id: %s", movie_id)
+    logger.info("desc: %s", desc)
     generated_poster = MoviePosterClient().generate_poster(movie_id, desc)
     return render_template('poster.html', url=generated_poster)
 

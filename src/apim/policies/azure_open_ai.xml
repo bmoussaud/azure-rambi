@@ -2,7 +2,7 @@
     <inbound>
         <set-backend-service id="apim-generated-policy" backend-id="OpenAI-primary-backend" />
         <set-variable name="deploymentId" value="@(context.Request.Url.Path.Split('/').ElementAtOrDefault(3))" />
-        <azure-openai-emit-token-metric namespace="OpenAI"  >
+        <azure-openai-emit-token-metric namespace="MyOpenAI"  >
             <dimension name="API ID" />
             <dimension name="Subscription ID" />
             <dimension name="User ID" />

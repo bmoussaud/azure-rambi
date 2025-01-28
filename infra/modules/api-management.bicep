@@ -25,7 +25,7 @@ resource aiParent 'Microsoft.Insights/components@2020-02-02-preview' existing = 
   name: aiName
 }
 
-resource apiManagementService 'Microsoft.ApiManagement/service@2023-03-01-preview' =  {
+resource apiManagementService 'Microsoft.ApiManagement/service@2023-03-01-preview' = {
   name: serviceName
   location: location
   sku: {
@@ -74,7 +74,6 @@ resource unlimitedProduct 'Microsoft.ApiManagement/service/products@2023-03-01-p
   }
 }
 
-
 resource adminUser 'Microsoft.ApiManagement/service/users/subscriptions@2023-05-01-preview' existing = {
   name: '/users/1'
 }
@@ -88,6 +87,17 @@ resource apiAdminSubscription 'Microsoft.ApiManagement/service/subscriptions@202
     ownerId: adminUser.id
     state: 'active'
     scope: '/apis'
+  }
+}
+
+//Allow the customs metrics at the application insight level.
+//https://learn.microsoft.com/en-us/azure/api-management/api-management-howto-app-insights?tabs=rest#emit-custom-metrics
+resource applicationinsights 'Microsoft.ApiManagement/service/diagnostics@2023-03-01-preview' = {
+  name: 'applicationinsights'
+  parent: apiManagementService
+  properties: {
+    metrics: true
+    loggerId: aiLogger.id
   }
 }
 

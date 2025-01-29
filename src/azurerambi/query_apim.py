@@ -47,11 +47,13 @@ def query():
         "max_tokens": 800
     }
 
+    print(json.dumps(json_payload, indent=2))
     # Make the POST request
     response = requests.post(url, headers=headers, json=json_payload)
 
     # Print the response text (or you can process it further as needed)
-    print(response.text)
+
+    print(json.dumps(response.json(),indent=2))
 
 
 for _ in range(10):

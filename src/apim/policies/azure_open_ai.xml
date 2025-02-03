@@ -1,7 +1,7 @@
 <policies>
     <inbound>
         <set-backend-service id="apim-generated-policy" backend-id="OpenAI-primary-backend" />
-        <set-variable name="deploymentid" value="@(context.Request.Url.Path.Split('/')[context.Request.Url.Path.Split('/').Length-3])" />
+        <set-variable name="deploymentid" value="@(context.Request.Url.Path.Split('/')[context.Request.Url.Path.Split('/').Length - 3])" />
         <llm-emit-token-metric namespace="MyLLM">
             <dimension name="API ID" />
             <dimension name="Operation ID" />

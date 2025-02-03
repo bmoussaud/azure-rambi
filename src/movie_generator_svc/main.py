@@ -43,7 +43,10 @@ logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(l
 logging.getLogger('azure.monitor.opentelemetry.exporter').setLevel(logging.WARNING)
 
 # Set the logging level to WARNING for the urllib3.connectionpool logger
-logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+logging.getLogger('urllib3.connectionpool').setLevel(logging.DEBUG)
+# Enable HTTP debugging for the openai library
+http_client_logger = logging.getLogger('openai')
+http_client_logger.setLevel(logging.DEBUG)
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
@@ -93,6 +96,7 @@ class GenAiMovieService:
 
         self._endpoint = os.getenv("MOVIE_POSTER_ENDPOINT")
         self._headers= {    }
+        self._language = "english"
 
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
@@ -118,13 +122,16 @@ class GenAiMovieService:
 
     def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> GenAIMovie:
         """ Generate a new movie based on the two movies """ 
-
         logger.info(
             "generate_movie called based on two movies %s and %s, genre: %s", movie1.title, movie2.title, genre)
         logger.info("Movie 1: %s", movie1)
         logger.info("Movie 2: %s", movie2)
-        movie1.poster_description = self.describe_poster(movie1.title, movie1.poster_url)
-        movie2.poster_description = self.describe_poster(movie2.title, movie2.poster_url)
+        if movie1.poster_description is None or movie1.poster_description == "":
+            movie1.poster_description = self.describe_poster(movie1.title, movie1.poster_url)
+            logger.info("Movie 1 Poster Description: %s", movie1.poster_description)
+        if movie2.poster_description is None  or movie2.poster_description == "":
+            movie2.poster_description = self.describe_poster(movie2.title, movie2.poster_url)
+            logger.info("Movie 2 Poster Description: %s", movie2.poster_description)
 
         with open("prompts/structured_new_movie_short.txt", "r", encoding="utf-8") as file:
             prompt_template = file.read()
@@ -140,23 +147,21 @@ class GenAiMovieService:
         )
 
         logger.info("Prompt: %s", prompt)
-
-        completion = self.client.beta.chat.completions.parse(
-            model="gpt-4o",
-            response_format=GenAIMovie,
-            messages=[
+        # https://cookbook.openai.com/examples/o1/using_chained_calls_for_o1_structured_outputs
+        messages=[
                 {
-                    "role": "system",
+                    "role": "user",
                     "content": "You are a bot expert with a huge knowledge about movies and the cinema."
                 },
                 {
-                    "role": "system",
+                    "role": "user",
                     "content": """
                     Two movie titles and plots will be provided, along with a target genre.
                     Using the titles, plots and genre as inspiration, generate the following:
                     * Step 1: Generate a new movie title that combines elements of the provided titles and fits the target genre. The title should be catchy and humorous.
                     * Step 2: Generate a 4-6 sentence movie plot synopsis for the new title, incorporating themes, characters, or plot points from the provided movies. Adapt them to fit the target genre.
                     * Step 3: Based on the generated movie plot and the key elements of the 2 movie posters, generate the movie poster description without using the movie's titles.
+                    * Step 4: Ensure the new movie title and plot are original and do not contain any violent or inappropriate content.
                                 """
                 },
                 {
@@ -164,7 +169,7 @@ class GenAiMovieService:
                     "content": prompt
                 },
                 {
-                    "role":"system",
+                    "role":"user",
                     "content": """
                 Use the details below to generate the new movie title and plot.
                 Use the description of the two posters to generate the new posterDescription without any title.
@@ -174,7 +179,21 @@ class GenAiMovieService:
                 """
                 }
             ]
-        )
+        
+        logger.info("Messages: %s", json.dumps(messages, indent=2))
+        o1_response = self.client.chat.completions.create(model="o1-mini", messages=messages)
+       
+        o1_response_content = o1_response.choices[0].message.content
+        logger.info("Response: %s", o1_response_content)
+        completion = self.client.beta.chat.completions.parse(
+            model="gpt-4o",
+            response_format=GenAIMovie,
+            messages=[
+            {
+                "role": "user", 
+                "content": f"""Given the following data, format it with the given response format using the {self._language} language: {o1_response_content}"""
+            }
+            ])
         message = completion.choices[0].message
         logger.info("Message: %s", json.dumps(json.loads(message.content), indent=2))
         generated_movie = GenAIMovie.model_validate(json.loads(message.content))

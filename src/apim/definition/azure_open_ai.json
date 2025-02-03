@@ -39,8 +39,7 @@
               "type": "string",
               "example": "davinci",
               "description": "Deployment id of the model which was deployed."
-            },
-            "default": "gpt-4o"
+            }
           },
           {
             "in": "query",
@@ -50,8 +49,7 @@
               "type": "string",
               "example": "2024-10-21",
               "description": "api version"
-            },
-            "default": "2024-08-01-preview"
+            }
           }
         ],
         "requestBody": {

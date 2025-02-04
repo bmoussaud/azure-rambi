@@ -16,14 +16,16 @@ class MoviePosterClient:
     """CLI class for the movie poster generator."""
     def __init__(self, endpoint: str = None, api_key: str = None):
         if endpoint is None:
-            endpoint = os.getenv("MOVIE_POSTER_ENDPOINT")  
+            endpoint = os.getenv("MOVIE_POSTER_ENDPOINT")
 
+        logger.info("MoviePosterClient endpoint: %s", endpoint)
+        
         if api_key is None:
-            api_key = os.getenv("API_SUBSCRIPTION_KEY")
+            api_key = os.getenv("APIM_SUBSCRIPTION_KEY")
 
         self._endpoint = endpoint
         self._headers = {
-            'Ocp-Apim-Subscription-Key': api_key
+            'api-key': api_key
         }
 
     def describe_poster(self, name, poster_url) -> str:
@@ -40,11 +42,12 @@ class MoviePosterClient:
             logger.error("Failed to retrieve data: %s %s", response.status_code, response.text)
             raise Exception(f"Failed to retrieve the poster description: {response.status_code} {response.text}")
         
-    def generate_poster(self, desc: str) -> dict:
+    def generate_poster(self, movie_id: str, desc: str) -> dict:
         """generate the image"""
         logger.info("generate_image of based on %s", desc)
         endpoint = f"{self._endpoint}/generate"
         poster = {
+            "id": movie_id,
             "description": desc,
             "title":"movieposter"
         }
@@ -56,7 +59,13 @@ class MoviePosterClient:
         if response.status_code == 200:
             json_response  = response.json()
             logger.info(json.dumps(json_response))
-            return json_response['url'] 
+            return json_response['url']
         else:
             logger.error("Failed to retrieve data: %s %s", response.status_code, response.text)
             raise Exception(f"Failed to retrieve the poster: {response.status_code} {response.text}")
+        
+    def redirect_poster_url(self, movie_id: int) -> str:
+        """redirect to the image"""
+        endpoint = f"{self._endpoint}/poster/{movie_id}.png"
+        logger.info("redirect_poster_url to endpoint %s", endpoint)
+        return endpoint

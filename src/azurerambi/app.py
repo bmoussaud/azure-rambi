@@ -15,7 +15,7 @@ from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
 from movie_service import TMDBService, Movie
-from movie_poster import MoviePosterClient
+from movie_poster_client import MoviePosterClient
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 import random
@@ -126,8 +126,8 @@ def poster_generate():
     logger.info("poster_generate")
     desc = request.form.get('poster_description')
     movie_id = request.form.get('movie_id')
-    logger.info("movie_id: %s", movie_id)
-    logger.info("desc: %s", desc)
+    logger.info("* movie_id: %s", movie_id)
+    logger.info("* desc: %s", desc)
     generated_poster = MoviePosterClient().generate_poster(movie_id, desc)
     return render_template('poster.html', url=generated_poster)
 

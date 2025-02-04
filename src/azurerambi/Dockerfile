@@ -21,6 +21,16 @@ COPY . .
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /code
 USER appuser
 
+# Set the GITHUB_SHA, GITHUB_JOB, GITHUB_ACTOR, and GITHUB_RUN_NUMBER environment variables
+ARG GITHUB_SHA
+ARG GITHUB_JOB
+ARG GITHUB_ACTOR
+ARG GITHUB_RUN_NUMBER
+ENV GITHUB_SHA=${GITHUB_SHA}
+ENV GITHUB_JOB=${GITHUB_JOB}
+ENV GITHUB_ACTOR=${GITHUB_ACTOR}
+ENV GITHUB_RUN_NUMBER=${GITHUB_RUN_NUMBER}
+
 # Expose the default Flask port
 EXPOSE 8000
 

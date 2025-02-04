@@ -139,6 +139,15 @@ jobs:
           containerAppEnvironment: azure-rambi
           containerAppName: gui-svc
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          environmentVariables: |
+            - name: GITHUB_SHA
+              value: ${{ github.sha }}
+            - name: GITHUB_JOB
+              value:$ {{ github.job }}
+            - name: GITHUB_ACTOR
+              value: ${{ github.actor }}
+            - name: GITHUB_RUN_NUMBER
+              value: ${{ github.run_number }}
       # Azure Logout
       - name: Azure Logout
         if: always()

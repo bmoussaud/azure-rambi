@@ -130,24 +130,21 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       # **Build and Deploy GUI**
+      - name: Build and push Docker image
+        run: |
+          docker build --build-arg GITHUB_SHA=${{ github.sha }} \
+                       --build-arg GITHUB_JOB=${{ github.job }} \
+                       --build-arg GITHUB_ACTOR=${{ github.actor }} \
+                       --build-arg GITHUB_RUN_NUMBER=${{ github.run_number }} \
+                       -t ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }} ${{ github.workspace }}/src/azurerambi
+          docker push ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
       - name: Build and Deploy GUI
         uses: azure/container-apps-deploy-action@v1
         with:
-          appSourcePath: ${{ github.workspace }}/src/azurerambi
-          acrName: ${{ env.ACR_NAME }}
-          imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
+          imageToDeploy: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
           containerAppEnvironment: azure-rambi
           containerAppName: gui-svc
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
-          environmentVariables: |
-            - name: GITHUB_SHA
-              value: ${{ github.sha }}
-            - name: GITHUB_JOB
-              value: ${{ github.job }}
-            - name: GITHUB_ACTOR
-              value: ${{ github.actor }}
-            - name: GITHUB_RUN_NUMBER
-              value: ${{ github.run_number }}
       # Azure Logout
       - name: Azure Logout
         if: always()

@@ -143,7 +143,7 @@ jobs:
             - name: GITHUB_SHA
               value: ${{ github.sha }}
             - name: GITHUB_JOB
-              value:$ {{ github.job }}
+              value: ${{ github.job }}
             - name: GITHUB_ACTOR
               value: ${{ github.actor }}
             - name: GITHUB_RUN_NUMBER

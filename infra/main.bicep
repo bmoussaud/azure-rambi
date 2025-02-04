@@ -17,6 +17,40 @@ var acrName = 'azurerambi${uniqueString(resourceGroup().id)}'
 var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
 var kvName = 'rambikv${uniqueString(resourceGroup().id)}'
 
+@description('Model deployments for OpenAI')
+param deployments array = [
+  {
+    name: 'gpt-4o'
+    capacity: 40
+    version: '2024-08-06' //2024-08-06 ?
+  }
+  {
+    name: 'dall-e-3'
+    model: 'dall-e-3'
+    version: '3.0'
+    capacity: 1
+  }
+]
+
+@batchSize(1)
+resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
+  for deployment in deployments: {
+    parent: openAI
+    name: deployment.name
+    sku: {
+      name: 'Standard'
+      capacity: deployment.capacity
+    }
+    properties: {
+      model: {
+        format: 'OpenAI'
+        name: deployment.name
+        version: deployment.version
+      }
+    }
+  }
+]
+
 @description('Creates an Azure OpenAI resource.')
 resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   name: openAIName
@@ -29,38 +63,6 @@ resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
     customSubDomainName: openAIName
     publicNetworkAccess: 'Enabled'
     restore: restore
-  }
-}
-
-resource gpt4o 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
-  name: 'gpt-4o'
-  parent: openAI
-  sku: {
-    name: 'Standard'
-    capacity: 40
-  }
-  properties: {
-    model: {
-      format: 'OpenAI'
-      name: 'gpt-4o'
-      version: '2024-08-06'
-    }
-  }
-}
-
-resource dalle3 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
-  name: 'dall-e-3'
-  parent: openAI
-  sku: {
-    name: 'Standard'
-    capacity: 1
-  }
-  properties: {
-    model: {
-      format: 'OpenAI'
-      name: 'dall-e-3'
-      version: '3.0'
-    }
   }
 }
 

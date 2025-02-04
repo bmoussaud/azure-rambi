@@ -52,6 +52,8 @@ genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
               "Music", "Mystery", "Romance", "Science Fiction",
               "TV Movie", "Thriller", "War", "Western"]
 
+movie_poster_client = MoviePosterClient()
+
 @dataclass
 class GitHubContext:
     """ Data class for GitHubContext """
@@ -111,7 +113,7 @@ def poster_description():
         logger.info("movie: %s", movie)
         logger.info("movie.poster_url: %s", movie.poster_url)
         logger.info("movie.title: %s", movie.title)
-        poster_desc = MoviePosterClient().describe_poster(movie.title, movie.poster_url)
+        poster_desc = movie_poster_client.describe_poster(movie.title, movie.poster_url)
     except Exception as e:
         logger.error("Other Error in describe_poster: %s", e)
         poster_desc = f"Error in describe_poster: {e}"
@@ -128,13 +130,14 @@ def poster_generate():
     movie_id = request.form.get('movie_id')
     logger.info("* movie_id: %s", movie_id)
     logger.info("* desc: %s", desc)
-    generated_poster = MoviePosterClient().generate_poster(movie_id, desc)
+    
+    generated_poster = movie_poster_client.generate_poster(movie_id, desc)
     return render_template('poster.html', url=generated_poster)
 
 @app.route('/poster/<movie_id>.png', methods=['GET'])
 def poster(movie_id):
     """Function to show the movie poster."""
-    url = MoviePosterClient().redirect_poster_url(movie_id)
+    url = movie_poster_client.redirect_poster_url(movie_id)
     #stream the content of the url
     response = requests.get(url, stream=True, timeout=100)
     if response.status_code != 200:

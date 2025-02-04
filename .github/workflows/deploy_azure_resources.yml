@@ -129,6 +129,10 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Login to Azure Container Registry
+        run: |
+            az acr login --name ${{ env.ACR_NAME }}  
       # **Build and Deploy GUI**
       - name: Build and push Docker image
         run: |

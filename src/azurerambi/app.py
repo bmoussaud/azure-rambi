@@ -137,11 +137,14 @@ def poster_generate():
 @app.route('/poster/<movie_id>.png', methods=['GET'])
 def poster(movie_id):
     """Function to show the movie poster."""
+    logger.info("poster %s", movie_id)
     url = movie_poster_client.redirect_poster_url(movie_id)
+    logger.info("url: %s", url)
     #stream the content of the url
     response = requests.get(url, stream=True, timeout=100)
+    logger.info("response: %s", response)
     if response.status_code != 200:
-        return f"Failed to retrieve the image. /poster/{movie_id}.png", 500
+        return f"Failed to retrieve the image. /poster/{movie_id}.png", response.status_code
     def generate():
         for chunk in response.iter_content(chunk_size=4096):
             yield chunk

@@ -96,7 +96,7 @@ class GenAiMovieService:
 
         self._endpoint = os.getenv("MOVIE_POSTER_ENDPOINT")
         self._headers= {    }
-        self._language = "english"
+        self._language = "english" 
 
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
@@ -145,6 +145,7 @@ class GenAiMovieService:
             movie2_description=movie2.poster_description,
             genre=genre
         )
+
 
         logger.info("Prompt: %s", prompt)
         # https://cookbook.openai.com/examples/o1/using_chained_calls_for_o1_structured_outputs

@@ -1,7 +1,7 @@
 <policies>
     <inbound>
         <set-backend-service id="apim-generated-policy" backend-id="OpenAI-primary-backend" />
-        <set-variable name="deploymentid" value="@(context.Request.Url.Path.Split('/')[context.Request.Url.Path.Split('/').Length - 3])" />
+        <authentication-managed-identity resource="https://cognitiveservices.azure.com/" />
         <azure-openai-emit-token-metric namespace="MyOpenAI">
             <dimension name="Deployment ID" value="@(context.Request.Url.Path.Split('/')[context.Request.Url.Path.Split('/').Length - 3])"/>
             <dimension name="Subscription ID" />
@@ -9,7 +9,13 @@
             <dimension name="User ID" />
             <dimension name="Product ID" />
         </azure-openai-emit-token-metric>
-        <authentication-managed-identity resource="https://cognitiveservices.azure.com/" />
+        <llm-emit-token-metric namespace="MyLLM">
+            <dimension name="Deployment ID" value="@(context.Request.Url.Path.Split('/')[context.Request.Url.Path.Split('/').Length - 3])" />
+            <dimension name="Subscription ID" />
+            <dimension name="API ID" />
+            <dimension name="User ID" />
+            <dimension name="Product ID" />
+        </llm-emit-token-metric>
         <base />
     </inbound>
     <backend>

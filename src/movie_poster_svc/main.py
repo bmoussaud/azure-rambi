@@ -21,12 +21,13 @@ from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 from azure.ai.inference.tracing import AIInferenceInstrumentor 
 from azure.monitor.opentelemetry import configure_azure_monitor
 from PIL import Image
-
+from azure.identity import ManagedIdentityCredential
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from openai import AzureOpenAI
 
 from azure.identity import DefaultAzureCredential
+from azure.identity import ManagedIdentityCredential
 from azure.storage.blob import BlobServiceClient
 
 openai.log = "debug"
@@ -92,8 +93,10 @@ class GenAiMovieService:
 
         sa_url = os.getenv("STORAGE_ACCOUNT_URL")
         logger.info("Initializing Azure Blob Storage client with account_url: %s", sa_url)
-        self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=DefaultAzureCredential())
-        logger.info("* Blob Service Client: %s", self.blob_service_client)
+        credential = DefaultAzureCredential()
+        logger.info("Credential: %s", credential)
+        self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=credential)
+        logger.info("Blob Service Client: %s", self.blob_service_client)
         self.container_client = self.blob_service_client.get_container_client("movieposters")
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
@@ -165,6 +168,7 @@ class GenAiMovieService:
             url = json_response["data"][0]["url"]
             
             blob_url = self.store_poster(movie_id, url)
+            logger.info("generate_poster: %s", blob_url)
             return blob_url
         except Exception as e:
             logger.error("generate_poster: %s", e)
@@ -181,7 +185,7 @@ class GenAiMovieService:
             logger.info("Retrieved poster from Azure Blob Storage: %s", blob_client.url)
             return blob_data
         except Exception as e:
-            logger.error("poster: %s", e)
+            logger.error("poster exception: %s", e)
             raise
 
 
@@ -258,6 +262,7 @@ async def movie_poster_generate(request: Request, poster: MoviePoster) -> MovieP
 )
 def get_image(request: Request, movie_id: str):
     """Function to get the movie poster image."""
+    logger.info("get_image called with %s", movie_id)
     image_bytes: bytes = GenAiMovieService().poster(movie_id)
     im = Image.open(io.BytesIO(image_bytes))
      # save image to an in-memory bytes buffer

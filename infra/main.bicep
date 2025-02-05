@@ -476,6 +476,11 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
               name: 'STORAGE_ACCOUNT_URL'
               value: storageAccount.properties.primaryEndpoints.blob
             }
+            {
+              // Required for managed identity to access the storage account
+              name: 'AZURE_CLIENT_ID'
+              value: azrStorageContributor.properties.clientId
+            }
           ]
           probes: [
             {

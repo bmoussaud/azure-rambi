@@ -800,18 +800,11 @@ resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
   }
 }
 
-output movieserviceFQDN string = containerMoviePosterSvcApp.properties.configuration.ingress.fqdn
-output guiFQDN string = guirSvcApp.properties.configuration.ingress.fqdn
-output moviegeneratorFQDN string = containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn
 output AZURE_LOCATION string = location
-
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
-
-output STORAGE_ACCOUNT_KEY string = storageAccount.listKeys().keys[0].value
 output STORAGE_ACCOUNT_NAME string = storageAccount.name
-output STORAGE_ACCOUNT_CONNECTION_STRING string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
 output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
 output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'

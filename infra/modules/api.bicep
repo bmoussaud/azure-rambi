@@ -46,6 +46,11 @@ resource api 'Microsoft.ApiManagement/service/apis@2023-03-01-preview' = {
     protocols: [
       'https'
     ]
+    subscriptionKeyParameterNames: {
+      header: 'api-key'
+      query: 'api-key'
+    }
+    subscriptionRequired: true
   }
 }
 
@@ -61,7 +66,7 @@ resource APIstarterProduct 'Microsoft.ApiManagement/service/products/apis@2023-0
   dependsOn: [api]
 }
 
-resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-03-01-preview' = {
+resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2024-06-01-preview' = {
   parent: api
   name: 'policy'
   properties: {
@@ -70,12 +75,15 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-03-01-pre
   }
 }
 
-resource apiDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2023-03-01-preview' = {
+resource apiDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2024-06-01-preview' = {
   parent: api
   name: 'applicationinsights'
   properties: {
     alwaysLog: 'allErrors'
     loggerId: aiLogger.id
+    //metrics: true + verbosity: information equals Support custom metrics <<<< not enough information :(
+    metrics: true
+    verbosity: 'information'
     sampling: {
       samplingType: 'fixed'
       percentage: 100

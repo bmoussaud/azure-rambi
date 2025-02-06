@@ -4,6 +4,9 @@ param location string = resourceGroup().location
 @description('The name of the Redis Cache instance')
 param redisCacheName string
 
+@description('The name of the user assigned identity to be used as the storage contributor.')
+param redisContributorName string = 'azure-rambi-storage-contributor'
+
 @description('The pricing tier of the new Azure Redis Cache.')
 @allowed([
   'Basic'
@@ -22,11 +25,30 @@ param cacheSKUFamily string = 'C'
 @maxValue(6)
 param cacheSKUCapacity int = 0
 
-resource redisCache 'Microsoft.Cache/Redis@2021-06-01' = {
+@description('Specify name of Built-In access policy to use as assignment.')
+@allowed([
+  'Data Owner'
+  'Data Contributor'
+  'Data Reader'
+])
+param builtInAccessPolicyName string = 'Data Owner'
+
+//TO DO: move to  'Microsoft.Cache/redisEnterprise@2024-09-01-preview' = {
+//https://luke.geek.nz/azure/deploying-azure-managed-redis-with-bicep/
+//https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/managed-redis/managed-redis-overview?WT.mc_id=AZ-MVP-5004796
+//fAster to provision
+
+resource redisCache 'Microsoft.Cache/Redis@2024-11-01' = {
   name: redisCacheName
   location: location
 
   properties: {
+    disableAccessKeyAuthentication: false
+    enableNonSslPort: false
+    minimumTlsVersion: '1.2'
+    redisConfiguration: {
+      'aad-enabled': 'true'
+    }
     sku: {
       name: cacheSKUName
       family: cacheSKUFamily
@@ -35,6 +57,20 @@ resource redisCache 'Microsoft.Cache/Redis@2021-06-01' = {
   }
 }
 
+resource redisCacheBuiltInAccessPolicyAssignment 'Microsoft.Cache/redis/accessPolicyAssignments@2023-08-01' = {
+  name: '${builtInAccessPolicyName}-${uniqueString(resourceGroup().id)}'
+  parent: redisCache
+  properties: {
+    accessPolicyName: builtInAccessPolicyName
+    objectId: redisContributor.properties.principalId
+    objectIdAlias: redisContributor.name
+  }
+}
+
+resource redisContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = {
+  name: redisContributorName
+}
+
 output redisHost string = redisCache.properties.hostName
 output redisPort int = redisCache.properties.sslPort
-output redisPassword string = listKeys(redisCache.id, '2021-06-01').primaryKey
+output redisPassword string = listKeys(redisCache.id, '2024-11-01').primaryKey

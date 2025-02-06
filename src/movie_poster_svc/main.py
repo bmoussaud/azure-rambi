@@ -4,6 +4,7 @@ import sys
 import logging
 import json
 import redis
+import base64
 import requests
 import io
 from collections import OrderedDict
@@ -26,9 +27,10 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from openai import AzureOpenAI
 
-from azure.identity import DefaultAzureCredential
-from azure.identity import ManagedIdentityCredential
+from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
+
 from azure.storage.blob import BlobServiceClient
+
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
@@ -56,6 +58,9 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 root.addHandler(handler)
 logger_uvicorn = logging.getLogger('uvicorn.error')
+
+
+logging.getLogger('azure.identity').setLevel(logging.DEBUG)
 
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     logger_uvicorn.info("configure_azure_monitor")
@@ -85,30 +90,66 @@ class GenAiMovieService:
             api_version=os.getenv("OPENAI_API_VERSION","2024-08-01-preview"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
+
         self._use_cache = os.getenv("USE_CACHE", None) is not None
         if self._use_cache:
             logger.info("Initializing Redis client")
-            self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True )
+            #use managed identity to connect to redis (azure-rambi-storage-contributor)
+            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
+            logger.info("managedIdCredential: %s", managed_id_credential)
+            redis_scope = "https://redis.azure.com/.default"
+            logger.info("Redis Scope: %s", redis_scope)
+            token = managed_id_credential.get_token(redis_scope)
+            logger.info("Token: %s", token)
+            if token is None:
+                logger.error("Redis client using password")
+                self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"),ssl=True )
+            else:
+                logger.info("Redis Client using token")
+                user_name = self.extract_username_from_token(token.token)
+                logger.info("User name: %s", user_name)
+                self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), username=user_name, password=token.token,ssl=True,decode_responses=True)
             logger.info("Redis ping: %s", self.redis_client.ping())
 
         sa_url = os.getenv("STORAGE_ACCOUNT_URL")
         logger.info("Initializing Azure Blob Storage client with account_url: %s", sa_url)
-        credential = DefaultAzureCredential()
-        logger.info("Credential: %s", credential)
-        self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=credential)
+        #use managed identity to connect to redis (azure-rambi-storage-contributor)
+        managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
+        logger.info("Credential: %s", managed_id_credential)
+        self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=managed_id_credential)
         logger.info("Blob Service Client: %s", self.blob_service_client)
         self.container_client = self.blob_service_client.get_container_client("movieposters")
+
+    def extract_username_from_token(self,token):
+        """Extract the username from the token"""
+        parts = token.split('.')
+        base64_str = parts[1]
+
+        if len(base64_str) % 4 == 2:
+            base64_str += "=="
+        elif len(base64_str) % 4 == 3:
+            base64_str += "="
+
+        json_bytes = base64.b64decode(base64_str)
+        json_str = json_bytes.decode('utf-8')
+        jwt = json.loads(json_str)
+        logger.info("extract_username_from_token: %s", jwt)
+        logger.info("extract_username_from_token oid: %s", jwt['oid'])
+        return jwt['oid']
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
         logger.info("describe_poster called with %s", poster_url)
+        cache_key = f"poster_description:{movie_title}:{poster_url}"
         if self._use_cache:
-            cache_key = f"poster_description:{movie_title}:{poster_url}"
-            logger.info("cache key %s", cache_key) 
+            logger.info("cache key %s", cache_key)
             cached_description = self.redis_client.get(cache_key)
-            if cached_description: 
+            if cached_description:
                 logger.info("Cache hit for %s", cache_key)
-                return cached_description.decode("utf-8")
+                if isinstance(cached_description, str):
+                    return cached_description
+                else:
+                    return cached_description.decode("utf-8")
         try:
             logger.info("ask gpt4o")
             response = self.client.chat.completions.create(
@@ -189,7 +230,6 @@ class GenAiMovieService:
             raise
 
 
-    
 def custom_openapi():
     """Customize the OpenAPI schema."""
     if app.openapi_schema:

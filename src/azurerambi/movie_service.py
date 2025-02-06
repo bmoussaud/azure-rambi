@@ -29,7 +29,7 @@ class TMDBService:
         self._end_point = end_point
 
 
-    def get_movie_by_id(self, id) -> Movie:
+    def get_movie_by_id(self, id:str) -> Movie:
         """ Get movie info from TMDB API """
         try:
             logger.info("Fetching movie with id: %s", id)
@@ -43,7 +43,7 @@ class TMDBService:
             if response.status_code == 200:
                 data = response.json()
                 return Movie(
-                    id=data["id"],
+                    id=str(data["id"]),
                     title=data["title"],
                     plot=data["overview"],
                     poster_url=f"https://image.tmdb.org/t/p/original/{data['poster_path']}"
@@ -71,7 +71,7 @@ class TMDBService:
                 if data["results"]:
                     movie = data["results"][0]
                     return Movie(
-                        id=movie["id"],
+                        id=str(movie["id"]),
                         title=movie["title"],
                         plot=movie["overview"],
                         poster_url=f"https://image.tmdb.org/t/p/original/{movie['poster_path']}"

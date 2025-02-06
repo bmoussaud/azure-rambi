@@ -64,7 +64,7 @@ class MoviePosterClient:
             logger.error("Failed to retrieve data: %s %s", response.status_code, response.text)
             raise Exception(f"Failed to retrieve the poster: {response.status_code} {response.text}")
         
-    def redirect_poster_url(self, movie_id: int) -> str:
+    def redirect_poster_url(self, movie_id: str) -> str:
         """redirect to the image"""
         endpoint = f"{self._endpoint}/poster/{movie_id}.png"
         logger.info("redirect_poster_url to endpoint %s", endpoint)

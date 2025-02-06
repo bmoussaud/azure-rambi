@@ -67,7 +67,7 @@ templates = Jinja2Templates(directory="templates")
 
 class Movie(BaseModel):
     """ Data class for Movie """
-    id: int
+    id: str
     title: str
     plot: str
     poster_url: str

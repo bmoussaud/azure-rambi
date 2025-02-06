@@ -68,7 +68,7 @@ templates = Jinja2Templates(directory="templates")
 
 class MoviePoster(BaseModel):
     """ Class to manage the movie poster """
-    id: int | None = None
+    id: str | None = None
     title: str
     description: str 
     url: str | None = None
@@ -142,10 +142,10 @@ class GenAiMovieService:
             description = f"Unable to describe the movie poster for {movie_title}: {e}"
         return description
 
-    def store_poster(self, movie_id: int,  url: str) -> str:
+    def store_poster(self, movie_id: str,  url: str) -> str:
         """ Store the generated poster in Azure Blob Storage and return a sas url"""
         # Upload the generated poster to Azure Blob Storage
-        logger.info("store_poster %d %s", movie_id, url)
+        logger.info("store_poster %s %s", movie_id, url)
         blob_name = f"{movie_id}.png"
         logger.info("Blob name: %s", blob_name)
         blob_client = self.container_client.get_blob_client(blob_name)
@@ -154,7 +154,7 @@ class GenAiMovieService:
         logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
         return f"/poster/{movie_id}.png"
 
-    def generate_poster(self, movie_id: int, poster_description: str) -> str:
+    def generate_poster(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
         try:
@@ -175,7 +175,7 @@ class GenAiMovieService:
             blob_url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
         return blob_url
     
-    def poster(self, movie_id: int) -> bytes:
+    def poster(self, movie_id: str) -> bytes:
         """Retrieve the movie poster from Azure Blob Storage"""
         logger.info("poster called with %s", movie_id)
         blob_name = f"{movie_id}.png"
@@ -270,6 +270,7 @@ def get_image(request: Request, movie_id: str):
         im.save(buf, format='PNG')
         im_bytes = buf.getvalue()
     headers = {'Content-Disposition': 'inline; filename=f"{movie_id}.png"'}
+    logger.info("get_image: %s", headers)
     # media_type here sets the media type of the actual response sent to the client.
     return Response(im_bytes, headers=headers, media_type='image/png')
 

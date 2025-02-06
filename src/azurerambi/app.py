@@ -135,7 +135,7 @@ def poster_generate():
     return render_template('poster.html', url=generated_poster)
 
 @app.route('/poster/<movie_id>.png', methods=['GET'])
-def poster(movie_id):
+def poster(movie_id:str):
     """Function to show the movie poster."""
     logger.info("poster %s", movie_id)
     url = movie_poster_client.redirect_poster_url(movie_id)
@@ -190,7 +190,8 @@ def movie_generate():
             response.raise_for_status()
             generated_movie = response.json()
             genre_index = genre_list.index(genre) if genre in genre_list else -1
-            generated_movie['id'] = f"{genre_index}{movie1_id}{movie2_id}{random.randint(10000, 99999)}"
+            #generate the generated movie id
+            generated_movie['id'] = f"{genre_index}_{movie1_id}_{movie2_id}_{random.randint(10000, 99999)}"
             logger.info("Generated movie: %s", json.dumps(generated_movie, indent=2))
         except requests.RequestException as e:
             logger.error("Error in calling movie_generate service: %s", e)

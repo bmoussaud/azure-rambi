@@ -12,8 +12,8 @@ param publisherEmail string
 
 param aiName string
 
-param eventHubNamespaceName string
-param eventHubName string
+//param eventHubNamespaceName string
+//param eventHubName string
 
 @description('The name of the SKU to use when creating the API Management service instance. This must be a SKU that supports virtual network integration.')
 param skuName string

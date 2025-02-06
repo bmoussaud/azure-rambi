@@ -179,8 +179,8 @@ module apiManagement 'modules/api-management.bicep' = {
     skuName: apimSku
     skuCount: apimSkuCount
     aiName: 'azure-rambi-appIn-${uniqueString(resourceGroup().id)}'
-    eventHubNamespaceName: 'azure-rambi-ehn-${uniqueString(resourceGroup().id)}'
-    eventHubName: 'azure-rambi-eh-${uniqueString(resourceGroup().id)}'
+    //eventHubNamespaceName: 'azure-rambi-ehn-${uniqueString(resourceGroup().id)}'
+    //eventHubName: 'azure-rambi-eh-${uniqueString(resourceGroup().id)}'
   }
   dependsOn: [
     logAnalyticsWorkspace

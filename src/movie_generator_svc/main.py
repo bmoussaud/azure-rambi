@@ -84,8 +84,6 @@ class GenAIMovie(Movie):
     prompt: str = None
     payload: MoviePayload = None
 
-
-
 class GenAiMovieService:
     """ Class to manage the access to OpenAI API to generate a new movie """
 
@@ -222,6 +220,7 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
+service = GenAiMovieService()
 
 @app.get('/')
 @log_request
@@ -243,7 +242,7 @@ async def env(request: Request):
 async def movie_generate(request: Request,payload:MoviePayload) -> GenAIMovie:
     """Function to generate a new movie."""
     logger_uvicorn.info("movie_generate")
-    return GenAiMovieService().generate_movie(payload.movie1, payload.movie2, payload.genre)
+    return service.generate_movie(payload.movie1, payload.movie2, payload.genre)
 
 @app.get('/liveness')
 @log_request

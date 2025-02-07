@@ -146,7 +146,7 @@ def poster(movie_id:str):
     if response.status_code != 200:
         return f"Failed to retrieve the image. /poster/{movie_id}.png", response.status_code
     def generate():
-        for chunk in response.iter_content(chunk_size=4096):
+        for chunk in response.iter_content(chunk_size=8192):
             yield chunk
     return app.response_class(generate(), content_type=response.headers['Content-Type'])
 

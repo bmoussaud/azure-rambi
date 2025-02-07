@@ -229,7 +229,7 @@ class GenAiMovieService:
             response = self.client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "user", "content": f"generate an concise and understandable message about this error: {str(exception)}"}
+                    {"role": "user", "content": f"explain using one or two sentences this error : {str(exception)}"}
                 ],
                 max_tokens=500
             )

@@ -75,8 +75,9 @@ class MoviePoster(BaseModel):
     """ Class to manage the movie poster """
     id: str | None = None
     title: str
-    description: str 
+    description: str
     url: str | None = None
+    error: str | None = None
 
 class GenAiMovieService:
     """ Class to manage the access to OpenAI API to generate a new movie """
@@ -198,24 +199,48 @@ class GenAiMovieService:
     def generate_poster(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
-        try:
-            response = self.client.images.generate(
-                model="dall-e-3",
-                prompt="Generate a movie poster based on this description: "+poster_description,
-                n=1,
-                size='1024x1792'
-            )
-            json_response = json.loads(response.model_dump_json())
-            url = json_response["data"][0]["url"]
-            
-            blob_url = self.store_poster(movie_id, url)
-            logger.info("generate_poster: %s", blob_url)
-            return blob_url
-        except Exception as e:
-            logger.error("generate_poster: %s", e)
-            blob_url = "https://placehold.co/150x220/red/white?text=Image+Not+Available"
+        
+        response = self.client.images.generate(
+            model="dall-e-3",
+            prompt="Generate a movie poster based on this description: "+poster_description,
+            n=1,
+            size='1024x1792'
+        )
+        json_response = json.loads(response.model_dump_json())
+        url = json_response["data"][0]["url"]
+        
+        blob_url = self.store_poster(movie_id, url)
+        logger.info("generate_poster: %s", blob_url)
         return blob_url
     
+    def extract_error_message(self, e: Exception) -> str:
+        """Extract the error message from the exception"""
+        error_message = None
+        try:
+            error_message = e.response.json().get('error', {}).get('message', str(e))
+        except AttributeError:
+            error_message = str(e)
+        return error_message
+    
+    def explain_exception(self, exception: Exception) -> str:
+        """Explain the exception using the GPT-4o model"""
+        logger.info("explain_exception called with %s", exception)
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "user", "content": f"generate an concise and understandable message about this error: {str(exception)}"}
+                ],
+                max_tokens=500
+            )
+            explanation = response.choices[0].message.content
+            logger.info("explain_exception: %s", explanation)
+            return explanation
+        except Exception as e:
+            logger.error("explain_exception: %s", e)
+            return f"Unable to explain the exception: {e}"
+
+    # ...existing code...
     def poster(self, movie_id: str) -> bytes:
         """Retrieve the movie poster from Azure Blob Storage"""
         logger.info("poster called with %s", movie_id)
@@ -282,8 +307,16 @@ async def movie_poster_store(request: Request, movie_title: str, url: str):
 @log_request
 async def movie_poster_generate(request: Request, poster: MoviePoster) -> MoviePoster:
     """Function to show the movie poster description."""
-    logger.info("movie_poster_generate called with %s", poster)
-    poster.url = GenAiMovieService().generate_poster(poster.id, poster.description)
+    service = GenAiMovieService()
+    try:
+        logger.info("movie_poster_generate called with %s", poster)
+        poster.url = service.generate_poster(poster.id, poster.description)
+    except Exception as e:  
+        logger.error("movie_poster_generate error: %s", e)
+        error_message = service.extract_error_message(e)
+        logger.error("generate_poster error_message: %s", error_message)
+        poster.error = service.explain_exception(e)
+        poster.url = f"https://placehold.co/1024x1792/red/white?text={error_message}"
     return poster
 
 @app.get(

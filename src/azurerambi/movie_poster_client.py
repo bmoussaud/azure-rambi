@@ -59,7 +59,7 @@ class MoviePosterClient:
         if response.status_code == 200:
             json_response  = response.json()
             logger.info(json.dumps(json_response))
-            return json_response['url']
+            return json_response
         else:
             logger.error("Failed to retrieve data: %s %s", response.status_code, response.text)
             raise Exception(f"Failed to retrieve the poster: {response.status_code} {response.text}")

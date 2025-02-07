@@ -1,1 +1,7 @@
-<img class="card-img-top" alt="movie_poster_url" src="{{url}}" />
+{% if error %}
+<div class="alert alert-danger" role="alert">
+    {{ error }}
+</div>
+{% else %}
+<img class="card-img-top" alt="movie_poster_url" src="{{ url }}" />
+{% endif %}

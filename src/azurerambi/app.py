@@ -132,7 +132,7 @@ def poster_generate():
     logger.info("* desc: %s", desc)
     
     generated_poster = movie_poster_client.generate_poster(movie_id, desc)
-    return render_template('poster.html', url=generated_poster)
+    return render_template('poster.html', url=generated_poster['url'], error=generated_poster['error'])
 
 @app.route('/poster/<movie_id>.png', methods=['GET'])
 def poster(movie_id:str):

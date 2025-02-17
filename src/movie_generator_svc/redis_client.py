@@ -28,6 +28,8 @@ class RedisClient:
             logger.info("User name: %s", user_name)
             self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), username=user_name, password=token.token,ssl=True,decode_responses=True)
         logger.info("Redis ping: %s", self.redis_client.ping())
+        self._timeout = os.getenv("REDIS_KEY_TIMEOUT", 600)  # Default timeout is 600 seconds (10 mn)
+        logger.info("Setting key timeout: %s seconds", self._timeout)
 
     def extract_username_from_token(self,token):
         """Extract the username from the token"""
@@ -53,6 +55,7 @@ class RedisClient:
 
     def set(self, key, value):
         """Set the value of a key."""
-        logger.info("Setting key: %s", key)     
-        self.redis_client.set(key, value)
+        logger.info("Setting key: %s", key)
+        # Set a timeout for the key
+        self.redis_client.setex(key, self._timeout, value)
         return value

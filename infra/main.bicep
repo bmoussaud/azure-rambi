@@ -723,6 +723,11 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
               name: 'OTEL_RESOURCE_ATTRIBUTES'
               value: 'service.namespace=azure-rambi,service.instance.id=movie-generator-svc'
             }
+            {
+              // Required for managed identity to access the storage account
+              name: 'AZURE_CLIENT_ID'
+              value: azrStorageContributor.properties.clientId
+            }
           ]
           probes: [
             {

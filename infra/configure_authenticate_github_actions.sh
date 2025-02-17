@@ -20,6 +20,7 @@ echo "${json_content}"
 service_princial=$(echo "${json_content}" | jq -r '.clientId')
 service_principal_password=$(echo "${json_content}" | jq -r '.clientSecret')
 tenant=$(echo "${json_content}" | jq -r '.tenantId')
+clientId=$(echo "${json_content}" | jq -r '.clientId')
 
 echo "------"
 echo "${service_princial}/${service_principal_password}/${tenant}"
@@ -46,6 +47,7 @@ gh variable set AZURE_ENV_NAME -b"${AZURE_ENV_NAME}"
 gh variable set AZURE_SUBSCRIPTION_ID -b"${subscriptionId}"
 gh variable set AZURE_LOCATION -b"${AZURE_LOCATION}"
 gh variable set AZURE_TENANT_ID -b"${tenant}"
+gh variable set AZURE_CLIENT_ID -b"${clientId}"
 
 rm ${myApp}.json
 rm .env

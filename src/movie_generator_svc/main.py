@@ -8,6 +8,7 @@ from collections import OrderedDict
 
 import openai
 import uvicorn
+import random
 from typing import Optional
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
@@ -199,6 +200,7 @@ class GenAiMovieService:
         generated_movie.prompt= prompt
         generated_movie.poster_url = None
         generated_movie.payload = MoviePayload(movie1=movie1, movie2=movie2, genre=genre)
+        generated_movie.id = f"{movie1.id}_{movie2.id}_{genre}_{random.randint(10000, 99999)}"
         logger.info("Generated movie: %s", generated_movie)
         return generated_movie
 

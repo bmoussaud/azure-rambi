@@ -398,10 +398,6 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           name: 'apim-subscription-key'
           value: apiManagement.outputs.apiAdminSubscriptionKey
         }
-        {
-          name: 'redis-password'
-          value: redis.outputs.redisPassword
-        }
       ]
       registries: [
         {

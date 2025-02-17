@@ -43,7 +43,7 @@ resource redisCache 'Microsoft.Cache/Redis@2024-11-01' = {
   location: location
 
   properties: {
-    disableAccessKeyAuthentication: false
+    disableAccessKeyAuthentication: true
     enableNonSslPort: false
     minimumTlsVersion: '1.2'
     redisConfiguration: {
@@ -73,4 +73,3 @@ resource redisContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018
 
 output redisHost string = redisCache.properties.hostName
 output redisPort int = redisCache.properties.sslPort
-output redisPassword string = listKeys(redisCache.id, '2024-11-01').primaryKey

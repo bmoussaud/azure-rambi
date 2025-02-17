@@ -4,22 +4,24 @@ import dataclasses
 from typing import List
 import logging
 import os
-from collections import OrderedDict
 import requests
 import json
-
-from flask import Flask, render_template, request, redirect
-from flask_wtf import FlaskForm
+import random
 import uvicorn
+import base64
+
+from collections import OrderedDict
+from flask import Flask, render_template, request
+from flask_wtf import FlaskForm
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+
 from wtforms.validators import DataRequired
 from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
 from movie_service import TMDBService, Movie
 from movie_poster_client import MoviePosterClient
-from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-import random
-
+from redis_client import RedisClient
 
 
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +55,7 @@ genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
               "TV Movie", "Thriller", "War", "Western"]
 
 movie_poster_client = MoviePosterClient()
+redis_client = RedisClient()
 
 @dataclass
 class GitHubContext:
@@ -191,7 +194,10 @@ def movie_generate():
             generated_movie = response.json()
             genre_index = genre_list.index(genre) if genre in genre_list else -1
             #generate the generated movie id
-            generated_movie['id'] = f"{genre_index}_{movie1_id}_{movie2_id}_{random.randint(10000, 99999)}"
+            if 'id' not in generated_movie:
+                logger.error("!!!! No id in generated movie, generating one")
+                generated_movie['id'] = f"{genre_index}_{movie1_id}_{movie2_id}_{random.randint(10000, 99999)}"
+
             logger.info("Generated movie: %s", json.dumps(generated_movie, indent=2))
         except requests.RequestException as e:
             logger.error("Error in calling movie_generate service: %s", e)

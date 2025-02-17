@@ -805,4 +805,3 @@ output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
 output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
 output APIM_SERVICE_NAME string = apiManagementServiceName
-output STORAGE_ACCOUNT_URL string = 'https://${storageAccount.name}.blob.core.windows.net/'

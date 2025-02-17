@@ -1,29 +1,21 @@
 #!/bin/bash
 # Variables
-resourceGroup="azrambi"
-appName="azrambi-b76s6utvi44xo"
-apimName="azure-rambi-apim-b76s6utvi44xo"
-subscriptionId="9479b396-5d3e-467a-b89f-ba8400aeb7dd"
-myApp="azure-rambi"
+source $1
+resourceGroup=${AZURE_RESOURCE_GROUP}
+subscriptionId=${AZURE_SUBSCRIPTION_ID}
+
+myApp="azure-rambi-${AZURE_ENV_NAME}"
+echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   "
 
 # Login to Azure
 az login 
 az ad app create --display-name $myApp
-echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   ${appName}"
 
-#az ad sp create-for-rbac --name $myApp --role contributor --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${appName}" --json-auth > ${myApp}.json
-#json_content=$(cat ${myApp}.json)
-#echo "${json_content}"
-#echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   ${apimName}"
-#az ad sp create-for-rbac --name $myApp --role contributor --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.ApiManagement/service/${apimName}" --json-auth > ${myApp}.json
-#json_content=$(cat ${myApp}.json)
-#echo "${json_content}"
 
 echo "create-for-rbac   ${myApp}   scope:${subscriptionId}/${resourceGroup}"
 az ad sp create-for-rbac --name $myApp --role Owner --scopes "/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}" --json-auth > ${myApp}.json
 json_content=$(cat ${myApp}.json)
 echo "${json_content}"
-
 
 service_princial=$(echo "${json_content}" | jq -r '.clientId')
 service_principal_password=$(echo "${json_content}" | jq -r '.clientSecret')

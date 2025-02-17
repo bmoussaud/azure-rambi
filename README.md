@@ -4,6 +4,8 @@
 
 Welcome to the Azure Rambi project! This repository contains code and resources for managing and deploying the Rambi Application using Azure services.
 
+![alt text](rambi.png)
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -30,41 +32,73 @@ To get started with Azure Rambi, follow these steps:
     cd azure-rambi
     ```
 
-## Installation
+## Deployment
 
 Install the required dependencies by running:
 ```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-To use Azure Rambi, execute the following command:
-```bash
-python src/azurerambi/app.py
-```
-
-
-## Azure Resources
-
-### AZD
-
-```
+az login
 azd auth login
 azd up
-````
-Warning: the provision phases include an APIM and A Redis Cache that can take a veryyyyyyy loooooong time to become available. Patience !
+```
+
+Warning: the provision phases include an APIM and A Redis Cache that can take a veryyyyyyy loooooong time to become available. Patience ! if it fails run the `azd up` command again.
+
+```
+ (✓) Done: Key Vault: rambikveab45rexk4hhs (689ms)
+  (✓) Done: Azure OpenAI: azrambi-openai-eab45rexk4hhs (695ms)
+  (✓) Done: Container Registry: azurerambieab45rexk4hhs (719ms)
+  (✓) Done: Storage account: azrambieab45rexk4hhs (723ms)
+  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-eab45rexk4hhs/gpt-4o (570ms)
+  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-eab45rexk4hhs/o1-mini (584ms)
+  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-eab45rexk4hhs/dall-e-3 (991ms)
+  (✓) Done: Log Analytics workspace: azure-rambi-log-eab45rexk4hhs (580ms)
+  (✓) Done: Cache for Redis: azure-rambi-redis-eab45rexk4hhs (1.846s)
+  (✓) Done: Application Insights: azure-rambi-appIn-eab45rexk4hhs (1.4s)
+  (✓) Done: Container Apps Environment: azure-rambi (917ms)
+  (✓) Done: Azure API Management: azure-rambi-apim-eab45rexk4hhs (23.719s)
+  (✓) Done: Container App: movie-generator-svc (17.974s)
+  (✓) Done: Container App: gui-svc (18.365s)
+  (✓) Done: Container App: movie-poster-svc (18.47s)
+
+Deploying services (azd deploy)
+
+  (✓) Done: Deploying service gui
+  - Endpoint: https://gui-svc.happyfield-037b39a8.francecentral.azurecontainerapps.io/
+
+  (✓) Done: Deploying service movie_generator_svc
+  - Endpoint: https://movie-generator-svc.happyfield-037b39a8.francecentral.azurecontainerapps.io/
+
+  (✓) Done: Deploying service movie_poster_svc
+  - Endpoint: https://movie-poster-svc.happyfield-037b39a8.francecentral.azurecontainerapps.io/
+```
+
+To open the application, click on the link below the `Done: Deploying service gui` 
+
+### Configure Github actions
+
+1. Edit [.github/workflows/deploy_azure_resources.yml](.github/workflows/deploy_azure_resources.yml) set the `ACR_NAME: xxxxxxx` 
+3. Execute `infra/authenticate_github_actions.sh .azure/dev/.env`
+
 
 ### Azure Infrastructue
 
 The [infra/main.bicep](infra/main.bicep)
 * CognitiveServices 
-    *  Open AI gpt-4
+    * Open AI gpt-4
+    * Open AI o1-mini
     * Open AI dall-e-3
-* Application Service Plan
-* Web-App
+* Container Registry
+* Azure Container Apps Environment
+* Container Apps
+    * gui: the frontend
+    * movie_poster_svc : service managing the poster description and the poster generation
+    * movie_generator_svc: service managing the movie generation.
 * API Management
+* Application Insight
+* Key Vault
+* Storag Account (Blob Storage)
 
+The [infra/user_portal_role.bicep](infra/user_portal_role.bicep) grants to the current authenticated user the right to browse the content of the `keyvault` and the `blob storage` using the Azure portal.
 
 ### GitHub Credentials
 
@@ -76,8 +110,6 @@ edit the file [infra/authenticate_with_Azure_App_Service_for_GitHub.sh](infra/au
 
 * Service: Azure Application Service using the python runtime on linux
 * CI/CD Pipeline: [.github/workflows/main_azure-rambi.yml](.github/workflows/main_azure-rambi.yml)
-
-
 
 ### API Management
 

@@ -69,8 +69,8 @@ jobs:
         uses: azure/container-apps-deploy-action@v1
         with:
           appSourcePath: ${{ github.workspace }}/src/movie_poster_svc
-          acrName: ${{ env.ACR_NAME }}
-          imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
+          acrName: ${{ vars.ACR_NAME }}
+          imageToBuild: ${{ vars.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_poster_svc:${{ github.sha }}
           containerAppEnvironment: azure-rambi
           containerAppName: movie-poster-svc
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
@@ -95,8 +95,8 @@ jobs:
         uses: azure/container-apps-deploy-action@v1
         with:
           appSourcePath: ${{ github.workspace }}/src/movie_generator_svc
-          acrName: ${{ env.ACR_NAME }}
-          imageToBuild: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_generator_svc:${{ github.sha }}
+          acrName: ${{ vars.ACR_NAME }}
+          imageToBuild: ${{ vars.ACR_NAME }}.azurecr.io/azure-rambi-ci/movie_generator_svc:${{ github.sha }}
           containerAppEnvironment: azure-rambi
           containerAppName: movie-generator-svc
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
@@ -119,7 +119,7 @@ jobs:
       
       - name: Login to Azure Container Registry
         run: |
-            az acr login --name ${{ env.ACR_NAME }}  
+            az acr login --name ${{ vars.ACR_NAME }}  
       # **Build and Deploy GUI**
       - name: Build and push Docker image
         run: |
@@ -127,12 +127,12 @@ jobs:
                        --build-arg GITHUB_JOB=${{ github.job }} \
                        --build-arg GITHUB_ACTOR=${{ github.actor }} \
                        --build-arg GITHUB_RUN_NUMBER=${{ github.run_number }} \
-                       -t ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }} ${{ github.workspace }}/src/azurerambi
-          docker push ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
+                       -t ${{ vars.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }} ${{ github.workspace }}/src/azurerambi
+          docker push ${{ vars.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
       - name: Build and Deploy GUI
         uses: azure/container-apps-deploy-action@v1
         with:
-          imageToDeploy: ${{ env.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
+          imageToDeploy: ${{ vars.ACR_NAME }}.azurecr.io/azure-rambi-ci/gui:${{ github.sha }}
           containerAppEnvironment: azure-rambi
           containerAppName: gui-svc
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}

@@ -461,10 +461,6 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
               value: '${int('${redis.outputs.redisPort}')}'
             }
             {
-              name: 'REDIS_PASSWORD'
-              secretRef: 'redis-password'
-            }
-            {
               name: 'USE_CACHE'
               value: 'oui'
             }

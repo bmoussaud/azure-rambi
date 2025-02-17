@@ -509,7 +509,6 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
     type: 'UserAssigned'
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
-      '${azrStorageContributor.id}': {}
     }
   }
   tags: { 'azd-service-name': 'gui' }
@@ -630,6 +629,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
     type: 'UserAssigned'
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
+      '${azrStorageContributor.id}': {}
     }
   }
   tags: { 'azd-service-name': 'movie_generator_svc' }

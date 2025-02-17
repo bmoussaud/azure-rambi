@@ -8,7 +8,7 @@ myApp="azure-rambi-${AZURE_ENV_NAME}"
 echo "create-for-rbac   ${myApp}   ${subscriptionId}   ${resourceGroup}   "
 
 # Login to Azure
-    az login 
+#az login 
 az ad app create --display-name $myApp
 
 
@@ -45,6 +45,7 @@ gh variable set AZURE_RESOURCE_GROUP -b"${resourceGroup}"
 gh variable set AZURE_ENV_NAME -b"${AZURE_ENV_NAME}"
 gh variable set AZURE_SUBSCRIPTION_ID -b"${subscriptionId}"
 gh variable set AZURE_LOCATION -b"${AZURE_LOCATION}"
+gh variable set AZURE_TENANT_ID -b"${tenant}"
 
 rm ${myApp}.json
 rm .env

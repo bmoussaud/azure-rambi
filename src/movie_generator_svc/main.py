@@ -4,7 +4,6 @@ import sys
 import logging
 import json
 import requests
-from collections import OrderedDict
 
 import openai
 import uvicorn
@@ -25,12 +24,16 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from openai import AzureOpenAI
+from collections import OrderedDict
+
+from redis_client import RedisClient
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
-AIInferenceInstrumentor().instrument() 
+AIInferenceInstrumentor().instrument()
 
 load_dotenv()
+
 
 root = logging.getLogger()
 root.setLevel(logging.INFO)
@@ -65,6 +68,7 @@ app = FastAPI()
 FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 templates = Jinja2Templates(directory="templates")
 
+redis_client = RedisClient()
 
 class Movie(BaseModel):
     """ Data class for Movie """
@@ -244,7 +248,8 @@ async def env(request: Request):
 async def movie_generate(request: Request,payload:MoviePayload) -> GenAIMovie:
     """Function to generate a new movie."""
     logger_uvicorn.info("movie_generate")
-    return service.generate_movie(payload.movie1, payload.movie2, payload.genre)
+    movie =  service.generate_movie(payload.movie1, payload.movie2, payload.genre)
+    return redis_client.set(movie.id, movie)
 
 @app.get('/liveness')
 @log_request

@@ -21,7 +21,6 @@ from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
 from movie_service import TMDBService, Movie
 from movie_poster_client import MoviePosterClient
-from redis_client import RedisClient
 
 
 logging.basicConfig(level=logging.INFO)
@@ -55,7 +54,7 @@ genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
               "TV Movie", "Thriller", "War", "Western"]
 
 movie_poster_client = MoviePosterClient()
-redis_client = RedisClient()
+
 
 @dataclass
 class GitHubContext:

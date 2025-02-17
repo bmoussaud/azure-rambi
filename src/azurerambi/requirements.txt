@@ -12,7 +12,6 @@ opentelemetry-instrumentation-flask
 opentelemetry-instrumentation-requests
 python-dotenv  
 pyyaml  
-redis
 requests
 uvicorn  
 uvloop>=0.16

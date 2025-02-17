@@ -48,8 +48,11 @@ class RedisClient:
 
     def get(self, key):
         """Get the value of a key."""
-        return f"Getting key {key} from Redis "
+        logger.info("Getting key: %s", key)
+        return self.redis_client.get(key)
 
     def set(self, key, value):
         """Set the value of a key."""
-        return f"Setting key {key} in Redis with value {value}"
+        logger.info("Setting key: %s", key)     
+        self.redis_client.set(key, value)
+        return value

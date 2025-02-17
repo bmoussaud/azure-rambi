@@ -76,10 +76,8 @@ To open the application, click on the link below the `Done: Deploying service gu
 
 ### Configure Github actions
 
-1. Edit [.github/workflows/deploy_azure_resources.yml](.github/workflows/deploy_azure_resources.yml) set the `ACR_NAME: xxxxxxx` 
 2. `gh auth login`
 3. Execute `infra/configure_authenticate_github_actions.sh .azure/dev/.env`
-
 
 ### Azure Infrastructue
 

@@ -48,6 +48,7 @@ gh variable set AZURE_SUBSCRIPTION_ID -b"${subscriptionId}"
 gh variable set AZURE_LOCATION -b"${AZURE_LOCATION}"
 gh variable set AZURE_TENANT_ID -b"${tenant}"
 gh variable set AZURE_CLIENT_ID -b"${clientId}"
+gh variable set ACR_NAME -b"${AZURE_CONTAINER_REGISTRY_NAME}"
 
 rm ${myApp}.json
 rm .env

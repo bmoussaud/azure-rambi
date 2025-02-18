@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Movie Generator",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/movie_generator_svc",
+            "module": "uvicorn",
+            "args": [
+                "main:app",
+                "--reload"
+            ],
+            "jinja": true
+        },
+        {
+            "name": "Python Debugger: Movie Poster",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/movie_poster_svc",
+            "module": "uvicorn",
+            "args": [
+                "main:app",
+                "--reload"
+            ],
+            "jinja": true
+        },
+        {
+            "name": "Python: Fronted",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/azurerambi",
+            "args": [
+                "app:app"
+            ],
+            "jinja": true,
+        }
+    ]
+}

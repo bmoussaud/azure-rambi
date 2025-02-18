@@ -27,7 +27,7 @@ from openai import AzureOpenAI
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
-AIInferenceInstrumentor().instrument() 
+AIInferenceInstrumentor().instrument()
 
 load_dotenv()
 
@@ -100,8 +100,7 @@ class GenAiMovieService:
 
     def describe_poster(self, name: str, poster_url: str) -> str:
         """ Describe the poster based on the URL """
-        # Call the movie-poster-svc describe poster service
-      
+        # Call the movie-poster-svc describe poster service     
         logger.info("%s Description of image at %s", name, poster_url)
         endpoint = f"{self._endpoint}/describe/{name}?url={poster_url}"
 

@@ -38,6 +38,7 @@ Install the required dependencies by running:
 ```bash
 az login
 azd auth login
+az group create -l francecentral -n rambi-dev
 azd up
 ```
 

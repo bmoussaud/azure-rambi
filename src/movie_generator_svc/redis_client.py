@@ -26,6 +26,8 @@ class RedisClient:
             logger.info("Redis Client using token")
             user_name = self.extract_username_from_token(token.token)
             logger.info("User name: %s", user_name)
+            logger.info("Redis host: %s", os.getenv("REDIS_HOST"))
+            logger.info("Redis port: %s", os.getenv("REDIS_PORT"))
             self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), username=user_name, password=token.token,ssl=True,decode_responses=True)
         logger.info("Redis ping: %s", self.redis_client.ping())
         self._timeout = os.getenv("REDIS_KEY_TIMEOUT", 600)  # Default timeout is 600 seconds (10 mn)

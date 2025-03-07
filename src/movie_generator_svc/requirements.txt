@@ -16,3 +16,4 @@ azure-monitor-opentelemetry
 azure-ai-inference
 azure-identity
 redis
+azure-storage-queue 

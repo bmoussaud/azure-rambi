@@ -75,6 +75,12 @@ Deploying services (azd deploy)
 
 To open the application, click on the link below the `Done: Deploying service gui` 
 
+### Troobleshooting configuration
+
+```
+az deployment group create --resource-group rambi-dev --template-file infra/user_portal_role.bicep
+```
+
 ### Configure Github actions
 
 2. `gh auth login`

@@ -32,3 +32,10 @@ services:
     host: containerapp
     docker:
       remoteBuild: true
+
+  rambi-events-handler:
+    language: python
+    project: src/rambi_event_handler
+    host: containerapp
+    #docker:
+    #  remoteBuild: true

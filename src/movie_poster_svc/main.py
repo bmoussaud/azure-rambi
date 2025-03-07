@@ -27,11 +27,13 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from openai import AzureOpenAI
 
-from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
+from azure.identity import DefaultAzureCredential, ManagedIdentityCredential, AzureCliCredential
 
 
 
 from azure.storage.blob import BlobServiceClient
+from azure.storage.queue import QueueClient
+from azure.storage.queue import QueueServiceClient
 
 
 openai.log = "debug"
@@ -114,7 +116,7 @@ class GenAiMovieService:
                 self.redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), username=user_name, password=token.token,ssl=True,decode_responses=True)
             logger.info("Redis ping: %s", self.redis_client.ping())
 
-        sa_url = os.getenv("STORAGE_ACCOUNT_URL")
+        sa_url = os.getenv("STORAGE_ACCOUNT_BLOB_URL")
         logger.info("Initializing Azure Blob Storage client with account_url: %s", sa_url)
         #use managed identity to connect to redis (azure-rambi-storage-contributor)
         managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
@@ -122,6 +124,8 @@ class GenAiMovieService:
         self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=managed_id_credential)
         logger.info("Blob Service Client: %s", self.blob_service_client)
         self.container_client = self.blob_service_client.get_container_client("movieposters")
+        
+        logger.info("GenAiMovieService initialized")
 
     def extract_username_from_token(self,token):
         """Extract the username from the token"""
@@ -198,11 +202,35 @@ class GenAiMovieService:
         logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
         return f"/poster/{movie_id}.png"
 
+    def generate_new_message(self, name: str):
+        """ Generate a new message based on the"""
+        try:
+            
+            sa = os.getenv("STORAGE_ACCOUNT_QUEUE_URL")
+            logger.info("initialize queue client with %s", sa)
+            logger.info("initialize queue client with clientID %s", os.getenv("AZURE_CLIENT_ID"))
+            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
+            queue_client_generated_movies = QueueClient.from_queue_url(f"{sa}generatedmovies", credential=managed_id_credential)
+            logger.info("generate_new_message called with %s", name)
+            logger.info("Adding messages to the queue...")
+
+            # Send several messages to the queue
+            queue_client_generated_movies.send_message(u"First message"+name)
+            queue_client_generated_movies.send_message(u"Second message"+name)
+            queue_client_generated_movies.send_message(u"Third message"+name)
+            properties = queue_client_generated_movies.get_queue_properties()
+            count = properties.approximate_message_count
+            logger.info("Message count: %d", count)
+            return f"Messages added to the queue {count}"
+        except Exception as e:
+            logger.error("MERROR generate_new_message: %s", e)
+            return f"Unable to generate new message: {e}"
+
     def generate_poster(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
         
-        response = self.client.images.generate(
+        response = self.client.images.generate( 
             model="dall-e-3",
             prompt="Generate a movie poster based on this description: "+poster_description,
             n=1,
@@ -357,6 +385,14 @@ async def liveness(request: Request):
 async def readiness(request: Request):
     """Function to check the readiness of the service."""
     return  "readiness"
+
+
+@app.get('/queue/{movie_title}')
+@log_request
+async def queue(request: Request, movie_title: str):
+    """Function to check the readiness of the service."""
+    logger.info("queue called with %s", movie_title)
+    return service.generate_new_message(movie_title)
 
 if __name__ == '__main__':
     uvicorn.run('main:app', host='0.0.0.0', port=8002)

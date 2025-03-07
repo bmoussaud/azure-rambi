@@ -16,5 +16,6 @@ azure-monitor-opentelemetry
 redis
 azure-ai-inference
 azure-storage-blob
+azure-storage-queue 
 azure-identity
 pillow

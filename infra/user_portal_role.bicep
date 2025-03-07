@@ -34,11 +34,41 @@ resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleD
   name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 }
 
+// Define the Storage Queue Data Contributor role
+resource storageQueueDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  name: '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
+}
+
+// Define the Storage Queue Data Message Sender role
+resource storageQueueDataMessageSenderDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  name: 'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a'
+}
+
 resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   scope: storageAccount
   name: guid(resourceGroup().id, 'Deployer', storageBlobDataContributorRoleDefinition.id)
   properties: {
     roleDefinitionId: storageBlobDataContributorRoleDefinition.id
+    principalId: az.deployer().objectId
+  }
+}
+
+resource assignroleAssignment2 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  scope: storageAccount
+  name: guid(resourceGroup().id, 'Deployer', storageQueueDataContributorRoleDefinition.id)
+  properties: {
+    roleDefinitionId: storageQueueDataContributorRoleDefinition.id
+    principalId: az.deployer().objectId
+  }
+}
+
+resource assignroleAssignment3 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  scope: storageAccount
+  name: guid(resourceGroup().id, 'Deployer', storageQueueDataMessageSenderDefinition.id)
+  properties: {
+    roleDefinitionId: storageQueueDataMessageSenderDefinition.id
     principalId: az.deployer().objectId
   }
 }

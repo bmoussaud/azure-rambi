@@ -15,5 +15,4 @@ opentelemetry-sdk >= 1.10.0
 azure-monitor-opentelemetry 
 azure-ai-inference
 azure-identity
-redis
 azure-storage-queue 

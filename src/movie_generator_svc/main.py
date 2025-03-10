@@ -3,12 +3,15 @@ import os
 import sys
 import logging
 import json
-import requests
 
+import random
+
+from typing import Optional
+from collections import OrderedDict
 import openai
 import uvicorn
-import random
-from typing import Optional
+import requests
+
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.templating import Jinja2Templates
@@ -18,15 +21,11 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 from azure.ai.inference.tracing import AIInferenceInstrumentor 
 from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry import trace
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from openai import AzureOpenAI
-from collections import OrderedDict
-
-from redis_client import RedisClient
 
 openai.log = "debug"
 OpenAIInstrumentor().instrument()
@@ -99,7 +98,7 @@ class GenAiMovieService:
 
         self._endpoint = os.getenv("MOVIE_POSTER_ENDPOINT")
         self._headers= {    }
-        self._language = "english" 
+        self._language = "english"
 
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
@@ -249,8 +248,7 @@ async def movie_generate(request: Request,payload:MoviePayload) -> GenAIMovie:
     """Function to generate a new movie."""
     logger_uvicorn.info("movie_generate")
     movie =  service.generate_movie(payload.movie1, payload.movie2, payload.genre)
-    redis_client = RedisClient()
-    return redis_client.set(movie.id, movie)
+    return movie
 
 @app.get('/generated_movie/{movie_id}')
 @log_request

@@ -239,19 +239,19 @@ module openaiApi 'modules/api.bicep' = {
   }
 }
 
-module moviePoster 'modules/api.bicep' = {
-  name: 'moviePoster'
-  params: {
-    apimName: apiManagementServiceName
-    apiName: 'moviePoster'
-    apiPath: '/movie_poster'
-    openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/movie_poster.json'
-    openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/movie_poster.xml'
-    serviceUrlPrimary: 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
-    apiSubscriptionName: 'azure-rambi-sub'
-    aiLoggerName: 'aiLogger'
-  }
-}
+// module moviePoster 'modules/api.bicep' = {
+//   name: 'moviePoster'
+//   params: {
+//     apimName: apiManagementServiceName
+//     apiName: 'moviePoster'
+//     apiPath: '/movie_poster'
+//     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/movie_poster.json'
+//     openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/movie_poster.xml'
+//     serviceUrlPrimary: 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
+//     apiSubscriptionName: 'azure-rambi-sub'
+//     aiLoggerName: 'aiLogger'
+//   }
+// }
 
 module logAnalyticsWorkspace 'modules/log-analytics-workspace.bicep' = {
   name: 'log-analytics-workspace'
@@ -680,7 +680,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
     template: {
       containers: [
         {
-          name: 'movie-poster-svc'
+          name: 'movie-generator-svc'
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
           env: [
             {
@@ -873,8 +873,8 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     managedEnvironmentId: containerAppsEnv.id
     siteConfig: {
-      //linuxFxVersion: 'DOCKER|mcr.microsoft.com/azure-functions/dotnet8-quickstart-demo:1.0'
-      linuxFxVersion: 'DOCKER|azurerambieab45rexk4hhs.azurecr.io/azure-rambi/rambi_event_handler_local:d5c64dac'
+      linuxFxVersion: 'DOCKER|mcr.microsoft.com/azure-functions/dotnet8-quickstart-demo:1.0'
+      //linuxFxVersion: 'DOCKER|azurerambieab45rexk4hhs.azurecr.io/azure-rambi/rambi_event_handler_local:f5cfc4d0'
       acrUseManagedIdentityCreds: true
       acrUserManagedIdentityID: uaiAzureRambiAcrPull.id
       // minimumElasticInstanceCount: 1
@@ -885,23 +885,33 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2022-09-01' = {
           value: containerRegistry.properties.loginServer
         }
         {
-          name: 'AzureWebJobsStorage__credential'
+          name: 'RambiQueueStorageConnection__credential'
           value: 'managedidentity'
+        }
+        {
+          name: 'RambiQueueStorageConnection__clientId'
+          value: azrStorageContributor.properties.clientId
         }
         {
           name: 'AzureWebJobsStorage'
           value: functionStorageAccount.properties.primaryEndpoints.queue
         }
-
         {
           name: 'AzureWebJobsStorage__accountName'
           value: functionStorageAccount.name
         }
-
-        // {
-        //   name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-        //   value: '@Microsoft.KeyVault(SecretUri=${kv.properties.vaultUri}secrets/APPINSIGHTS-INSTRUMENTATIONKEY)'
-        // }
+        {
+          name: 'AzureWebJobsStorage__accountKey'
+          value: functionStorageAccount.listKeys().keys[0].value
+        }
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsights.outputs.connectionString
+        }
+        {
+          name: 'PYTHON_ENABLE_WORKER_EXTENSIONS'
+          value: '1'
+        }
       ]
     }
   }

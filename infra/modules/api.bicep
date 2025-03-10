@@ -135,4 +135,4 @@ resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-
   }
 }
 
-output apiSubscription string = apiSubscription.listSecrets().primaryKey
+//output apiSubscription string = apiSubscription.listSecrets().primaryKey

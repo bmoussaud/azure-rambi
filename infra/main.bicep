@@ -178,7 +178,7 @@ module apiManagement 'modules/api-management.bicep' = {
     publisherEmail: apimPublisherEmail
     skuName: apimSku
     skuCount: apimSkuCount
-    aiName: 'azure-rambi-appIn-${uniqueString(resourceGroup().id)}'
+    aiName: 'azure-rambi-app-insights'
     //eventHubNamespaceName: 'azure-rambi-ehn-${uniqueString(resourceGroup().id)}'
     //eventHubName: 'azure-rambi-eh-${uniqueString(resourceGroup().id)}'
   }
@@ -192,7 +192,7 @@ module apiManagement 'modules/api-management.bicep' = {
 module tmdbApi 'modules/api.bicep' = {
   name: 'apiTMDB'
   params: {
-    apimName: apiManagementServiceName
+    apimName: apiManagement.outputs.name
     apiName: 'TMDB'
     apiPath: '/tmdb'
     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/tmdb_search_movie.json'
@@ -218,9 +218,9 @@ resource secretTMDBApiKey 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview'
 module tmdbApiKey 'modules/nvkv.bicep' = {
   name: 'tmdbApiKey'
   params: {
-    apimName: apiManagementServiceName
+    apimName: apiManagement.outputs.name
     keyName: 'tmdb-api-key'
-    keyVaultName: kvName
+    keyVaultName: kv.name
     secretName: secretTMDBApiKey.name
   }
 }
@@ -228,7 +228,7 @@ module tmdbApiKey 'modules/nvkv.bicep' = {
 module openaiApi 'modules/api.bicep' = {
   name: 'apiOpenAI'
   params: {
-    apimName: apiManagementServiceName
+    apimName: apiManagement.outputs.name
     apiName: 'OpenAI'
     apiPath: '/azure-openai/openai'
     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/azure_open_ai.json'
@@ -239,25 +239,11 @@ module openaiApi 'modules/api.bicep' = {
   }
 }
 
-// module moviePoster 'modules/api.bicep' = {
-//   name: 'moviePoster'
-//   params: {
-//     apimName: apiManagementServiceName
-//     apiName: 'moviePoster'
-//     apiPath: '/movie_poster'
-//     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/movie_poster.json'
-//     openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/movie_poster.xml'
-//     serviceUrlPrimary: 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
-//     apiSubscriptionName: 'azure-rambi-sub'
-//     aiLoggerName: 'aiLogger'
-//   }
-// }
-
 module logAnalyticsWorkspace 'modules/log-analytics-workspace.bicep' = {
   name: 'log-analytics-workspace'
   params: {
     location: location
-    logAnalyticsName: 'azure-rambi-log-${uniqueString(resourceGroup().id)}'
+    logAnalyticsName: 'azure-rambi-log-analytics'
   }
 }
 
@@ -274,12 +260,9 @@ module applicationInsights 'modules/app-insights.bicep' = {
   name: 'application-insights'
   params: {
     location: location
-    workspaceName: 'azure-rambi-log-${uniqueString(resourceGroup().id)}'
-    applicationInsightsName: 'azure-rambi-appIn-${uniqueString(resourceGroup().id)}'
+    workspaceName: logAnalyticsWorkspace.outputs.name
+    applicationInsightsName: 'azure-rambi-app-insights'
   }
-  dependsOn: [
-    logAnalyticsWorkspace
-  ]
 }
 
 module redis 'modules/redis.bicep' = {
@@ -346,17 +329,157 @@ resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@
   name: 'azure-rambi-acr-pull'
   location: location
 }
-var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 
 @description('This allows the managed identity of the container app to access the registry, note scope is applied to the wider ResourceGroup not the ACR')
 resource uaiRbacAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, uaiAzureRambiAcrPull.id, acrPullRole)
+  name: guid(resourceGroup().id, uaiAzureRambiAcrPull.id, 'ACR Pull Role RG')
+  scope: resourceGroup()
   properties: {
-    roleDefinitionId: acrPullRole
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
     principalId: uaiAzureRambiAcrPull.properties.principalId
     principalType: 'ServicePrincipal'
   }
 }
+
+//Shared secrets for the container apps
+var shared_secrets = [
+  {
+    name: 'appinsight-inst-key'
+    value: applicationInsights.outputs.instrumentationKey
+  }
+  {
+    name: 'applicationinsights-connection-string'
+    value: applicationInsights.outputs.connectionString
+  }
+  {
+    name: 'apim-subscription-key'
+    value: apiManagement.outputs.apiAdminSubscriptionKey
+  }
+]
+
+/* @description('Creates an Movie Poster SVC Azure Container App.')
+module containerMoviePosterSvcApp2 'br/public:avm/res/app/container-app:0.13.0' = {
+  name: 'movie-poster-svc'
+  params: {
+    name: 'movie-poster-svc'
+    location: location
+    tags: { 'azd-service-name': 'movie_poster_svc' }
+    managedIdentities: {
+      userAssignedResourceIds: [
+        uaiAzureRambiAcrPull.id
+        azrStorageContributor.id
+        azrQueueStorageProducer.id
+      ]
+    }
+    workloadProfileName: 'default'
+    containers: [
+      {
+        image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+        name: 'movie-poster-svc'
+        resources: {}
+        env: [
+          {
+            name: 'OPENAI_API_VERSION'
+            value: '2024-08-01-preview'
+          }
+          {
+            name: 'AZURE_OPENAI_API_KEY'
+            secretRef: 'apim-subscription-key'
+          }
+          {
+            name: 'AZURE_OPENAI_ENDPOINT'
+            value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+          }
+          {
+            name: 'APIM_SUBSCRIPTION_KEY'
+            secretRef: 'apim-subscription-key'
+          }
+          {
+            name: 'APIM_ENDPOINT'
+            value: apiManagement.outputs.apiManagementProxyHostName
+          }
+          {
+            name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+            secretRef: 'appinsight-inst-key'
+          }
+          {
+            name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+            secretRef: 'applicationinsights-connection-string'
+          }
+          {
+            name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+            value: '~3'
+          }
+          {
+            name: 'OTEL_SERVICE_NAME'
+            value: 'movie_poster_svc'
+          }
+          {
+            name: 'OTEL_RESOURCE_ATTRIBUTES'
+            value: 'service.namespace=azure-rambi,service.instance.id=movie-poster-svc'
+          }
+          {
+            name: 'REDIS_HOST'
+            value: redis.outputs.redisHost
+          }
+          {
+            name: 'REDIS_PORT'
+            value: '${int('${redis.outputs.redisPort}')}'
+          }
+          {
+            name: 'USE_CACHE'
+            value: 'oui'
+          }
+          {
+            name: 'STORAGE_ACCOUNT_BLOB_URL'
+            value: storageAccountAzureRambi.properties.primaryEndpoints.blob
+          }
+          {
+            name: 'STORAGE_ACCOUNT_QUEUE_URL'
+            value: storageAccountAzureRambi.properties.primaryEndpoints.queue
+          }
+          {
+            // Required for managed identity to access the storage account
+            name: 'AZURE_CLIENT_ID'
+            value: azrStorageContributor.properties.clientId
+          }
+        ]
+
+        probes: [
+          {
+            httpGet: {
+              path: '/liveness'
+              port: 8002
+            }
+            type: 'Liveness'
+          }
+          {
+            httpGet: {
+              path: '/readiness'
+              port: 8002
+            }
+            type: 'Readiness'
+          }
+        ]
+      }
+    ]
+    environmentResourceId: containerAppsEnv.id
+    additionalPortMappings: [
+      {
+        external: true
+        targetPort: 8002
+      }
+    ]
+    ingressAllowInsecure: false
+    secrets: shared_secrets
+    registries: [
+      {
+        identity: uaiAzureRambiAcrPull.id
+        server: containerRegistry.properties.loginServer
+      }
+    ]
+  }
+} */
 
 @description('Creates an Movie Poster SVC Azure Container App.')
 resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
@@ -367,6 +490,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
       '${azrStorageContributor.id}': {}
+      '${azrQueueStorageProducer.id}': {}
     }
   }
   tags: { 'azd-service-name': 'movie_poster_svc' }
@@ -385,20 +509,7 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
           }
         ]
       }
-      secrets: [
-        {
-          name: 'appinsight-inst-key'
-          value: applicationInsights.outputs.instrumentationKey
-        }
-        {
-          name: 'applicationinsights-connection-string'
-          value: applicationInsights.outputs.connectionString
-        }
-        {
-          name: 'apim-subscription-key'
-          value: apiManagement.outputs.apiAdminSubscriptionKey
-        }
-      ]
+      secrets: shared_secrets
       registries: [
         {
           identity: uaiAzureRambiAcrPull.id
@@ -531,20 +642,7 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
           }
         ]
       }
-      secrets: [
-        {
-          name: 'appinsight-inst-key'
-          value: applicationInsights.outputs.instrumentationKey
-        }
-        {
-          name: 'applicationinsights-connection-string'
-          value: applicationInsights.outputs.connectionString
-        }
-        {
-          name: 'apim-subscription-key'
-          value: apiManagement.outputs.apiAdminSubscriptionKey
-        }
-      ]
+      secrets: shared_secrets
       registries: [
         {
           identity: uaiAzureRambiAcrPull.id
@@ -652,24 +750,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
           }
         ]
       }
-      secrets: [
-        {
-          name: 'azure-openai-endpoint'
-          value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-        }
-        {
-          name: 'appinsight-inst-key'
-          value: applicationInsights.outputs.instrumentationKey
-        }
-        {
-          name: 'applicationinsights-connection-string'
-          value: applicationInsights.outputs.connectionString
-        }
-        {
-          name: 'apim-subscription-key'
-          value: apiManagement.outputs.apiAdminSubscriptionKey
-        }
-      ]
+      secrets: shared_secrets
       registries: [
         {
           identity: uaiAzureRambiAcrPull.id
@@ -697,7 +778,7 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
             }
             {
               name: 'AZURE_OPENAI_ENDPOINT'
-              secretRef: 'azure-openai-endpoint'
+              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
             }
             {
               name: 'APIM_SUBSCRIPTION_KEY'
@@ -777,108 +858,87 @@ resource storageAccountAzureRambi 'Microsoft.Storage/storageAccounts@2021-09-01'
       defaultAction: 'Allow'
     }
   }
-}
 
-// Create a Blob service in the Azure Rambi storage account
-resource moviepostersBlobService 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
-  name: 'default'
-  parent: storageAccountAzureRambi
-}
-//Create a container in the blod service account
-resource moviepostersStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
-  name: 'movieposters'
-  parent: moviepostersBlobService
-}
+  resource blobServices 'blobServices' = {
+    resource container 'containers' = {
+      name: 'movieposters'
+      properties: {
+        publicAccess: 'None'
+      }
+    }
+    name: 'default'
+  }
 
-// Create a queue service in the Azure Rambi storage account
-resource moviepostersQueueService 'Microsoft.Storage/storageAccounts/queueServices@2021-09-01' = {
-  name: 'default'
-  parent: storageAccountAzureRambi
-}
-
-resource moviepostersStorageQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2021-09-01' = {
-  name: 'movieposters'
-  parent: moviepostersQueueService
-}
-
-resource generatedmoviesStorageQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2021-09-01' = {
-  name: 'generatedmovies'
-  parent: moviepostersQueueService
+  resource queueServices 'queueServices' = {
+    resource queue 'queues' = {
+      name: 'generatedmovies'
+      properties: {}
+    }
+    name: 'default'
+  }
 }
 
 resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'azure-rambi-storage-contributor'
   location: location
 }
+// Define the role definitions for azure rambi storage account
+/* var roleDefinitions = [
+  'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+  '974c5e8b-45b9-4653-ba55-5f855dd0fb88' // Storage Queue Data Contributor
+  'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' // Storage Queue Data Message Processor
+] */
+
 // Define the Storage Blob Data Contributor role
 resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
   scope: subscription()
   name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 }
 
-// Define the Storage Queue Data Contributor role
-resource storageQueueDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  scope: subscription()
-  name: '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
-}
-
-// Define the Storage Queue Data Message Sender role
-resource storageQueueDataMessageSenderDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  scope: subscription()
-  name: 'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a'
-}
-
-resource assignroleAssignmentBlob 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   scope: storageAccountAzureRambi
   name: guid(resourceGroup().id, azrStorageContributor.id, storageBlobDataContributorRoleDefinition.id)
   properties: {
     roleDefinitionId: storageBlobDataContributorRoleDefinition.id
     principalId: azrStorageContributor.properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
-resource assignroleAssignmentQueue 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  scope: storageAccountAzureRambi
-  name: guid(resourceGroup().id, azrStorageContributor.id, storageQueueDataContributorRoleDefinition.id)
-  properties: {
-    roleDefinitionId: storageQueueDataContributorRoleDefinition.id
-    principalId: azrStorageContributor.properties.principalId
+/* // Assign the Storage Queue Data Contributor and Storage Queue Data Message Processor roles to the function app
+resource assignroleAssignmentRolesToAzureRambiStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
+  for roleId in roleDefinitions: {
+    name: guid(storageAccountAzureRambi.id, azrStorageContributor.id, roleId)
+    scope: storageAccountAzureRambi
+    properties: {
+      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
+      principalId: azrStorageContributor.properties.principalId
+      principalType: 'ServicePrincipal'
+    }
   }
-}
+] */
 
-resource assignroleAssignmentSend 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  scope: storageAccountAzureRambi
-  name: guid(resourceGroup().id, azrStorageContributor.id, storageQueueDataMessageSenderDefinition.id)
-  properties: {
-    roleDefinitionId: storageQueueDataMessageSenderDefinition.id
-    principalId: azrStorageContributor.properties.principalId
-  }
-}
-
-var functionStorageAccountName = 'azrambifct${uniqueString(resourceGroup().id)}'
-
-resource rambiEventsHandler 'Microsoft.Web/sites@2022-09-01' = {
+resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
   name: 'rambi-events-handler'
   location: location
+  tags: { 'azd-service-name': 'rambi-events-handler' }
+  kind: 'functionapp,linux,container,azurecontainerapps'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${uaiAzureRambiAcrPull.id}': {}
-      '${azfctStorageContributor.id}': {}
-      '${azrStorageContributor.id}': {}
+      '${uaiAzureRambiAcrPull.id}': {} // ACR pull
+      '${azfctStorageContributor.id}': {} // Internal Azure Function Storage access
+      '${azrQueueStorageReader.id}': {} // Storage access To the Queue
     }
   }
-  tags: { 'azd-service-name': 'rambi-events-handler' }
-  kind: 'functionapp,linux,container,azurecontainerapps'
+
   properties: {
     managedEnvironmentId: containerAppsEnv.id
     siteConfig: {
       linuxFxVersion: 'DOCKER|mcr.microsoft.com/azure-functions/dotnet8-quickstart-demo:1.0'
-      //linuxFxVersion: 'DOCKER|azurerambieab45rexk4hhs.azurecr.io/azure-rambi/rambi_event_handler_local:f5cfc4d0'
+      //linuxFxVersion: 'DOCKER|azurerambieab45rexk4hhs.azurecr.io/azure-rambi/rambi_event_handler_local:396bbb31'
       acrUseManagedIdentityCreds: true
       acrUserManagedIdentityID: uaiAzureRambiAcrPull.id
-      // minimumElasticInstanceCount: 1
-      // functionAppScaleLimit: 5
       appSettings: [
         {
           name: 'DOCKER_REGISTRY_SERVER_URL'
@@ -890,11 +950,15 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'RambiQueueStorageConnection__clientId'
-          value: azrStorageContributor.properties.clientId
+          value: azrQueueStorageReader.properties.clientId
+        }
+        {
+          name: 'RambiQueueStorageConnection__queueServiceUri'
+          value: storageAccountAzureRambi.properties.primaryEndpoints.queue
         }
         {
           name: 'AzureWebJobsStorage'
-          value: functionStorageAccount.properties.primaryEndpoints.queue
+          value: 'managedidentity'
         }
         {
           name: 'AzureWebJobsStorage__accountName'
@@ -917,6 +981,10 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2022-09-01' = {
   }
 }
 
+var resourceToken = toLower(uniqueString(subscription().id, 'dev', location))
+var deploymentStorageContainerName = 'app-package-${take('azurerambi', 32)}-${take(resourceToken, 7)}'
+var functionStorageAccountName = 'azrambifct${uniqueString(resourceGroup().id)}'
+
 resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   name: functionStorageAccountName
   location: location
@@ -924,6 +992,26 @@ resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' =
     name: 'Standard_LRS'
   }
   kind: 'StorageV2'
+  properties: {
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    allowSharedKeyAccess: false
+    publicNetworkAccess: 'Enabled'
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+    }
+  }
+
+  resource blobServices 'blobServices' = {
+    resource container 'containers' = {
+      name: deploymentStorageContainerName
+      properties: {
+        publicAccess: 'None'
+      }
+    }
+    name: 'default'
+  }
 }
 
 resource azfctStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
@@ -931,15 +1019,70 @@ resource azfctStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentiti
   location: location
 }
 
-resource assignroleAssignmentazfctStorageContributor 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  scope: functionStorageAccount
-  name: guid(resourceGroup().id, azfctStorageContributor.id, storageBlobDataContributorRoleDefinition.id)
-  properties: {
-    roleDefinitionId: storageBlobDataContributorRoleDefinition.id
-    principalId: azfctStorageContributor.properties.principalId
-    principalType: 'ServicePrincipal'
-  }
+resource azrQueueStorageReader 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: 'azure-rambi-queue-storage-reader'
+  location: location
 }
+
+resource azrQueueStorageProducer 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: 'azure-rambi-queue-storage-producer'
+  location: location
+}
+
+var triggerQueueRoleIds = [
+  '19e7f393-937e-4f77-808e-94535e297925' // Storage Queue Data Reader
+  '8a0f0c08-91a1-4084-bc3d-661d67233fed' // Storage Queue Data Message Processor
+]
+
+// Assign the Storage Queue Data Contributor and Storage Queue Data Message Processor roles to the function app
+resource assignroleAssignmentTriggerStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
+  for roleId in triggerQueueRoleIds: {
+    name: guid(storageAccountAzureRambi.id, azrQueueStorageReader.id, roleId)
+    scope: storageAccountAzureRambi
+    properties: {
+      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
+      principalId: azrQueueStorageReader.properties.principalId
+      principalType: 'ServicePrincipal'
+    }
+  }
+]
+
+var messageProducterRoleIds = [
+  '974c5e8b-45b9-4653-ba55-5f855dd0fb88' // Storage queue Data Contributor
+  'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' // Storage Queue Data Message Sender
+]
+
+resource assignroleAssignmentMessageProducterStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
+  for roleId in messageProducterRoleIds: {
+    name: guid(storageAccountAzureRambi.id, azrQueueStorageProducer.id, roleId)
+    scope: storageAccountAzureRambi
+    properties: {
+      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
+      principalId: azrQueueStorageProducer.properties.principalId
+      principalType: 'ServicePrincipal'
+    }
+  }
+]
+
+// Allow access from API to storage account using a managed identity and Storage Blob Data Contributor and Data Owner role
+var roleIds = [
+  'b7e6dc6d-f1e8-4753-8033-0f276bb0955b' // Storage Blob Data Owner
+  'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+  '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3' // Storage Queue Data Contributor
+]
+// Assign the Storage Blob Data Owner and Storage Blob Data Contributor roles to the function app
+resource assignroleAssignmentFunctionStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
+  for roleId in roleIds: {
+    name: guid(functionStorageAccount.id, azfctStorageContributor.id, roleId)
+    scope: functionStorageAccount
+    properties: {
+      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
+      principalId: azfctStorageContributor.properties.principalId
+      principalType: 'ServicePrincipal'
+    }
+  }
+]
+
 output AZURE_LOCATION string = location
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name

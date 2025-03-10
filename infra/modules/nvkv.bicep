@@ -22,5 +22,3 @@ resource apiKey 'Microsoft.ApiManagement/service/namedValues@2021-08-01' = {
     }
   }
 }
-
-//https://rambikvtfnbpycbnkdum.vault.azure.net/secrets/APIM-ENDPOINT

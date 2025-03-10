@@ -103,6 +103,7 @@ resource applicationinsights 'Microsoft.ApiManagement/service/diagnostics@2023-0
 
 //output apiManagementInternalIPAddress string = apiManagementService.properties.publicIPAddresses[0]
 output apiManagementIdentityPrincipalId string = apiManagementService.identity.principalId
+output name string = apiManagementService.name
 output apiManagementProxyHostName string = apiManagementService.properties.hostnameConfigurations[0].hostName
 //output apiManagementDeveloperPortalHostName string = replace(apiManagementService.properties.developerPortalUrl, 'https://', '')
 output aiLoggerId string = aiLogger.id

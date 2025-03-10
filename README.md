@@ -38,8 +38,12 @@ Install the required dependencies by running:
 ```bash
 az login
 azd auth login
-az group create -l francecentral -n rambi-dev
-azd up
+azd up           
+? Enter a new environment name: dev
+? Select an Azure Subscription to use: 1. fake-subscription (00000000-0000-0000-0000-000000000000)
+? Select an Azure location to use: 21. (Europe) France Central (francecentral)
+? Pick a resource group to use: Create a new resource group
+? Enter a name for the new resource group: azrambi-dev
 ```
 
 Warning: the provision phases include an APIM and A Redis Cache that can take a veryyyyyyy loooooong time to become available. Patience ! if it fails run the `azd up` command again.
@@ -78,7 +82,7 @@ To open the application, click on the link below the `Done: Deploying service gu
 ### Troobleshooting configuration
 
 ```
-az deployment group create --resource-group rambi-dev --template-file infra/user_portal_role.bicep
+az deployment group create --resource-group <target_rg> --template-file infra/user_portal_role.bicep
 ```
 
 ### Configure Github actions
@@ -166,6 +170,12 @@ To use the new `movie_generator_svc` service, make a POST request to the `/gener
 ```
 
 The service will return a JSON response with the generated movie details.
+
+## Clean up
+
+```sh
+azd down --force --purge
+```
 
 ## Contributing
 

@@ -1,11 +1,26 @@
-#/bin/bash
+#!/bin/bash
 # This script builds the docker image for the rambi_event_handler and pushes it to Azure Container Registry
 # It also updates the Azure Function App to use the new image
 # Usage: ./docker_build.sh
 # Ensure you have the Azure CLI installed and logged in
 # Ensure you have the Azure Container Registry and Function App created
+
+echo -e "\nLoading azd .env file from current environment..."
+# Read the environment variables from azd and export them
+while IFS= read -r line; do
+    # Only process lines with an equal sign
+    if [[ "$line" != *"="* ]]; then
+        continue
+    fi
+
+    key="${line%%=*}"
+    value="${line#*=}"
+    # Remove leading and trailing quotes if they exist
+    value="${value%\"}"
+    value="${value#\"}"
+    export "$key"="$value"
+done < <(azd env get-values)
 set -x
-. /workspaces/azure-rambi/.azure/dev/.env
 remote_tag=$(openssl rand -hex 4)
 az acr login --name ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
 IMAGE_NAME=azure-rambi/rambi_event_handler_local
@@ -14,5 +29,5 @@ docker build -t ${IMAGE_NAME} .
 docker tag ${IMAGE_NAME} ${AZURE_CONTAINER_REGISTRY_ENDPOINT}/azure-rambi/rambi_event_handler_local:${remote_tag}
 docker push ${AZURE_CONTAINER_REGISTRY_ENDPOINT}/azure-rambi/rambi_event_handler_local:${remote_tag}
 echo "${AZURE_CONTAINER_REGISTRY_ENDPOINT}/azure-rambi/rambi_event_handler_local:${remote_tag}"
-
-az functionapp config container set --image ${AZURE_CONTAINER_REGISTRY_ENDPOINT}/azure-rambi/rambi_event_handler_local:${remote_tag}  --name rambi-events-handler --resource-group ${AZURE_RESOURCE_GROUP}
+azd env set RAMBI_EVENT_HANDLER_IMAGE "${AZURE_CONTAINER_REGISTRY_ENDPOINT}/azure-rambi/rambi_event_handler_local:${remote_tag}"
+az functionapp config container set --image ${RAMBI_EVENT_HANDLER_IMAGE}  --name rambi-events-handler --resource-group ${AZURE_RESOURCE_GROUP}

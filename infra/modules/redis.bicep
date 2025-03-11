@@ -5,7 +5,7 @@ param location string = resourceGroup().location
 param redisCacheName string
 
 @description('The name of the user assigned identity to be used as the storage contributor.')
-param redisContributorName string = 'azure-rambi-storage-contributor'
+param redisContributorName string = ''
 
 @description('The pricing tier of the new Azure Redis Cache.')
 @allowed([

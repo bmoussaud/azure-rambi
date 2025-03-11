@@ -15,7 +15,6 @@ var apimPublisherName = 'Azure Rambi Suites'
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 var acrName = 'azurerambi${uniqueString(resourceGroup().id)}'
 var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
-var kvName = 'rambikv${uniqueString(resourceGroup().id)}'
 
 @description('Model deployments for OpenAI')
 param deployments array = [
@@ -23,31 +22,21 @@ param deployments array = [
     name: 'gpt-4o'
     capacity: 40
     version: '2024-08-06' //2024-08-06 ?
+    deployment: 'Standard'
   }
   {
     name: 'dall-e-3'
     model: 'dall-e-3'
     version: '3.0'
     capacity: 1
+    deployment: 'Standard'
   }
-]
-
-@batchSize(1)
-resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
-  for deployment in deployments: {
-    parent: openAI
-    name: deployment.name
-    sku: {
-      name: 'Standard'
-      capacity: deployment.capacity
-    }
-    properties: {
-      model: {
-        format: 'OpenAI'
-        name: deployment.name
-        version: deployment.version
-      }
-    }
+  {
+    name: 'o1-mini'
+    model: 'o1-mini'
+    version: '2024-09-12'
+    capacity: 10
+    deployment: 'GlobalStandard'
   }
 ]
 
@@ -66,25 +55,28 @@ resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   }
 }
 
-resource o1mini 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
-  name: 'o1-mini'
-  parent: openAI
-  sku: {
-    name: 'GlobalStandard'
-    capacity: 10
-  }
-  properties: {
-    model: {
-      format: 'OpenAI'
-      name: 'o1-mini'
-      version: '2024-09-12'
+@batchSize(1)
+resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
+  for deployment in deployments: {
+    parent: openAI
+    name: deployment.name
+    sku: {
+      name: deployment.deployment
+      capacity: deployment.capacity
+    }
+    properties: {
+      model: {
+        format: 'OpenAI'
+        name: deployment.name
+        version: deployment.version
+      }
     }
   }
-}
+]
 
 @description('Creates an Azure Key Vault.')
 resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
-  name: kvName
+  name: 'rambikv${uniqueString(resourceGroup().id)}'
   location: location
   properties: {
     tenantId: subscription().tenantId
@@ -270,6 +262,7 @@ module redis 'modules/redis.bicep' = {
   params: {
     location: location
     redisCacheName: 'azure-rambi-redis-${uniqueString(resourceGroup().id)}'
+    redisContributorName: 'azure-rambi-storage-contributor'
   }
 }
 
@@ -585,8 +578,12 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
             }
             {
               // Required for managed identity to access the storage account
-              name: 'AZURE_CLIENT_ID'
+              name: 'AZURE_CLIENT_ID_BLOB'
               value: azrStorageContributor.properties.clientId
+            }
+            {
+              name: 'AZURE_CLIENT_ID_QUEUE'
+              value: azrQueueStorageProducer.properties.clientId
             }
           ]
           probes: [

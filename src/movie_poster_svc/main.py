@@ -100,7 +100,7 @@ class GenAiMovieService:
         if self._use_cache:
             logger.info("Initializing Redis client")
             #use managed identity to connect to redis (azure-rambi-storage-contributor)
-            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
+            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_BLOB"))
             logger.info("managedIdCredential: %s", managed_id_credential)
             redis_scope = "https://redis.azure.com/.default"
             logger.info("Redis Scope: %s", redis_scope)
@@ -119,8 +119,8 @@ class GenAiMovieService:
         sa_url = os.getenv("STORAGE_ACCOUNT_BLOB_URL")
         logger.info("Initializing Azure Blob Storage client with account_url: %s", sa_url)
         #use managed identity to connect to redis (azure-rambi-storage-contributor)
-        managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
-        logger.info("Credential: %s", managed_id_credential)
+        managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_BLOB"))
+        logger.info("AZURE_CLIENT_ID_BLOB managedIdCredential: %s", managed_id_credential)
         self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=managed_id_credential)
         logger.info("Blob Service Client: %s", self.blob_service_client)
         self.container_client = self.blob_service_client.get_container_client("movieposters")
@@ -208,8 +208,8 @@ class GenAiMovieService:
             
             sa = os.getenv("STORAGE_ACCOUNT_QUEUE_URL")
             logger.info("initialize queue client with %s", sa)
-            logger.info("initialize queue client with clientID %s", os.getenv("AZURE_CLIENT_ID"))
-            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
+            logger.info("initialize queue client with clientID %s", os.getenv("AZURE_CLIENT_ID_QUEUE"))
+            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_QUEUE"))
             queue_client_generated_movies = QueueClient.from_queue_url(f"{sa}generatedmovies", credential=managed_id_credential)
             logger.info("generate_new_message called with %s", name)
             logger.info("Adding messages to the queue...")

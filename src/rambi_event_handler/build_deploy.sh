@@ -4,6 +4,14 @@
 # Usage: ./docker_build.sh
 # Ensure you have the Azure CLI installed and logged in
 # Ensure you have the Azure Container Registry and Function App created
+if [ -z "$1" ]; then
+    PROJECT_DIR="."
+else
+    PROJECT_DIR=$1
+fi
+
+echo "Project Directory: $PROJECT_DIR"
+cd $PROJECT_DIR
 
 echo -e "\nLoading azd .env file from current environment..."
 # Read the environment variables from azd and export them

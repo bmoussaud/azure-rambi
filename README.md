@@ -82,7 +82,7 @@ To open the application, click on the link below the `Done: Deploying service gu
 ### Troobleshooting configuration
 
 ```
-az deployment group create --resource-group <target_rg> --template-file infra/user_portal_role.bicep
+az deployment group create  --template-file infra/user_portal_role.bicep --resource-group $( azd env get-value AZURE_RESOURCE_GROUP )
 ```
 
 ### Configure Github actions

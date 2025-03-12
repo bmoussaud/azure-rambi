@@ -7,7 +7,7 @@ param restore bool = false
 @description('The email address of the owner of the service')
 var apimPublisherEmail = 'azure-rambi@contososuites.com'
 
-var apiManagementServiceName = 'azure-rambi-apim-${uniqueString(resourceGroup().id)}'
+var apiManagementServiceName = 'azrambi-apim-${uniqueString(resourceGroup().id)}'
 var apimSku = 'Basicv2'
 var apimSkuCount = 1
 var apimPublisherName = 'Azure Rambi Suites'
@@ -155,7 +155,7 @@ resource cognitiveServiceOpenAIUserRoleAssignment 'Microsoft.Authorization/roleA
   properties: {
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
-      '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+      '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
     )
     principalId: apiManagement.outputs.apiManagementIdentityPrincipalId
   }
@@ -215,6 +215,9 @@ module tmdbApiKey 'modules/nvkv.bicep' = {
     keyVaultName: kv.name
     secretName: secretTMDBApiKey.name
   }
+  dependsOn: [
+    keyVaultSecretUserRoleAssignment //this role assignment is needed to allow the API Management service to access the Key Vault
+  ]
 }
 
 module openaiApi 'modules/api.bicep' = {

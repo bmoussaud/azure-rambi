@@ -841,6 +841,93 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
   }
 }
 
+@description('Creates a Movie Gallery SVC Azure Container App.')
+resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+  name: 'movie-gallery-svc'
+  location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uaiAzureRambiAcrPull.id}': {}
+    }
+  }
+  tags: { 'azd-service-name': 'movie_gallery_svc' }
+  properties: {
+    managedEnvironmentId: containerAppsEnv.id
+    workloadProfileName: 'default'
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 5000
+        allowInsecure: false
+        traffic: [
+          {
+            latestRevision: true
+            weight: 100
+          }
+        ]
+      }
+      secrets: shared_secrets
+      registries: [
+        {
+          identity: uaiAzureRambiAcrPull.id
+          server: containerRegistry.properties.loginServer
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'movie-gallery-svc'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+              secretRef: 'appinsight-inst-key'
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              secretRef: 'applicationinsights-connection-string'
+            }
+            {
+              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+              value: '~3'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'movie_gallery_svc'
+            }
+            {
+              name: 'OTEL_RESOURCE_ATTRIBUTES'
+              value: 'service.namespace=azure-rambi,service.instance.id=movie-gallery-svc'
+            }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/movies'
+                port: 5000
+              }
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/movies'
+                port: 5000
+              }
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 2
+      }
+    }
+  }
+}
+
 @description('Creates an Azure Storage Account.')
 resource storageAccountAzureRambi 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   name: storageAccountName

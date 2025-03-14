@@ -6,3 +6,4 @@ azure-functions
 opencensus-extension-azure-functions
 opencensus-ext-requests
 requests
+httpx

@@ -1063,6 +1063,10 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
           name: 'PYTHON_ENABLE_WORKER_EXTENSIONS'
           value: '1'
         }
+        {
+          name: 'MOVIE_GALLERY_SVC_ENDPOINT'
+          value: 'https://${containerMovieGallerySvcApp.properties.configuration.ingress.fqdn}'
+        }
       ]
     }
   }
@@ -1178,6 +1182,7 @@ output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscription
 output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
 output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
 output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn}'
+output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.properties.configuration.ingress.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
 output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey

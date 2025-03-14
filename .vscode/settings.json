@@ -1,5 +1,12 @@
 {
     "python.analysis.extraPaths": [
         "./src/azurerambi"
-    ]
+    ],
+    "azureFunctions.deploySubpath": "src/rambi_event_handler",
+    "azureFunctions.scmDoBuildDuringDeployment": true,
+    "azureFunctions.projectLanguage": "Python",
+    "azureFunctions.projectRuntime": "~4",
+    "debug.internalConsoleOptions": "neverOpen",
+    "azureFunctions.projectLanguageModel": 2,
+    "azureFunctions.projectSubpath": "src/rambi_event_handler"
 }

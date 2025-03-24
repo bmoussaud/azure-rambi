@@ -31,6 +31,28 @@ def test_function(req: func.HttpRequest) -> func.HttpResponse:
         status_code=200
         )
 
+@app.function_name(name="HttpTrigger2")
+@app.route(route="hello2", auth_level=func.AuthLevel.ANONYMOUS)
+@app.queue_output(arg_name="outputQueueItem", queue_name="benoitoutput",connection="RambiQueueStorageConnection")  # Queue output binding
+def test_function_2(req: func.HttpRequest, outputQueueItem: func.Out[str]) -> None:
+    """ HTTP trigger function that returns a sample response. """
+    logging.info('Benoit Python HTTP 2 trigger function processed a request.')
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    outputQueueItem.set(f"movie_http_2_{timestamp}")
+
+
+@app.function_name(name="QueueFunc")
+@app.queue_trigger(arg_name="msg", queue_name="inputqueue",
+                   connection="RambiQueueStorageConnection")  # Queue trigger
+@app.queue_output(arg_name="outputQueueItem", queue_name="outqueue",
+                 connection="RambiQueueStorageConnection")  # Queue output binding
+def test_function3(msg: func.QueueMessage, outputQueueItem: func.Out[str]) -> None:
+    """ This function will be invoked whenever a message is added to the queue. """
+    logging.info('Python queue trigger function processed a queue item: %s',
+                 msg.get_body().decode('utf-8'))
+    outputQueueItem.set('hello')
+
+
 
 @app.function_name("OnNewGeneratedMovie")
 @app.queue_trigger(arg_name="msg", queue_name="generatedmovies",connection="RambiQueueStorageConnection")

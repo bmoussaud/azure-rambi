@@ -1010,6 +1010,7 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
   location: location
   tags: { 'azd-service-name': 'rambi-events-handler' }
   kind: 'functionapp,linux,container,azurecontainerapps'
+  //appInsightResourceId : applicationInsights.outputs.id
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
@@ -1044,6 +1045,22 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
           value: storageAccountAzureRambi.properties.primaryEndpoints.queue
         }
         {
+          name: 'RambiQueueStorageConnection__accountName'
+          value: storageAccountAzureRambi.name
+        }
+        {
+          name: 'RambiQueueStorageConnection__accountKey'
+          value: storageAccountAzureRambi.listKeys().keys[0].value
+        }
+        {
+          name: 'RambiQueueStorageConnection__queueEndpoint'
+          value: storageAccountAzureRambi.properties.primaryEndpoints.queue
+        }
+        {
+          name: 'RambiQueueStorageConnection__blobEndpoint'
+          value: storageAccountAzureRambi.properties.primaryEndpoints.blob
+        }
+        {
           name: 'AzureWebJobsStorage'
           value: 'managedidentity'
         }
@@ -1056,7 +1073,27 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
           value: functionStorageAccount.listKeys().keys[0].value
         }
         {
+          name: 'AzureWebJobsStorage__queueEndpoint'
+          value: functionStorageAccount.properties.primaryEndpoints.queue
+        }
+        {
+          name: 'AzureWebJobsStorage__blobEndpoint'
+          value: functionStorageAccount.properties.primaryEndpoints.blob
+        }
+        {
+          name: 'AzureWebJobsStorage__clientId'
+          value: azfctStorageContributor.properties.clientId
+        }
+        {
+          name: 'AzureWebJobsStorage__credential'
+          value: 'managedidentity'
+        }
+        {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsights.outputs.instrumentationKey
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsights.outputs.connectionString
         }
         {
@@ -1120,14 +1157,14 @@ resource azrQueueStorageProducer 'Microsoft.ManagedIdentity/userAssignedIdentiti
   location: location
 }
 
-var triggerQueueRoleIds = [
-  '19e7f393-937e-4f77-808e-94535e297925' // Storage Queue Data Reader
-  '8a0f0c08-91a1-4084-bc3d-661d67233fed' // Storage Queue Data Message Processor
-]
+
 
 // Assign the Storage Queue Data Contributor and Storage Queue Data Message Processor roles to the function app
 resource assignroleAssignmentTriggerStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
-  for roleId in triggerQueueRoleIds: {
+  for roleId in [
+    '19e7f393-937e-4f77-808e-94535e297925' // Storage Queue Data Reader
+    '8a0f0c08-91a1-4084-bc3d-661d67233fed' // Storage Queue Data Message Processor
+  ]: {
     name: guid(storageAccountAzureRambi.id, azrQueueStorageReader.id, roleId)
     scope: storageAccountAzureRambi
     properties: {
@@ -1138,13 +1175,12 @@ resource assignroleAssignmentTriggerStorageAccount 'Microsoft.Authorization/role
   }
 ]
 
-var messageProducterRoleIds = [
-  '974c5e8b-45b9-4653-ba55-5f855dd0fb88' // Storage queue Data Contributor
-  'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' // Storage Queue Data Message Sender
-]
 
 resource assignroleAssignmentMessageProducterStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
-  for roleId in messageProducterRoleIds: {
+  for roleId in [
+    '974c5e8b-45b9-4653-ba55-5f855dd0fb88' // Storage queue Data Contributor
+    'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' // Storage Queue Data Message Sender
+  ]: {
     name: guid(storageAccountAzureRambi.id, azrQueueStorageProducer.id, roleId)
     scope: storageAccountAzureRambi
     properties: {
@@ -1155,15 +1191,13 @@ resource assignroleAssignmentMessageProducterStorageAccount 'Microsoft.Authoriza
   }
 ]
 
-// Allow access from API to storage account using a managed identity and Storage Blob Data Contributor and Data Owner role
-var roleIds = [
-  'b7e6dc6d-f1e8-4753-8033-0f276bb0955b' // Storage Blob Data Owner
-  'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
-  '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3' // Storage Queue Data Contributor
-]
 // Assign the Storage Blob Data Owner and Storage Blob Data Contributor roles to the function app
 resource assignroleAssignmentFunctionStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
-  for roleId in roleIds: {
+  for roleId in [
+    'b7e6dc6d-f1e8-4753-8033-0f276bb0955b' // Storage Blob Data Owner
+    'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+    '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3' // Storage Queue Data Contributor
+  ]: {
     name: guid(functionStorageAccount.id, azfctStorageContributor.id, roleId)
     scope: functionStorageAccount
     properties: {

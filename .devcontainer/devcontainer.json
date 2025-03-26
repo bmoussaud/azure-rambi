@@ -6,6 +6,7 @@
     //],
     "features": {
         "ghcr.io/azure/azure-dev/azd:latest": {},
+        "ghcr.io/dapr/cli/dapr-cli:0": {},
         "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         //"ghcr.io/devcontainers/features/python:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
@@ -30,6 +31,7 @@
         "vscode": {
             "extensions": [
                 "ms-azuretools.azure-dev",
+                "ms-azuretools.vscode-dapr",
                 "ms-azuretools.vscode-bicep",
                 "ms-python.python",
                 "ms-python.black-formatter",

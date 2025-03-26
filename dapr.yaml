@@ -1,0 +1,13 @@
+version: 1
+common:
+  resourcesPath: dapr/local/components
+  env:
+    DEBUG: true
+apps:
+  - name: movie-gallery-svc
+    type: python
+    appDirPath: src/movie_gallery_svc
+    appPort: 5000
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+    appLogDestination: fileAndConsole
+    daprdLogDestination: file

@@ -10,3 +10,8 @@ opentelemetry-sdk >= 1.10.0
 azure-monitor-opentelemetry 
 azure-identity
 
+dapr
+dapr-ext-fastapi 
+cloudevents
+pydantic
+retry

@@ -88,6 +88,23 @@ resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
     //publicNetworkAccess: 'Enabled'
   }
 }
+resource azrKeyVaultContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: 'azure-rambi-keyvault-user'
+  location: location
+}
+
+// Assign the Key Vault Secrets Officer role to the managed identity
+resource keyVaultContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(kv.id, azrKeyVaultContributor.id, 'Key Vault Contributor Role')
+  scope: kv
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '4633458b-17de-408a-b874-0445c86b69e6' // Key Vault Secrets Officer
+    )
+    principalId: azrKeyVaultContributor.properties.principalId
+  }
+}
 
 @description('This is the built-in Key Vault Secrets Officer role. See https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-user')
 resource keyVaultSecretsUserRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
@@ -289,8 +306,16 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
   name: 'azure-rambi'
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${azrKeyVaultContributor.id}': {}
+    }
+  }
 
   properties: {
+    daprAIInstrumentationKey: applicationInsights.outputs.instrumentationKey
+
     appInsightsConfiguration: {
       connectionString: applicationInsights.outputs.connectionString
     }
@@ -352,130 +377,6 @@ var shared_secrets = [
     value: apiManagement.outputs.apiAdminSubscriptionKey
   }
 ]
-
-/* @description('Creates an Movie Poster SVC Azure Container App.')
-module containerMoviePosterSvcApp2 'br/public:avm/res/app/container-app:0.13.0' = {
-  name: 'movie-poster-svc'
-  params: {
-    name: 'movie-poster-svc'
-    location: location
-    tags: { 'azd-service-name': 'movie_poster_svc' }
-    managedIdentities: {
-      userAssignedResourceIds: [
-        uaiAzureRambiAcrPull.id
-        azrStorageContributor.id
-        azrQueueStorageProducer.id
-      ]
-    }
-    workloadProfileName: 'default'
-    containers: [
-      {
-        image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-        name: 'movie-poster-svc'
-        resources: {}
-        env: [
-          {
-            name: 'OPENAI_API_VERSION'
-            value: '2024-08-01-preview'
-          }
-          {
-            name: 'AZURE_OPENAI_API_KEY'
-            secretRef: 'apim-subscription-key'
-          }
-          {
-            name: 'AZURE_OPENAI_ENDPOINT'
-            value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-          }
-          {
-            name: 'APIM_SUBSCRIPTION_KEY'
-            secretRef: 'apim-subscription-key'
-          }
-          {
-            name: 'APIM_ENDPOINT'
-            value: apiManagement.outputs.apiManagementProxyHostName
-          }
-          {
-            name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-            secretRef: 'appinsight-inst-key'
-          }
-          {
-            name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-            secretRef: 'applicationinsights-connection-string'
-          }
-          {
-            name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-            value: '~3'
-          }
-          {
-            name: 'OTEL_SERVICE_NAME'
-            value: 'movie_poster_svc'
-          }
-          {
-            name: 'OTEL_RESOURCE_ATTRIBUTES'
-            value: 'service.namespace=azure-rambi,service.instance.id=movie-poster-svc'
-          }
-          {
-            name: 'REDIS_HOST'
-            value: redis.outputs.redisHost
-          }
-          {
-            name: 'REDIS_PORT'
-            value: '${int('${redis.outputs.redisPort}')}'
-          }
-          {
-            name: 'USE_CACHE'
-            value: 'oui'
-          }
-          {
-            name: 'STORAGE_ACCOUNT_BLOB_URL'
-            value: storageAccountAzureRambi.properties.primaryEndpoints.blob
-          }
-          {
-            name: 'STORAGE_ACCOUNT_QUEUE_URL'
-            value: storageAccountAzureRambi.properties.primaryEndpoints.queue
-          }
-          {
-            // Required for managed identity to access the storage account
-            name: 'AZURE_CLIENT_ID'
-            value: azrStorageContributor.properties.clientId
-          }
-        ]
-
-        probes: [
-          {
-            httpGet: {
-              path: '/liveness'
-              port: 8002
-            }
-            type: 'Liveness'
-          }
-          {
-            httpGet: {
-              path: '/readiness'
-              port: 8002
-            }
-            type: 'Readiness'
-          }
-        ]
-      }
-    ]
-    environmentResourceId: containerAppsEnv.id
-    additionalPortMappings: [
-      {
-        external: true
-        targetPort: 8002
-      }
-    ]
-    ingressAllowInsecure: false
-    secrets: shared_secrets
-    registries: [
-      {
-        identity: uaiAzureRambiAcrPull.id
-        server: containerRegistry.properties.loginServer
-      }
-    ]
-  }
-} */
 
 @description('Creates an Movie Poster SVC Azure Container App.')
 resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
@@ -841,90 +742,18 @@ resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-p
   }
 }
 
-@description('Creates a Movie Gallery SVC Azure Container App.')
-resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+@description('Creates a Movie Gallery Azure Container App.')
+module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
   name: 'movie-gallery-svc'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uaiAzureRambiAcrPull.id}': {}
-    }
-  }
-  tags: { 'azd-service-name': 'movie_gallery_svc' }
-  properties: {
-    managedEnvironmentId: containerAppsEnv.id
-    workloadProfileName: 'default'
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 5000
-        allowInsecure: false
-        traffic: [
-          {
-            latestRevision: true
-            weight: 100
-          }
-        ]
-      }
-      secrets: shared_secrets
-      registries: [
-        {
-          identity: uaiAzureRambiAcrPull.id
-          server: containerRegistry.properties.loginServer
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'movie-gallery-svc'
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-          env: [
-            {
-              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-              secretRef: 'appinsight-inst-key'
-            }
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              secretRef: 'applicationinsights-connection-string'
-            }
-            {
-              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-              value: '~3'
-            }
-            {
-              name: 'OTEL_SERVICE_NAME'
-              value: 'movie_gallery_svc'
-            }
-            {
-              name: 'OTEL_RESOURCE_ATTRIBUTES'
-              value: 'service.namespace=azure-rambi,service.instance.id=movie-gallery-svc'
-            }
-          ]
-          probes: [
-            {
-              type: 'Liveness'
-              httpGet: {
-                path: '/movies'
-                port: 5000
-              }
-            }
-            {
-              type: 'Readiness'
-              httpGet: {
-                path: '/movies'
-                port: 5000
-              }
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 2
-      }
-    }
+  params: {
+    location: location
+    containerName: 'movie-gallery-svc'
+    containerPort: 5000
+    containerRegistryName: containerRegistry.name
+    acrPullRoleName: uaiAzureRambiAcrPull.name
+    shared_secrets: shared_secrets
+    containerAppsEnvironment: containerAppsEnv.name
+    kvName: kv.name
   }
 }
 
@@ -969,6 +798,7 @@ resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities
   name: 'azure-rambi-storage-contributor'
   location: location
 }
+
 // Define the role definitions for azure rambi storage account
 /* var roleDefinitions = [
   'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
@@ -1102,7 +932,7 @@ resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'MOVIE_GALLERY_SVC_ENDPOINT'
-          value: 'https://${containerMovieGallerySvcApp.properties.configuration.ingress.fqdn}'
+          value: 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
         }
       ]
     }
@@ -1157,8 +987,6 @@ resource azrQueueStorageProducer 'Microsoft.ManagedIdentity/userAssignedIdentiti
   location: location
 }
 
-
-
 // Assign the Storage Queue Data Contributor and Storage Queue Data Message Processor roles to the function app
 resource assignroleAssignmentTriggerStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
   for roleId in [
@@ -1174,7 +1002,6 @@ resource assignroleAssignmentTriggerStorageAccount 'Microsoft.Authorization/role
     }
   }
 ]
-
 
 resource assignroleAssignmentMessageProducterStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
   for roleId in [
@@ -1216,7 +1043,7 @@ output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscription
 output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
 output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
 output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn}'
-output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.properties.configuration.ingress.fqdn}'
+output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
 output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey

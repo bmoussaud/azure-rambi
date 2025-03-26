@@ -1,0 +1,7 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: movie-gallery-svc
+  namespace: default
+spec:
+  type: state.store.redis

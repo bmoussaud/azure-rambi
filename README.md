@@ -209,4 +209,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 * https://azureossd.github.io/2024/02/12/Container-Apps-General-troubleshooting-with-Dapr-on-Container-Apps/
 * https://github.com/Azure/aca-dotnet-workshop
 * https://docs.dapr.io/developing-applications/building-blocks/state-management/howto-state-query-api/
+* https://github.com/Azure-Samples/Tutorial-Deploy-Dapr-Microservices-ACA/blob/main/azuredeploy.bicep
+
 

@@ -1,8 +1,8 @@
 import json
 import uuid
 import logging
-from pydantic import BaseModel
 from typing import List
+from pydantic import BaseModel
 
 class MovieRequest(BaseModel):
     """Request model for adding a new movie."""
@@ -15,7 +15,7 @@ class Movie(dict):
         dict.__init__(self, movie_id=movie_id, title=title, description=description)
    
     def __repr__(self):
-        return f"MovieGallery(id={self['movie_id']}, title={self['title']}, description={self['description']})"
+        return f"MovieGallery(movie_id={self['movie_id']}, title={self['title']}, description={self['description']})"
 
     def getattr(self, key):
         """Get attribute value by key."""
@@ -39,7 +39,7 @@ class Movie(dict):
         """Convert bytes to Movie object."""
         item = json.loads(json_bytes.decode('utf-8'))
         return Movie(
-            item["id"],
+            item["movie_id"],
             item["title"],
             item["description"]
         )

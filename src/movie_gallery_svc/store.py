@@ -18,14 +18,14 @@ class MovieStore:
         """Add a movie to the store."""
         logging.info("Adding movie: %s", movie)
         logging.info("JSON %s", json.dumps(movie))
-        logging.info("saving movie to store %s using this key %s", self.state_store_name, movie['id'])
+        logging.info("saving movie to store %s using this key %s", self.state_store_name, movie['movie_id'])
         self.dapr_client.save_state(
             store_name=self.state_store_name,
-            key=movie['id'],
+            key=movie['movie_id'],
             value=json.dumps(movie)
         )
-        logging.info("Movie %s added to store", movie['id'])
-        return self.try_find_by_id(movie['id'])
+        logging.info("Movie %s added to store", movie['movie_id'])
+        return self.try_find_by_id(movie['movie_id'])
        
     def try_find_by_id(self, movie_id : str) -> Movie:
         """Find a movie by its ID."""

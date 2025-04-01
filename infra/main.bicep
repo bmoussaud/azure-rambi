@@ -753,7 +753,6 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
-    kvName: kv.name
   }
 }
 

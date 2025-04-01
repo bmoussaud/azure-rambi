@@ -51,6 +51,10 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
           name: 'collection'
           value: 'state'
         }
+        {
+          name: 'azureClientId'
+          value: managedIdentity.properties.clientId
+        }
       ]
       scopes: [
         containerName
@@ -63,9 +67,10 @@ resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-pre
   name: containerName
   location: location
   identity: {
-    type: 'SystemAssigned,UserAssigned'
+    type: 'UserAssigned'
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
+      '${managedIdentity.id}': {}
     }
   }
   tags: { 'azd-service-name': replace(containerName, '-', '_') }
@@ -205,10 +210,15 @@ resource cosmosDbDatabaseCollection 'Microsoft.DocumentDB/databaseAccounts/sqlDa
 // Assign cosmosdb account read/write access to aca system assigned identity
 // To know more: https://learn.microsoft.com/azure/cosmos-db/how-to-setup-rbac
 resource backendApiService_cosmosdb_role_assignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2022-08-15' = {
-  name: guid(subscription().id, containerMovieGallerySvcApp.name, '00000000-0000-0000-0000-000000000002')
+  name: guid(
+    subscription().id,
+    'docdbcontributor',
+    containerMovieGallerySvcApp.name,
+    '00000000-0000-0000-0000-000000000002'
+  )
   parent: cosmosDbAccount
   properties: {
-    principalId: containerMovieGallerySvcApp.identity.principalId
+    principalId: managedIdentity.properties.principalId
     roleDefinitionId: resourceId(
       'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions',
       cosmosDbAccount.name,
@@ -216,6 +226,11 @@ resource backendApiService_cosmosdb_role_assignment 'Microsoft.DocumentDB/databa
     ) //DocumentDB Data Contributor
     scope: '${cosmosDbAccount.id}/dbs/${cosmosDbDatabase.name}/colls/${cosmosDbDatabaseCollection.name}'
   }
+}
+
+resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+  name: 'dapr-state-store-identity'
+  location: location
 }
 
 output name string = containerMovieGallerySvcApp.name

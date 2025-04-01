@@ -2,17 +2,16 @@
 import uuid
 import json
 import logging
+import uvicorn
 
-from typing import List
-from fastapi import FastAPI, Response, status
+from store import MovieStore
+from entities import MovieRequest, Movie
 
 from fastapi import FastAPI, Response, status
 from fastapi.responses import HTMLResponse
 from dapr.clients import DaprClient
 from dapr.ext.fastapi import DaprApp
-from settings import Settings
-from store import MovieStore
-from entities import MovieRequest, Movie
+import traceback
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,7 +21,7 @@ dapr_app = DaprApp(app)
 
 
 @app.get('/', response_class = HTMLResponse)
-async def root():
+def root():
     """
     Root endpoint to check if the service is running.
     """
@@ -33,58 +32,58 @@ async def root():
             <title>Movie Gallery API</title>
         </head>
         <body>
-            <h1>Movie Gallery API Ready !</h1>
+            <h2>Movie Gallery API Ready !</h2>
         </body>
     </html>
     """
 
 @app.post("/movies", status_code = status.HTTP_201_CREATED)
-async def add_movie(movie: MovieRequest):
-    """
-    Endpoint to add a new movie."""
-
+def add_movie(movie: MovieRequest):
+    """Endpoint to add a new movie."""
     try:
-        settings=Settings(DaprClient())
-
-        store=MovieStore(settings)
-
+        logging.info("Adding new movie")
+        store=MovieStore(DaprClient())
         movie=Movie(
             uuid.uuid4().hex,
-            movie.title,   
-            movie.description   
-        )
-
+            movie.title,
+            movie.description)
         logging.info("Saving new movie %s", movie)
         new_request=store.upsert(movie)
-
         return Response(content = json.dumps(new_request), media_type = "application/json")
     except Exception as e:
-        logging.error('Error: %s', e)
-        return Response(content = json.dumps([]), media_type = "application/json")
+        logging.error('Add_Movie Error: %s', e)
+        logging.error('Call stack: %s', traceback.format_exc())
+        return Response(content = json.dumps({'method':'add_movie','error':e}), media_type = "application/json")
 
 @app.get("/movies")
-async def list_movies():
+def list_movies():
     """Endpoint to list all movies."""
+    logging.info("Listing all movies")
     try:
-        settings = Settings(DaprClient())
-        movies = MovieStore(settings).find_all()
+        logging.info('initializing Dapr client')
+        dapr_client = DaprClient()
+        logging.info('initializing MovieStore')
+        movies = MovieStore(dapr_client).find_all()
         return Response(content=json.dumps(movies), media_type="application/json")
     except Exception as e:
         logging.error('RuntimeError: %s', e)
         return Response(content=json.dumps([]), media_type="application/json", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 @app.get("/liveness")
-async def liveness():
+def liveness():
     """
     Liveness probe endpoint.
     """
-    logging.info("Liveness probe")
+    #logging.info("Liveness probe")
     return Response(content=json.dumps({"status": "alive"}), media_type="application/json")
 
 @app.get("/readiness")
-async def readiness():
+def readiness():
     """
     Readiness probe endpoint.
     """
-    logging.info("Readiness probe")
+    #logging.info("Readiness probe")
     return Response(content=json.dumps({"status": "ready"}), media_type="application/json")
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=5000)

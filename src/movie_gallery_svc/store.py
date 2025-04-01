@@ -1,40 +1,39 @@
 """Movie store class to manage movie data."""
 import logging
 import json
-from dapr.clients import DaprClient
-from settings import Settings
+import traceback
 from entities import Movie
+from dapr.clients import DaprClient
 
 logging.basicConfig(level=logging.INFO)
 
+
 class MovieStore:
     """Class to manage the movie store."""
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        self.dapr_client = settings.dapr_client()
-        self.state_store_name = settings.state_store_name
-        self.state_store_query_index_name = settings.state_store_query_index_name
-        self.binding_smtp = settings.binding_smtp
-
+    def __init__(self, dapr_client : DaprClient):
+        self.dapr_client = dapr_client
+        self.state_store_name = 'movie-gallery-svc-statetore'
+        
     def upsert(self, movie: Movie) -> Movie:
         """Add a movie to the store."""
         logging.info("Adding movie: %s", movie)
+        logging.info("JSON %s", json.dumps(movie))
+        logging.info("saving movie to store %s using this key %s", self.state_store_name, movie['id'])
         self.dapr_client.save_state(
             store_name=self.state_store_name,
             key=movie['id'],
-            value=json.dumps(movie),
-            metadata={"content-type": "application/json"}
+            value=json.dumps(movie)
         )
         logging.info("Movie %s added to store", movie['id'])
         return self.try_find_by_id(movie['id'])
        
-    def try_find_by_id(self, id : str) -> Movie:
+    def try_find_by_id(self, movie_id : str) -> Movie:
         """Find a movie by its ID."""
-        logging.info("Finding movie by ID: %s", id)
+        logging.info("Finding movie by ID: %s", movie_id)
         try:
             response = self.dapr_client.get_state(
                 store_name=self.state_store_name,
-                key=id
+                key=movie_id
             )
             if response.data:
                 movie = Movie.from_bytes(response.data)
@@ -45,19 +44,36 @@ class MovieStore:
                 return None
         except Exception as e:
             logging.error("Error finding movie by ID: %s", e)
-            return None
+            raise e
    
     def find_all(self) -> list[Movie]:
         """Find all movies in the store."""
         logging.info("Finding all movies")
         try:
+            query_all_with_limit = '''
+            {
+                "page": {
+                    "limit": 100
+                }
+            }
+            '''
+            query_all = "{}"
+            query = query_all
+            states_metadata = {"contentType": "application/json"}
+            logging.info("Query: %s", query)
+            logging.info("States metadata: %s", states_metadata)
+            logging.info("Store name: %s", self.state_store_name)
+            logging.info("Querying state store")
             response = self.dapr_client.query_state(
-                store_name=self.state_store_query_index_name,
-                query="SELECT * FROM movies"
-            )
-            movies = [Movie.from_bytes(item.data) for item in response.items]
+                    store_name=self.state_store_name,
+                    query=query,
+                    states_metadata=states_metadata
+                )
+            movies = [Movie.from_bytes(item.value) for item in response.results]
             logging.info("Movies found: %s", movies)
             return movies
         except Exception as e:
             logging.error("Error finding all movies: %s", e)
+            logging.error("Call stack: %s", traceback.format_exc())
+            logging.error("Returning empty list")
             return []

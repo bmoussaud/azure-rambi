@@ -40,7 +40,7 @@ services:
     docker:
       remoteBuild: true
 
-hooks:
-  postdeploy: # Pull environment variable inline from local device and set in .env file
-      shell: sh
-      run: src/rambi_event_handler/build_deploy.sh src/rambi_event_handler
+#hooks:
+#  postdeploy: # Pull environment variable inline from local device and set in .env file
+#      shell: sh
+#      run: src/rambi_event_handler/build_deploy.sh src/rambi_event_handler

@@ -15,8 +15,6 @@ param acrPullRoleName string = ''
 @description('Azure Container Registry name.')
 param containerRegistryName string
 
-param kvName string = 'azure-rambi-kv'
-
 param containerName string = 'movie-gallery-svc'
 param containerPort int = 5000
 
@@ -26,36 +24,24 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
   name: containerRegistryName
 }
 
-resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' existing = {
-  name: kvName
-}
-
 resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' existing = {
   name: acrPullRoleName
 }
 
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' existing = {
   name: containerAppsEnvironment
-  resource daprComponent 'daprComponents@2022-03-01' = {
-    name: containerName
+  resource statestoreComponent 'daprComponents@2022-03-01' = {
+    name: '${containerName}-statetore'
+
     properties: {
       componentType: 'state.azure.cosmosdb'
       version: 'v1'
       initTimeout: '5m'
-      secrets: [
-        {
-          name: 'cosmos-key'
-          value: 'https://${kv.name}.vault.azure.net/secrets/cosmosAccountMasterKey'
-        }
-      ]
+      secrets: []
       metadata: [
         {
           name: 'url'
-          value: cosmosAccount.outputs.endpoint
-        }
-        {
-          name: 'masterKey'
-          secretRef: 'cosmos-key'
+          value: cosmosDbAccount.properties.documentEndpoint
         }
         {
           name: 'database'
@@ -65,10 +51,6 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
           name: 'collection'
           value: 'state'
         }
-        {
-          name: 'actorStateStore'
-          value: 'true'
-        }
       ]
       scopes: [
         containerName
@@ -77,87 +59,11 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
   }
 }
 
-/*
-module containerMovieGallerySvcApp 'br/public:avm/res/app/container-app:0.14.1' = {
-  name: containerName
-  params: {
-    // Required parameters
-    environmentResourceId: containerAppsEnv.id
-    tags: { 'azd-service-name': replace(containerName, '-', '_') }
-    name: containerName
-    exposedPort: containerPort
-    managedIdentities: {
-      userAssignedResourceIds: userIdentityIds
-    }
-    registries: [
-      {
-        server: containerRegistry.properties.loginServer
-      }
-    ]
-    secrets: concat(shared_secrets, [
-      {
-        name: 'appinsight-inst-key'
-        secretUri: 'https://${kv.name}.vault.azure.net/secrets/appinsight-inst-key'
-      }
-    ])
-    containers: [
-      {
-        image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-        name: containerName
-        env: [
-          {
-            name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-            secretRef: 'appinsight-inst-key'
-          }
-          {
-            name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-            secretRef: 'applicationinsights-connection-string'
-          }
-          {
-            name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-            value: '~3'
-          }
-          {
-            name: 'OTEL_SERVICE_NAME'
-            value: containerName
-          }
-          {
-            name: 'OTEL_RESOURCE_ATTRIBUTES'
-            value: 'service.namespace=azure-rambi,service.instance.id=${containerName}'
-          }
-        ]
-
-        resources: {
-          cpu: '0.5'
-          memory: '1.0Gi'
-        }
-        probes: [
-          {
-            type: 'Liveness'
-            httpGet: {
-              path: '/liveness'
-              port: containerPort
-            }
-          }
-          {
-            type: 'Readiness'
-            httpGet: {
-              path: '/readiness'
-              port: containerPort
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
-*/
-
 resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   name: containerName
   location: location
   identity: {
-    type: 'UserAssigned'
+    type: 'SystemAssigned,UserAssigned'
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
     }
@@ -188,8 +94,10 @@ resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-pre
       dapr: {
         enabled: true
         appId: containerName
+        appProtocol: 'http'
         appPort: containerPort
         enableApiLogging: true
+        logLevel: 'info'
       }
     }
     template: {
@@ -245,33 +153,68 @@ resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-pre
   }
 }
 
-module cosmosAccount 'br/public:avm/res/document-db/database-account:0.11.3' = {
-  name: 'databaseAccountDeployment'
-  params: {
-    // Required parameters
-    name: 'azure-rambi-cosmos-account'
-    // Non-required parameters
-    location: location
-    secretsExportConfiguration: {
-      keyVaultResourceId: kv.id
-      primaryWriteKeySecretName: 'cosmosAccountMasterKey'
-      primaryReadOnlyKeySecretName: 'cosmosAccountMasterReadKey'
-      primaryWriteConnectionStringSecretName: 'cosmosAccountConnectionString'
-      primaryReadonlyConnectionStringSecretName: 'cosmosAccountReadConnectionString'
-    }
-    sqlDatabases: [
+resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' = {
+  name: 'azrambi-cosmos-account'
+  location: location
+  kind: 'GlobalDocumentDB'
+  properties: {
+    locations: [
       {
-        name: containerName
-        containers: [
-          {
-            name: 'state'
-            paths: [
-              '/partitionKey'
-            ]
-          }
-        ]
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
       }
     ]
+    databaseAccountOfferType: 'Standard'
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+resource cosmosDbDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2021-04-15' = {
+  name: containerName
+  parent: cosmosDbAccount
+  properties: {
+    resource: {
+      id: containerName
+    }
+  }
+}
+
+resource cosmosDbDatabaseCollection 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2021-05-15' = {
+  name: 'state'
+  parent: cosmosDbDatabase
+
+  properties: {
+    resource: {
+      id: 'state'
+      partitionKey: {
+        paths: [
+          '/partitionKey'
+        ]
+        kind: 'Hash'
+      }
+    }
+    options: {
+      autoscaleSettings: {
+        maxThroughput: 4000
+      }
+    }
+  }
+}
+
+// Assign cosmosdb account read/write access to aca system assigned identity
+// To know more: https://learn.microsoft.com/azure/cosmos-db/how-to-setup-rbac
+resource backendApiService_cosmosdb_role_assignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2022-08-15' = {
+  name: guid(subscription().id, containerMovieGallerySvcApp.name, '00000000-0000-0000-0000-000000000002')
+  parent: cosmosDbAccount
+  properties: {
+    principalId: containerMovieGallerySvcApp.identity.principalId
+    roleDefinitionId: resourceId(
+      'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions',
+      cosmosDbAccount.name,
+      '00000000-0000-0000-0000-000000000002'
+    ) //DocumentDB Data Contributor
+    scope: '${cosmosDbAccount.id}/dbs/${cosmosDbDatabase.name}/colls/${cosmosDbDatabaseCollection.name}'
   }
 }
 

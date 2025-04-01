@@ -1,0 +1,12 @@
+{
+    "filter": {},
+    "sort": [
+        {
+            "key": "title",
+            "order": "DESC"
+        }
+    ],
+    "page": {
+        "limit": 3
+    }
+}

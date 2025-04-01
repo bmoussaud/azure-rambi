@@ -799,13 +799,6 @@ resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities
   location: location
 }
 
-// Define the role definitions for azure rambi storage account
-/* var roleDefinitions = [
-  'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
-  '974c5e8b-45b9-4653-ba55-5f855dd0fb88' // Storage Queue Data Contributor
-  'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' // Storage Queue Data Message Processor
-] */
-
 // Define the Storage Blob Data Contributor role
 resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
   scope: subscription()
@@ -821,19 +814,6 @@ resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
     principalType: 'ServicePrincipal'
   }
 }
-
-/* // Assign the Storage Queue Data Contributor and Storage Queue Data Message Processor roles to the function app
-resource assignroleAssignmentRolesToAzureRambiStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
-  for roleId in roleDefinitions: {
-    name: guid(storageAccountAzureRambi.id, azrStorageContributor.id, roleId)
-    scope: storageAccountAzureRambi
-    properties: {
-      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
-      principalId: azrStorageContributor.properties.principalId
-      principalType: 'ServicePrincipal'
-    }
-  }
-] */
 
 resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
   name: 'rambi-events-handler'

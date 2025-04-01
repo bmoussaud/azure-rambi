@@ -3,15 +3,16 @@ import uuid
 import json
 import logging
 import uvicorn
+import traceback
 
 from store import MovieStore
-from entities import MovieRequest, Movie
+from entities import GeneratedMovie, MovieRequest, Movie
 
 from fastapi import FastAPI, Response, status
 from fastapi.responses import HTMLResponse
 from dapr.clients import DaprClient
 from dapr.ext.fastapi import DaprApp
-import traceback
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,25 +39,37 @@ def root():
     """
 
 @app.post("/movies", status_code = status.HTTP_201_CREATED)
-def add_movie(movie: MovieRequest):
+def add_movie(movie: GeneratedMovie) -> GeneratedMovie:
     """Endpoint to add a new movie."""
     try:
-        logging.info("Adding new movie")
+        logging.info("Adding new movie %s", movie)
         store=MovieStore(DaprClient())
-        movie=Movie(
-            uuid.uuid4().hex,
-            movie.title,
-            movie.description)
-        logging.info("Saving new movie %s", movie)
-        new_request=store.upsert(movie)
-        return Response(content = json.dumps(new_request), media_type = "application/json")
+        inserted_generated_movie=store.upsert(movie)
+        return inserted_generated_movie
     except Exception as e:
         logging.error('Add_Movie Error: %s', e)
         logging.error('Call stack: %s', traceback.format_exc())
         return Response(content = json.dumps({'method':'add_movie','error':e}), media_type = "application/json")
 
-@app.get("/movies")
-def list_movies():
+@app.get("/movies/{movie_id}", response_model=GeneratedMovie)
+def get_movie(movie_id: str) -> GeneratedMovie:
+    """Endpoint to get a movie by ID."""
+    logging.info("Getting movie with ID: %s", movie_id)
+    try:
+        store = MovieStore(DaprClient())
+        movie = store.try_find_by_id(movie_id)
+        if movie:
+            return movie
+        else:
+            return Response(content=json.dumps({}), media_type="application/json", status_code=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logging.error('Get_Movie Error: %s', e)
+        logging.error('Call stack: %s', traceback.format_exc())
+        return Response(content=json.dumps({'method':'get_movie','error':e}), media_type="application/json")
+    
+
+@app.get("/movies", response_model=list[GeneratedMovie])
+def list_movies() -> list[GeneratedMovie]:
     """Endpoint to list all movies."""
     logging.info("Listing all movies")
     try:
@@ -64,7 +77,17 @@ def list_movies():
         dapr_client = DaprClient()
         logging.info('initializing MovieStore')
         movies = MovieStore(dapr_client).find_all()
-        return Response(content=json.dumps(movies), media_type="application/json")
+        # remove prompt from the movie
+        for movie in movies:
+            if isinstance(movie, GeneratedMovie):
+                movie.prompt = None
+                #movie.payload = None
+        # convert to JSON
+        d_movies = [movie.to_json() for movie in movies]
+        logging.info('Movies JSON: %s', d_movies)
+        # return as JSON
+        logging.info('Returning movies as JSON')
+        return movies
     except Exception as e:
         logging.error('RuntimeError: %s', e)
         return Response(content=json.dumps([]), media_type="application/json", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

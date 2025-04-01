@@ -198,6 +198,7 @@ def movie_generate():
                 generated_movie['id'] = f"{genre_index}_{movie1_id}_{movie2_id}_{random.randint(10000, 99999)}"
 
             logger.info("Generated movie: %s", json.dumps(generated_movie, indent=2))
+            
         except requests.RequestException as e:
             logger.error("Error in calling movie_generate service: %s", e)
             generated_movie = {

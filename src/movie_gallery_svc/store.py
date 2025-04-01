@@ -2,7 +2,7 @@
 import logging
 import json
 import traceback
-from entities import Movie
+from entities import GeneratedMovie, Movie
 from dapr.clients import DaprClient
 
 logging.basicConfig(level=logging.INFO)
@@ -14,18 +14,19 @@ class MovieStore:
         self.dapr_client = dapr_client
         self.state_store_name = 'movie-gallery-svc-statetore'
         
-    def upsert(self, movie: Movie) -> Movie:
+    def upsert(self, movie: GeneratedMovie) -> GeneratedMovie:
         """Add a movie to the store."""
         logging.info("Adding movie: %s", movie)
-        logging.info("JSON %s", json.dumps(movie))
-        logging.info("saving movie to store %s using this key %s", self.state_store_name, movie['movie_id'])
+        logging.info("JSON %s", movie.to_json())
+        movie_id = movie.id
+        logging.info("Saving movie to store %s using this key %s", self.state_store_name, movie_id)
         self.dapr_client.save_state(
             store_name=self.state_store_name,
-            key=movie['movie_id'],
-            value=json.dumps(movie)
+            key=movie_id,
+            value=movie.to_json()
         )
-        logging.info("Movie %s added to store", movie['movie_id'])
-        return self.try_find_by_id(movie['movie_id'])
+        logging.info("Movie %s added to store", movie_id)
+        return self.try_find_by_id(movie_id)
        
     def try_find_by_id(self, movie_id : str) -> Movie:
         """Find a movie by its ID."""
@@ -36,7 +37,8 @@ class MovieStore:
                 key=movie_id
             )
             if response.data:
-                movie = Movie.from_bytes(response.data)
+                logging.info("Movie found in store data: %s", response.data)
+                movie = GeneratedMovie.from_json(response.data)
                 logging.info("Movie found: %s", movie)
                 return movie
             else:
@@ -69,8 +71,8 @@ class MovieStore:
                     query=query,
                     states_metadata=states_metadata
                 )
-            movies = [Movie.from_bytes(item.value) for item in response.results]
-            logging.info("Movies found: %s", movies)
+            movies = [GeneratedMovie.from_json(item.value) for item in response.results]
+            logging.info("GeneratedMovies found: %d", len(movies))
             return movies
         except Exception as e:
             logging.error("Error finding all movies: %s", e)

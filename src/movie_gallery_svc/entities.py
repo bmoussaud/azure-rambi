@@ -15,7 +15,7 @@ class Movie(dict):
         dict.__init__(self, movie_id=movie_id, title=title, description=description)
    
     def __repr__(self):
-        return f"MovieGallery(id={self['id']}, title={self['title']}, description={self['description']})"
+        return f"MovieGallery(id={self['movie_id']}, title={self['title']}, description={self['description']})"
 
     def getattr(self, key):
         """Get attribute value by key."""

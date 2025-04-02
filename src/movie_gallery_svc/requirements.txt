@@ -4,7 +4,6 @@ requests
 fastapi-logger
 opentelemetry-instrumentation-requests
 opentelemetry-instrumentation-fastapi
-opentelemetry-instrumentation-openai
 opentelemetry-api >= 1.10.0
 opentelemetry-sdk >= 1.10.0
 azure-monitor-opentelemetry 

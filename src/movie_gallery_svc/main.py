@@ -1,13 +1,11 @@
-
-import uuid
 import json
 import logging
 import uvicorn
 import traceback
 
+from entities import GeneratedMovie
 from store import MovieStore
-from entities import GeneratedMovie, MovieRequest, Movie
-
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from fastapi import FastAPI, Response, status
 from fastapi.responses import HTMLResponse
 from dapr.clients import DaprClient
@@ -18,8 +16,10 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 dapr_app = DaprApp(app)
-#dapr_client = DaprClient()
+dapr_client = DaprClient()
+store=MovieStore(dapr_client)
 
+FastAPIInstrumentor.instrument_app(app, excluded_urls="liveness,readiness")
 
 @app.get('/', response_class = HTMLResponse)
 def root():
@@ -33,7 +33,7 @@ def root():
             <title>Movie Gallery API</title>
         </head>
         <body>
-            <h2>Movie Gallery API Ready !</h2>
+            <pre>Movie Gallery API Ready !</pre>
         </body>
     </html>
     """
@@ -43,7 +43,6 @@ def add_movie(movie: GeneratedMovie) -> GeneratedMovie:
     """Endpoint to add a new movie."""
     try:
         logging.info("Adding new movie %s", movie)
-        store=MovieStore(DaprClient())
         inserted_generated_movie=store.upsert(movie)
         return inserted_generated_movie
     except Exception as e:
@@ -56,7 +55,6 @@ def get_movie(movie_id: str) -> GeneratedMovie:
     """Endpoint to get a movie by ID."""
     logging.info("Getting movie with ID: %s", movie_id)
     try:
-        store = MovieStore(DaprClient())
         movie = store.try_find_by_id(movie_id)
         if movie:
             return movie
@@ -74,9 +72,7 @@ def list_movies() -> list[GeneratedMovie]:
     logging.info("Listing all movies")
     try:
         logging.info('initializing Dapr client')
-        dapr_client = DaprClient()
-        logging.info('initializing MovieStore')
-        movies = MovieStore(dapr_client).find_all()
+        movies = store.find_all()
         # remove prompt from the movie
         for movie in movies:
             if isinstance(movie, GeneratedMovie):

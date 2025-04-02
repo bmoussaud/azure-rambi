@@ -12,7 +12,7 @@ services:
 #   ## The language is 'python'.
 #   ## The source code is located in the project (azure.yaml) directory.
 #   ## The service will be hosted on Azure App Service.
-  gui:
+  gui_svc:
     language: python
     project: src/azurerambi
     host: containerapp

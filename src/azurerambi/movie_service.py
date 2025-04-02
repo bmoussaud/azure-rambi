@@ -36,7 +36,7 @@ class TMDBService:
             _headers = {
                 'api-key': self._api_key
             }
-            url = f"https://{self._end_point}/tmdb/3/movie/{id}"
+            url = f"{self._end_point}/tmdb/3/movie/{id}"
             logger.info("url: %s", url)
             response = requests.get(url, headers=_headers, timeout=10)
             logger.info("response: %s", response)
@@ -62,7 +62,7 @@ class TMDBService:
             _headers = {
                 'api-key': self._api_key
             }
-            url = f"https://{self._end_point}/tmdb/3/search/movie?query={title}"
+            url = f"{self._end_point}/tmdb/3/search/movie?query={title}"
             logger.info("url: %s", url)
             response = requests.get(url, headers=_headers, timeout=10)
             logger.info("response: %s", response)

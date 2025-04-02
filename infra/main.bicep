@@ -518,109 +518,34 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
 }
 
 @description('Creates an GUI SVC Azure Container App.')
-resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+module containerGuiSvcApp 'modules/apps/gui-svc.bicep' = {
   name: 'gui-svc'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uaiAzureRambiAcrPull.id}': {}
-    }
-  }
-  tags: { 'azd-service-name': 'gui' }
-  properties: {
-    managedEnvironmentId: containerAppsEnv.id
-    workloadProfileName: 'default'
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 8000
-        allowInsecure: false
-        traffic: [
-          {
-            latestRevision: true
-            weight: 100
-          }
-        ]
+  params: {
+    location: location
+    containerName: 'gui-svc'
+    containerPort: 8000
+    containerRegistryName: containerRegistry.name
+    acrPullRoleName: uaiAzureRambiAcrPull.name
+    shared_secrets: shared_secrets
+    containerAppsEnvironment: containerAppsEnv.name
+    additionalProperties: [
+      {
+        name: 'AZURE_OPENAI_ENDPOINT'
+        value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
       }
-      secrets: shared_secrets
-      registries: [
-        {
-          identity: uaiAzureRambiAcrPull.id
-          server: containerRegistry.properties.loginServer
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'gui'
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-          env: [
-            {
-              name: 'OPENAI_API_VERSION'
-              value: '2024-08-01-preview'
-            }
-            {
-              name: 'AZURE_OPENAI_API_KEY'
-              value: '-1'
-            }
-            {
-              name: 'AZURE_OPENAI_ENDPOINT'
-              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-            }
-            {
-              name: 'MOVIE_POSTER_ENDPOINT'
-              value: 'http://movie-poster-svc'
-            }
-            {
-              name: 'MOVIE_GENERATOR_ENDPOINT'
-              value: 'http://movie-generator-svc'
-            }
-            {
-              name: 'APIM_SUBSCRIPTION_KEY'
-              secretRef: 'apim-subscription-key'
-            }
-            {
-              name: 'TMDB_ENDPOINT'
-              value: apiManagement.outputs.apiManagementProxyHostName
-            }
-            {
-              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-              secretRef: 'appinsight-inst-key'
-            }
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              secretRef: 'applicationinsights-connection-string'
-            }
-            {
-              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-              value: '~3'
-            }
-            {
-              name: 'OTEL_SERVICE_NAME'
-              value: 'gui'
-            }
-            {
-              name: 'OTEL_RESOURCE_ATTRIBUTES'
-              value: 'service.namespace=azure-rambi,service.instance.id=gui-svc'
-            }
-            {
-              name: 'REDIS_HOST'
-              value: redis.outputs.redisHost
-            }
-            {
-              name: 'REDIS_PORT'
-              value: '${int('${redis.outputs.redisPort}')}'
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 2
+      {
+        name: 'TMDB_ENDPOINT'
+        value: 'https://${apiManagement.outputs.apiManagementProxyHostName}'
       }
-    }
+      {
+        name: 'REDIS_HOST'
+        value: redis.outputs.redisHost
+      }
+      {
+        name: 'REDIS_PORT'
+        value: '${int('${redis.outputs.redisPort}')}'
+      }
+    ]
   }
 }
 

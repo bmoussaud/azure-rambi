@@ -21,6 +21,7 @@ from wtforms import StringField, SubmitField
 from dotenv import load_dotenv
 from movie_service import TMDBService, Movie
 from movie_poster_client import MoviePosterClient
+from dapr.clients import DaprClient
 
 
 logging.basicConfig(level=logging.INFO)
@@ -117,7 +118,7 @@ def poster_description():
         logger.info("movie.title: %s", movie.title)
         poster_desc = movie_poster_client.describe_poster(movie.title, movie.poster_url)
     except Exception as e:
-        logger.error("Other Error in describe_poster: %s", e)
+        logger.exception("Other Error in describe_poster")
         poster_desc = f"Error in describe_poster: {e}"
 
     return render_template('poster_description.html',
@@ -198,9 +199,16 @@ def movie_generate():
                 generated_movie['id'] = f"{genre_index}_{movie1_id}_{movie2_id}_{random.randint(10000, 99999)}"
 
             logger.info("Generated movie: %s", json.dumps(generated_movie, indent=2))
-            
+            with DaprClient() as d:
+                logger.info("Invoke movie gallery service to save the generated movie")
+                d.invoke_method(
+                    app_id="movie-gallery-svc",
+                    method_name="movies",
+                    data=json.dumps(generated_movie),
+                    http_verb='POST'
+                )
         except requests.RequestException as e:
-            logger.error("Error in calling movie_generate service: %s", e)
+            logger.exception("Error in calling movie_generate service")
             generated_movie = {
                 "title": "Generation Movie Error",
                 "plot": f"Error in calling movie_generate service: {e}",

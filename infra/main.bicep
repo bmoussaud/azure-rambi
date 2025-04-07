@@ -1,5 +1,6 @@
-@description('Location of the resources')
-param location string = resourceGroup().location
+@minLength(1)
+@description('Primary location for all resources')
+param location string
 
 @description('Restore the service instead of creating a new instance. This is useful if you previously soft-deleted the service and want to restore it. If you are restoring a service, set this to true. Otherwise, leave this as false.')
 param restore bool = false

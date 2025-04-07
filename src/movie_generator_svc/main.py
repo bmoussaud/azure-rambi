@@ -252,15 +252,7 @@ async def movie_generate(request: Request,payload:MoviePayload) -> GenAIMovie:
     movie =  service.generate_movie(payload.movie1, payload.movie2, payload.genre)
     return movie
 
-@app.get('/generated_movie/{movie_id}')
-@log_request
-async def generated_movie(request: Request,movie_id:str) -> GenAIMovie:
-    """Function to retrieve a generated_movie."""
-    logger_uvicorn.info("generated_movie %s", movie_id)
-    redis_client = RedisClient()
-    generated =  redis_client.get(movie_id)
-    logger_uvicorn.info("generated_movie %s", generated)
-    return generated
+
 
 @app.get('/liveness')
 @log_request

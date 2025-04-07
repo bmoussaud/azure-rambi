@@ -447,120 +447,26 @@ module containerGuiSvcApp 'modules/apps/gui-svc.bicep' = {
 }
 
 @description('Creates an Movie Generator SVC Azure Container App.')
-resource containerMovieGeneratorSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+module containerMovieGeneratorSvcApp 'modules/apps/movie-generator-svc.bicep' = {
   name: 'movie-generator-svc'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uaiAzureRambiAcrPull.id}': {}
-      '${azrStorageContributor.id}': {}
-    }
-  }
-  tags: { 'azd-service-name': 'movie_generator_svc' }
-  properties: {
-    managedEnvironmentId: containerAppsEnv.id
-    workloadProfileName: 'default'
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 8001
-        allowInsecure: false
-        traffic: [
-          {
-            latestRevision: true
-            weight: 100
-          }
-        ]
+  params: {
+    location: location
+    containerName: 'movie-generator-svc'
+    containerPort: 8001
+    containerRegistryName: containerRegistry.name
+    acrPullRoleName: uaiAzureRambiAcrPull.name
+    shared_secrets: shared_secrets
+    containerAppsEnvironment: containerAppsEnv.name
+    additionalProperties: [
+      {
+        name: 'AZURE_OPENAI_ENDPOINT'
+        value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
       }
-      secrets: shared_secrets
-      registries: [
-        {
-          identity: uaiAzureRambiAcrPull.id
-          server: containerRegistry.properties.loginServer
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'movie-generator-svc'
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-          env: [
-            {
-              name: 'OPENAI_API_VERSION'
-              value: '2024-08-01-preview'
-            }
-            {
-              name: 'MOVIE_POSTER_ENDPOINT'
-              value: 'http://movie-poster-svc'
-            }
-            {
-              name: 'AZURE_OPENAI_API_KEY'
-              secretRef: 'apim-subscription-key'
-            }
-            {
-              name: 'AZURE_OPENAI_ENDPOINT'
-              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-            }
-            {
-              name: 'APIM_SUBSCRIPTION_KEY'
-              secretRef: 'apim-subscription-key'
-            }
-            {
-              name: 'APIM_ENDPOINT'
-              value: apiManagement.outputs.apiManagementProxyHostName
-            }
-            {
-              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-              secretRef: 'appinsight-inst-key'
-            }
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              secretRef: 'applicationinsights-connection-string'
-            }
-            {
-              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-              value: '~3'
-            }
-            {
-              name: 'OTEL_SERVICE_NAME'
-              value: 'movie_generator_svc'
-            }
-            {
-              name: 'OTEL_RESOURCE_ATTRIBUTES'
-              value: 'service.namespace=azure-rambi,service.instance.id=movie-generator-svc'
-            }
-            {
-              // Required for managed identity to access the storage account
-              name: 'AZURE_CLIENT_ID'
-              value: azrStorageContributor.properties.clientId
-            }
-          ]
-          probes: [
-            {
-              type: 'Liveness'
-              httpGet: {
-                path: '/liveness'
-                port: 8001
-              }
-            }
-
-            {
-              type: 'Readiness'
-              httpGet: {
-                path: '/readiness'
-                port: 8001
-              }
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 2
+      {
+        name: 'APIM_ENDPOINT'
+        value: apiManagement.outputs.apiManagementProxyHostName
       }
-    }
+    ]
   }
 }
 
@@ -645,7 +551,7 @@ output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.l
 output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
 output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
 output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.outputs.fqdn}'
-output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn}'
+output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.outputs.fqdn}'
 output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'

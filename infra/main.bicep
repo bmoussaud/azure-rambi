@@ -371,133 +371,46 @@ var shared_secrets = [
 ]
 
 @description('Creates an Movie Poster SVC Azure Container App.')
-resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
   name: 'movie-poster-svc'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uaiAzureRambiAcrPull.id}': {}
-      '${azrStorageContributor.id}': {}
-    }
-  }
-  tags: { 'azd-service-name': 'movie_poster_svc' }
-  properties: {
-    managedEnvironmentId: containerAppsEnv.id
-    workloadProfileName: 'default'
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 8002
-        allowInsecure: false
-        traffic: [
-          {
-            latestRevision: true
-            weight: 100
-          }
-        ]
+  params: {
+    location: location
+    containerName: 'movie-poster-svc'
+    containerPort: 8002
+    containerRegistryName: containerRegistry.name
+    acrPullRoleName: uaiAzureRambiAcrPull.name
+    shared_secrets: shared_secrets
+    containerAppsEnvironment: containerAppsEnv.name
+    additionalProperties: [
+      {
+        name: 'AZURE_OPENAI_ENDPOINT'
+        value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
       }
-      secrets: shared_secrets
-      registries: [
-        {
-          identity: uaiAzureRambiAcrPull.id
-          server: containerRegistry.properties.loginServer
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'movie-poster-svc'
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-          env: [
-            {
-              name: 'OPENAI_API_VERSION'
-              value: '2024-08-01-preview'
-            }
-            {
-              name: 'AZURE_OPENAI_API_KEY'
-              secretRef: 'apim-subscription-key'
-            }
-            {
-              name: 'AZURE_OPENAI_ENDPOINT'
-              value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-            }
-            {
-              name: 'APIM_SUBSCRIPTION_KEY'
-              secretRef: 'apim-subscription-key'
-            }
-            {
-              name: 'APIM_ENDPOINT'
-              value: apiManagement.outputs.apiManagementProxyHostName
-            }
-            {
-              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-              secretRef: 'appinsight-inst-key'
-            }
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              secretRef: 'applicationinsights-connection-string'
-            }
-            {
-              name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-              value: '~3'
-            }
-            {
-              name: 'OTEL_SERVICE_NAME'
-              value: 'movie_poster_svc'
-            }
-            {
-              name: 'OTEL_RESOURCE_ATTRIBUTES'
-              value: 'service.namespace=azure-rambi,service.instance.id=movie-poster-svc'
-            }
-            {
-              name: 'REDIS_HOST'
-              value: redis.outputs.redisHost
-            }
-            {
-              name: 'REDIS_PORT'
-              value: '${int('${redis.outputs.redisPort}')}'
-            }
-            {
-              name: 'USE_CACHE'
-              value: 'oui'
-            }
-            {
-              name: 'STORAGE_ACCOUNT_BLOB_URL'
-              value: storageAccountAzureRambi.properties.primaryEndpoints.blob
-            }
-
-            {
-              // Required for managed identity to access the storage account
-              name: 'AZURE_CLIENT_ID_BLOB'
-              value: azrStorageContributor.properties.clientId
-            }
-          ]
-          probes: [
-            {
-              type: 'Liveness'
-              httpGet: {
-                path: '/liveness'
-                port: 8002
-              }
-            }
-
-            {
-              type: 'Readiness'
-              httpGet: {
-                path: '/readiness'
-                port: 8002
-              }
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 2
+      {
+        name: 'APIM_ENDPOINT'
+        value: apiManagement.outputs.apiManagementProxyHostName
       }
-    }
+      {
+        name: 'REDIS_HOST'
+        value: redis.outputs.redisHost
+      }
+      {
+        name: 'REDIS_PORT'
+        value: '${int('${redis.outputs.redisPort}')}'
+      }
+      {
+        name: 'USE_CACHE'
+        value: 'oui'
+      }
+      {
+        name: 'STORAGE_ACCOUNT_BLOB_URL'
+        value: storageAccountAzureRambi.properties.primaryEndpoints.blob
+      }
+      {
+        name: 'AZURE_CLIENT_ID_BLOB'
+        value: azrStorageContributor.properties.clientId
+      }
+    ]
   }
 }
 
@@ -731,7 +644,7 @@ output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
 output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
 output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
-output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.properties.configuration.ingress.fqdn}'
+output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.outputs.fqdn}'
 output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.properties.configuration.ingress.fqdn}'
 output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'

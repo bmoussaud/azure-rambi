@@ -1,5 +1,5 @@
 [project]
-name = "azurerambi"
+name = "gui_svc"
 version = "1.0.0"
 description = "Rambi projet on Azure"
 authors = [

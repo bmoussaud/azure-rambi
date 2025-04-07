@@ -14,7 +14,7 @@ services:
 #   ## The service will be hosted on Azure App Service.
   gui_svc:
     language: python
-    project: src/azurerambi
+    project: src/gui_svc
     host: containerapp
     docker:
       remoteBuild: true

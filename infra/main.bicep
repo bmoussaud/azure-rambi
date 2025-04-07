@@ -5,17 +5,8 @@ param location string
 @description('Restore the service instead of creating a new instance. This is useful if you previously soft-deleted the service and want to restore it. If you are restoring a service, set this to true. Otherwise, leave this as false.')
 param restore bool = false
 
-@description('The email address of the owner of the service')
-var apimPublisherEmail = 'azure-rambi@contososuites.com'
-
-var apiManagementServiceName = 'azrambi-apim-${uniqueString(resourceGroup().id)}'
-var apimSku = 'Basicv2'
-var apimSkuCount = 1
-var apimPublisherName = 'Azure Rambi Suites'
-
 var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
 var acrName = 'azurerambi${uniqueString(resourceGroup().id)}'
-var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
 
 @description('Model deployments for OpenAI')
 param deployments array = [
@@ -183,11 +174,11 @@ module apiManagement 'modules/api-management.bicep' = {
   name: 'api-management'
   params: {
     location: location
-    serviceName: apiManagementServiceName
-    publisherName: apimPublisherName
-    publisherEmail: apimPublisherEmail
-    skuName: apimSku
-    skuCount: apimSkuCount
+    serviceName: 'azrambi-apim-${uniqueString(resourceGroup().id)}'
+    publisherName: 'Azure Rambi Suites'
+    publisherEmail: 'azure-rambi@contososuites.com'
+    skuName: 'Basicv2'
+    skuCount: 1
     aiName: 'azure-rambi-app-insights'
     //eventHubNamespaceName: 'azure-rambi-ehn-${uniqueString(resourceGroup().id)}'
     //eventHubName: 'azure-rambi-eh-${uniqueString(resourceGroup().id)}'
@@ -388,7 +379,6 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
       '${azrStorageContributor.id}': {}
-      '${azrQueueStorageProducer.id}': {}
     }
   }
   tags: { 'azd-service-name': 'movie_poster_svc' }
@@ -477,18 +467,11 @@ resource containerMoviePosterSvcApp 'Microsoft.App/containerApps@2024-10-02-prev
               name: 'STORAGE_ACCOUNT_BLOB_URL'
               value: storageAccountAzureRambi.properties.primaryEndpoints.blob
             }
-            {
-              name: 'STORAGE_ACCOUNT_QUEUE_URL'
-              value: storageAccountAzureRambi.properties.primaryEndpoints.queue
-            }
+
             {
               // Required for managed identity to access the storage account
               name: 'AZURE_CLIENT_ID_BLOB'
               value: azrStorageContributor.properties.clientId
-            }
-            {
-              name: 'AZURE_CLIENT_ID_QUEUE'
-              value: azrQueueStorageProducer.properties.clientId
             }
           ]
           probes: [
@@ -684,7 +667,7 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
 
 @description('Creates an Azure Storage Account.')
 resource storageAccountAzureRambi 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: storageAccountName
+  name: 'azrambi${uniqueString(resourceGroup().id)}'
   location: location
   sku: {
     name: 'Standard_LRS'
@@ -710,6 +693,7 @@ resource storageAccountAzureRambi 'Microsoft.Storage/storageAccounts@2021-09-01'
     name: 'default'
   }
 
+  /*
   resource queueServices 'queueServices' = {
     resource queue 'queues' = {
       name: 'generatedmovies'
@@ -717,6 +701,7 @@ resource storageAccountAzureRambi 'Microsoft.Storage/storageAccounts@2021-09-01'
     }
     name: 'default'
   }
+  */
 }
 
 resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
@@ -740,206 +725,6 @@ resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
   }
 }
 
-resource rambiEventsHandler 'Microsoft.Web/sites@2024-04-01' = {
-  name: 'rambi-events-handler'
-  location: location
-  tags: { 'azd-service-name': 'rambi-events-handler' }
-  kind: 'functionapp,linux,container,azurecontainerapps'
-  //appInsightResourceId : applicationInsights.outputs.id
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uaiAzureRambiAcrPull.id}': {} // ACR pull
-      '${azfctStorageContributor.id}': {} // Internal Azure Function Storage access
-      '${azrQueueStorageReader.id}': {} // Storage access To the Queue
-    }
-  }
-
-  properties: {
-    managedEnvironmentId: containerAppsEnv.id
-    siteConfig: {
-      linuxFxVersion: 'DOCKER|mcr.microsoft.com/azure-functions/dotnet8-quickstart-demo:1.0'
-      //linuxFxVersion: 'DOCKER|azurerambieab45rexk4hhs.azurecr.io/azure-rambi/rambi_event_handler_local:396bbb31'
-      acrUseManagedIdentityCreds: true
-      acrUserManagedIdentityID: uaiAzureRambiAcrPull.id
-      appSettings: [
-        {
-          name: 'DOCKER_REGISTRY_SERVER_URL'
-          value: containerRegistry.properties.loginServer
-        }
-        {
-          name: 'RambiQueueStorageConnection__credential'
-          value: 'managedidentity'
-        }
-        {
-          name: 'RambiQueueStorageConnection__clientId'
-          value: azrQueueStorageReader.properties.clientId
-        }
-        {
-          name: 'RambiQueueStorageConnection__queueServiceUri'
-          value: storageAccountAzureRambi.properties.primaryEndpoints.queue
-        }
-        {
-          name: 'RambiQueueStorageConnection__accountName'
-          value: storageAccountAzureRambi.name
-        }
-        {
-          name: 'RambiQueueStorageConnection__accountKey'
-          value: storageAccountAzureRambi.listKeys().keys[0].value
-        }
-        {
-          name: 'RambiQueueStorageConnection__queueEndpoint'
-          value: storageAccountAzureRambi.properties.primaryEndpoints.queue
-        }
-        {
-          name: 'RambiQueueStorageConnection__blobEndpoint'
-          value: storageAccountAzureRambi.properties.primaryEndpoints.blob
-        }
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'managedidentity'
-        }
-        {
-          name: 'AzureWebJobsStorage__accountName'
-          value: functionStorageAccount.name
-        }
-        {
-          name: 'AzureWebJobsStorage__accountKey'
-          value: functionStorageAccount.listKeys().keys[0].value
-        }
-        {
-          name: 'AzureWebJobsStorage__queueEndpoint'
-          value: functionStorageAccount.properties.primaryEndpoints.queue
-        }
-        {
-          name: 'AzureWebJobsStorage__blobEndpoint'
-          value: functionStorageAccount.properties.primaryEndpoints.blob
-        }
-        {
-          name: 'AzureWebJobsStorage__clientId'
-          value: azfctStorageContributor.properties.clientId
-        }
-        {
-          name: 'AzureWebJobsStorage__credential'
-          value: 'managedidentity'
-        }
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: applicationInsights.outputs.instrumentationKey
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsights.outputs.connectionString
-        }
-        {
-          name: 'PYTHON_ENABLE_WORKER_EXTENSIONS'
-          value: '1'
-        }
-        {
-          name: 'MOVIE_GALLERY_SVC_ENDPOINT'
-          value: 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
-        }
-      ]
-    }
-  }
-}
-
-var resourceToken = toLower(uniqueString(subscription().id, 'dev', location))
-var deploymentStorageContainerName = 'app-package-${take('azurerambi', 32)}-${take(resourceToken, 7)}'
-var functionStorageAccountName = 'azrambifct${uniqueString(resourceGroup().id)}'
-
-resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: functionStorageAccountName
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-  properties: {
-    minimumTlsVersion: 'TLS1_2'
-    allowBlobPublicAccess: false
-    allowSharedKeyAccess: false
-    publicNetworkAccess: 'Enabled'
-    networkAcls: {
-      bypass: 'AzureServices'
-      defaultAction: 'Allow'
-    }
-  }
-
-  resource blobServices 'blobServices' = {
-    resource container 'containers' = {
-      name: deploymentStorageContainerName
-      properties: {
-        publicAccess: 'None'
-      }
-    }
-    name: 'default'
-  }
-}
-
-resource azfctStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
-  name: 'azure-fct-storage-contributor'
-  location: location
-}
-
-resource azrQueueStorageReader 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
-  name: 'azure-rambi-queue-storage-reader'
-  location: location
-}
-
-resource azrQueueStorageProducer 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
-  name: 'azure-rambi-queue-storage-producer'
-  location: location
-}
-
-// Assign the Storage Queue Data Contributor and Storage Queue Data Message Processor roles to the function app
-resource assignroleAssignmentTriggerStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
-  for roleId in [
-    '19e7f393-937e-4f77-808e-94535e297925' // Storage Queue Data Reader
-    '8a0f0c08-91a1-4084-bc3d-661d67233fed' // Storage Queue Data Message Processor
-  ]: {
-    name: guid(storageAccountAzureRambi.id, azrQueueStorageReader.id, roleId)
-    scope: storageAccountAzureRambi
-    properties: {
-      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
-      principalId: azrQueueStorageReader.properties.principalId
-      principalType: 'ServicePrincipal'
-    }
-  }
-]
-
-resource assignroleAssignmentMessageProducterStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
-  for roleId in [
-    '974c5e8b-45b9-4653-ba55-5f855dd0fb88' // Storage queue Data Contributor
-    'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' // Storage Queue Data Message Sender
-  ]: {
-    name: guid(storageAccountAzureRambi.id, azrQueueStorageProducer.id, roleId)
-    scope: storageAccountAzureRambi
-    properties: {
-      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
-      principalId: azrQueueStorageProducer.properties.principalId
-      principalType: 'ServicePrincipal'
-    }
-  }
-]
-
-// Assign the Storage Blob Data Owner and Storage Blob Data Contributor roles to the function app
-resource assignroleAssignmentFunctionStorageAccount 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [
-  for roleId in [
-    'b7e6dc6d-f1e8-4753-8033-0f276bb0955b' // Storage Blob Data Owner
-    'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
-    '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3' // Storage Queue Data Contributor
-  ]: {
-    name: guid(functionStorageAccount.id, azfctStorageContributor.id, roleId)
-    scope: functionStorageAccount
-    properties: {
-      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
-      principalId: azfctStorageContributor.properties.principalId
-      principalType: 'ServicePrincipal'
-    }
-  }
-]
-
 output AZURE_LOCATION string = location
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name
@@ -952,5 +737,5 @@ output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.ou
 output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
 output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
-output APIM_SERVICE_NAME string = apiManagementServiceName
+output APIM_SERVICE_NAME string = apiManagement.name
 output TMDB_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName

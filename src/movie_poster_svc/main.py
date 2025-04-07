@@ -202,30 +202,6 @@ class GenAiMovieService:
         logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
         return f"/poster/{movie_id}.png"
 
-    def generate_new_message(self, name: str):
-        """ Generate a new message based on the"""
-        try:
-            
-            sa = os.getenv("STORAGE_ACCOUNT_QUEUE_URL")
-            logger.info("initialize queue client with %s", sa)
-            logger.info("initialize queue client with clientID %s", os.getenv("AZURE_CLIENT_ID_QUEUE"))
-            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_QUEUE"))
-            queue_client_generated_movies = QueueClient.from_queue_url(f"{sa}generatedmovies", credential=managed_id_credential)
-            logger.info("generate_new_message called with %s", name)
-            logger.info("Adding messages to the queue...")
-
-            # Send several messages to the queue
-            queue_client_generated_movies.send_message(u"First message"+name)
-            queue_client_generated_movies.send_message(u"Second message"+name)
-            queue_client_generated_movies.send_message(u"Third message"+name)
-            properties = queue_client_generated_movies.get_queue_properties()
-            count = properties.approximate_message_count
-            logger.info("Message count: %d", count)
-            return f"Messages added to the queue {count}"
-        except Exception as e:
-            logger.error("MERROR generate_new_message: %s", e)
-            return f"Unable to generate new message: {e}"
-
     def generate_poster(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
         logger.info("generate_poster called with %s", poster_description)
@@ -385,14 +361,6 @@ async def liveness(request: Request):
 async def readiness(request: Request):
     """Function to check the readiness of the service."""
     return  "readiness"
-
-
-@app.get('/queue/{movie_title}')
-@log_request
-async def queue(request: Request, movie_title: str):
-    """Function to check the readiness of the service."""
-    logger.info("queue called with %s", movie_title)
-    return service.generate_new_message(movie_title)
 
 if __name__ == '__main__':
     uvicorn.run('main:app', host='0.0.0.0', port=8002)

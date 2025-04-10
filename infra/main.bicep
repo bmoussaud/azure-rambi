@@ -512,15 +512,13 @@ resource storageAccountAzureRambi 'Microsoft.Storage/storageAccounts@2021-09-01'
     name: 'default'
   }
 
-  /*
   resource queueServices 'queueServices' = {
     resource queue 'queues' = {
-      name: 'generatedmovies'
+      name: 'movieposters-events'
       properties: {}
     }
     name: 'default'
   }
-  */
 }
 
 resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
@@ -541,6 +539,41 @@ resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
     roleDefinitionId: storageBlobDataContributorRoleDefinition.id
     principalId: azrStorageContributor.properties.principalId
     principalType: 'ServicePrincipal'
+  }
+}
+
+module systemTopic 'br/public:avm/res/event-grid/system-topic:0.6.0' = {
+  name: 'systemTopicDeployment'
+  params: {
+    // Required parameters
+    name: 'azrambi-event-grid-topic'
+    source: storageAccountAzureRambi.id
+    topicType: 'Microsoft.Storage.StorageAccounts'
+    // Non-required parameters
+    location:  location
+    eventSubscriptions: [
+      {
+        destination: {
+          endpointType: 'StorageQueue'
+          properties: {
+            queueMessageTimeToLiveInSeconds: 86400
+            resourceId: storageAccountAzureRambi.id
+            queueName: 'movieposters-events'
+          }
+        }
+        eventDeliverySchema: 'CloudEventSchemaV1_0'
+        expirationTimeUtc: '2099-01-01T11:00:21.715Z'
+        filter: {
+          enableAdvancedFilteringOnArrays: true
+          isSubjectCaseSensitive: false
+        }
+        name: 'movieposters-event-subscription'
+        retryPolicy: {
+          eventTimeToLive: '120'
+          maxDeliveryAttempts: 10
+        }
+      }
+    ]
   }
 }
 

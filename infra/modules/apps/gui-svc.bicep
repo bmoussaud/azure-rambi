@@ -109,6 +109,10 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
                 name: 'OTEL_RESOURCE_ATTRIBUTES'
                 value: 'service.namespace=azure-rambi,service.instance.id=${containerName}'
               }
+              {
+                name: 'PORT'
+                value: '${containerPort}'
+              }
             ],
             additionalProperties
           )

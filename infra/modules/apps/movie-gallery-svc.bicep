@@ -18,6 +18,9 @@ param containerRegistryName string
 param containerName string = 'movie-gallery-svc'
 param containerPort int = 5000
 
+@description('Storage account name.')
+param storageAccountName string
+
 param location string = resourceGroup().location
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
@@ -26,6 +29,10 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
 
 resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' existing = {
   name: acrPullRoleName
+}
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
+  name: storageAccountName
 }
 
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' existing = {
@@ -50,6 +57,33 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
         {
           name: 'collection'
           value: 'state'
+        }
+        {
+          name: 'azureClientId'
+          value: managedIdentity.properties.clientId
+        }
+      ]
+      scopes: [
+        containerName
+      ]
+    }
+  }
+
+  resource queueComponent 'daprComponents@2022-03-01' = {
+    name: 'movieposters-events-queue'
+    properties: {
+      componentType: 'bindings.azure.storagequeues'
+      version: 'v1'
+      initTimeout: '5m'
+      secrets: []
+      metadata: [
+        {
+          name: 'storageAccount'
+          value: storageAccount.name
+        }
+        {
+          name: 'queue'
+          value: 'movieposters-events'
         }
         {
           name: 'azureClientId'
@@ -131,6 +165,18 @@ resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-pre
               name: 'OTEL_RESOURCE_ATTRIBUTES'
               value: 'service.namespace=azure-rambi,service.instance.id=${containerName}'
             }
+            {
+              name: 'STORAGE_ACCOUNT_NAME'
+              value: 'azrambi4vcyb7vq3byju'
+            }
+            {
+              name: 'STORAGE_QUEUE_NAME'
+              value: 'movieposters-events'
+            }
+            {
+              name: 'PORT'
+              value: '${containerPort}'
+            }
           ]
           probes: [
             {
@@ -159,7 +205,7 @@ resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-pre
 }
 
 resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' = {
-  name: 'azrambi-cosmos-account'
+  name: 'azrambi-cosmos-dbaccount'
   location: location
   kind: 'GlobalDocumentDB'
   properties: {
@@ -231,6 +277,17 @@ resource backendApiService_cosmosdb_role_assignment 'Microsoft.DocumentDB/databa
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
   name: 'dapr-state-store-identity'
   location: location
+}
+
+// Role assignment for Storage Queue Data Contributor to the managed identity
+resource storageQueueDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, storageAccount.name, managedIdentity.id)
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88') // Storage Queue Data Contributor role
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
 }
 
 output name string = containerMovieGallerySvcApp.name

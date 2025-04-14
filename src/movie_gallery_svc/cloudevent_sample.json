@@ -1,0 +1,23 @@
+{
+    "id": "576df06a-101e-006e-1d2d-ad9840069ee4",
+    "source": "/subscriptions/9479b396-5d3e-467a-b89f-ba8400aeb7dd/resourceGroups/rg-azr-dev/providers/Microsoft.Storage/storageAccounts/azrambirpolpzd22ykfo",
+    "specversion": "1.0",
+    "type": "Microsoft.Storage.BlobCreated",
+    "subject": "/blobServices/default/containers/movieposters/blobs/313369_194_Romance_11844.png",
+    "time": "2025-04-14T11:06:12.5258854Z",
+    "data": {
+        "api": "PutBlob",
+        "clientRequestId": "79d3c724-1920-11f0-ad17-96f9d8066883",
+        "requestId": "576df06a-101e-006e-1d2d-ad9840000000",
+        "eTag": "0x8DD7B445E38E866",
+        "contentType": "application/octet-stream",
+        "contentLength": 5526153,
+        "blobType": "BlockBlob",
+        "accessTier": "Default",
+        "url": "https://azrambirpolpzd22ykfo.blob.core.windows.net/movieposters/313369_194_Romance_11844.png",
+        "sequencer": "00000000000000000000000000015BA60000000002ce278f",
+        "storageDiagnostics": {
+            "batchId": "e169facb-c006-0042-002d-ad74ef000000"
+        }
+    }
+}²

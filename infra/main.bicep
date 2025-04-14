@@ -476,11 +476,12 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
   params: {
     location: location
     containerName: 'movie-gallery-svc'
-    containerPort: 5000
+    containerPort: 80
     containerRegistryName: containerRegistry.name
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
+    storageAccountName: storageAccountAzureRambi.name
   }
 }
 
@@ -574,6 +575,14 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.6.0' = {
         }
       }
     ]
+  }
+}
+
+module userPortalAccess 'modules/user_portal_role.bicep' = {
+  name: 'user-portal-access'
+  params: {
+    kvName: kv.name
+    storageAccountName: storageAccountAzureRambi.name
   }
 }
 

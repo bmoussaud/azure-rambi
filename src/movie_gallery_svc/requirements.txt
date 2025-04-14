@@ -1,16 +1,20 @@
-flask
-uvicorn 
-requests
-fastapi-logger
-opentelemetry-instrumentation-requests
-opentelemetry-instrumentation-fastapi
-opentelemetry-api >= 1.10.0
-opentelemetry-sdk >= 1.10.0
-azure-monitor-opentelemetry 
 azure-identity
-
-dapr
-dapr-ext-fastapi 
+azure-monitor-opentelemetry 
+azure-storage-blob
+azure-storage-queue
 cloudevents
+dapr
+dapr-client
+dapr-ext-fastapi 
+fastapi
+fastapi-logger
+openai
+opentelemetry-api >= 1.10.0
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-requests
+opentelemetry-sdk >= 1.10.0
 pydantic
+python-dotenv
+python-multipart
 retry
+uvicorn

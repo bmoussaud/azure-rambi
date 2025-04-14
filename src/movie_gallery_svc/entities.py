@@ -13,6 +13,7 @@ class Movie(BaseModel):
     title: str
     plot: str
     poster_url: Optional[str] = None
+    internal_poster_url: Optional[str] = None
     poster_description: Optional[str] = None
 
     def to_dict(self) -> dict:
@@ -26,7 +27,7 @@ class Movie(BaseModel):
 
     def __str__(self) -> str:
         """Return a string representation of the Movie instance"""
-        return f"Movie(id={self.id}, title={self.title}, plot={self.plot}, poster_url={self.poster_url}, poster_description={self.poster_description})"
+        return f"Movie(id={self.id}, title={self.title}, plot={self.plot}, poster_url={self.poster_url}, internal_poster_url={self.internal_poster_url},poster_description={self.poster_description})"
 
 class MoviePayload(BaseModel):
     """Data class for movie generation payload"""

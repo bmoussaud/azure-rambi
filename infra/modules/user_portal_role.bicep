@@ -1,9 +1,10 @@
-var kvName = 'rambikv${uniqueString(resourceGroup().id)}'
-var storageAccountName = 'azrambi${uniqueString(resourceGroup().id)}'
+param kvName string
+param storageAccountName string
 
 resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' existing = {
   name: kvName
 }
+
 @description('This is the built-in Key Vault Secrets Officer role. See https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-user')
 resource keyVaultSecretsUserRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
   scope: subscription()

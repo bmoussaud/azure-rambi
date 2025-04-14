@@ -1,0 +1,26 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: movieposters-events-queue
+spec:
+  type: bindings.azure.storagequeues
+  version: v1
+  metadata:
+  - name: accountName
+    secretKeyRef:
+      name: AZURE_STORAGE_ACCOUNT_NAME
+      key: AZURE_STORAGE_ACCOUNT_NAME
+  - name: accountKey
+    secretKeyRef:
+      name: AZURE_STORAGE_ACCOUNT_KEY
+      key: AZURE_STORAGE_ACCOUNT_KEY
+  - name: queueName
+    value: "movieposters-events-queue"
+  - name: decodeBase64
+    value: "true"
+  - name: direction
+    value: "input"
+auth:
+  secretStore: kubernetes
+scopes:
+  - movie-gallery-svc

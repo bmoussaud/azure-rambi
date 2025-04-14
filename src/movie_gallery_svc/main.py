@@ -166,17 +166,6 @@ async def movieposters_events_handler(request: Request):
             status_code=status.HTTP_200_OK  # Use 200 to acknowledge receipt even on error
         )
 
-# Register Dapr pub/sub subscriptions
-@app.route('/dapr/subscribe', methods=['GET'])
-def subscribe():
-    """Endpoint to get the Dapr pub/sub subscriptions."""
-    subscriptions = [{
-        'pubsubname': STORAGE_QUEUE_BINDING,
-        'topic': 'movieposters-events'
-    }]
-    logging.info("***** Dapr pub/sub is subscribed to: %s", json.dumps(subscriptions))
-    return Response(content=json.dumps(subscriptions), media_type="application/json")
-
 @app.post("/movies", status_code = status.HTTP_201_CREATED)
 def add_movie(movie: GeneratedMovie) -> GeneratedMovie:
     """Endpoint to add a new movie."""

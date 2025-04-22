@@ -274,7 +274,7 @@ module redis 'modules/redis.bicep' = {
   params: {
     location: location
     redisCacheName: 'azure-rambi-redis-${uniqueString(resourceGroup().id)}'
-    redisContributorName: 'azure-rambi-storage-contributor'
+    redisContributorName: azrStorageContributor.name
   }
 }
 
@@ -381,6 +381,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
+    storageContributorRoleName: azrStorageContributor.name
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'

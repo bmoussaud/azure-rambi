@@ -5,6 +5,7 @@ param containerRegistryName string
 param acrPullRoleName string
 param shared_secrets array
 param containerAppsEnvironment string
+param storageContributorRoleName string
 
 @description('Additional properties to be added to the container app')
 param additionalProperties array = []
@@ -18,7 +19,7 @@ resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@
 }
 
 resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = {
-  name: 'azure-rambi-storage-contributor'
+  name: storageContributorRoleName
 }
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {

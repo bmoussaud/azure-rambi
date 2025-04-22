@@ -11,7 +11,7 @@ import uvicorn
 import base64
 
 from collections import OrderedDict
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_wtf import FlaskForm
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -216,6 +216,29 @@ def movie_generate():
             }
         return render_template('generated_movie.html', generated_movie=generated_movie)
 
+@app.route('/gallery', methods=['GET'])
+def movie_gallery():
+    """Display all movies from the movie gallery service."""
+    logger.info("Accessing movie gallery")
+    movies = []
+    try:
+        with DaprClient() as d:
+            logger.info("Invoking movie gallery service to get all movies")
+            resp = d.invoke_method(
+                app_id="movie-gallery-svc",
+                method_name="movies",
+                http_verb='GET'
+            )
+            # Properly access data from Dapr InvokeMethodResponse object
+            if resp.data:
+                movies = json.loads(resp.data.decode('utf-8'))
+                logger.info(f"Retrieved {len(movies)} movies from gallery")
+            else:
+                logger.warning("No data returned from movie gallery service")
+    except Exception as e:
+        logger.exception("Error retrieving movies from gallery service", exc_info=e)
+        
+    return render_template('gallery.html', movies=movies, github=GitHubContext())
 
 if __name__ == '__main__':
     app.run( debug=True)

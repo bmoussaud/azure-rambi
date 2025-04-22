@@ -11,7 +11,7 @@ import uvicorn
 import base64
 
 from collections import OrderedDict
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 from flask_wtf import FlaskForm
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -39,6 +39,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'azure_rambi'
+app.config['SESSION_TYPE'] = 'filesystem'
 
 
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING") is not None:
@@ -75,7 +76,7 @@ class RambiModel:
     movie2: Movie
     default_genres: List[str] = dataclasses.field(default_factory=lambda: genre_list)
     languages: List[str] = dataclasses.field(default_factory=lambda: language_list)
-
+    
 class TwoMoviesForm(FlaskForm):
     """Form for find tow movies."""
     movie1Title = StringField('Movie 1', validators=[DataRequired()])
@@ -104,7 +105,12 @@ def home():
         movie2 = tmdb_svc.get_movie_by_title(
             twomovieform.movie2Title.data)
         rambimodel = RambiModel(movie1, movie2)
-    return render_template('index.html', form=twomovieform, rambimodel=rambimodel, github=GitHubContext())
+    
+    # Get current language preference, default to 'english' if not set
+    current_language = session.get('preferred_language', 'english')
+    return render_template('index.html', form=twomovieform, rambimodel=rambimodel, 
+                           current_language=current_language, languages=language_list,
+                           github=GitHubContext())
 
 
 @ app.route('/poster/description', methods=['POST'])
@@ -174,7 +180,9 @@ def movie_generate():
         logger.info("movie2_id: %s", movie2_id)
 
         genre = request.form.get('genre')
-        language= request.form.get('language')
+        # Use language from session if available, otherwise use the form data or default to 'english'
+        language = session.get('preferred_language') or 'english'
+        logger.info("Using language: %s", language)
         tmdb_svc = tmdb_service()
         movie1 = tmdb_svc.get_movie_by_id(movie1_id)
         logger.info("movie1: %s", movie1)
@@ -244,6 +252,18 @@ def movie_gallery():
         logger.exception("Error retrieving movies from gallery service", exc_info=e)
         
     return render_template('gallery.html', movies=movies, github=GitHubContext())
+
+@app.route('/set_language', methods=['POST'])
+def set_language():
+    """Set user language preference"""
+    selected_language = request.form.get('language')
+    logger.info(f"Setting language preference to: {selected_language}")
+    
+    if selected_language in language_list:
+        session['preferred_language'] = selected_language
+        return jsonify({"status": "success", "language": selected_language})
+    else:
+        return jsonify({"status": "error", "message": "Invalid language selection"}), 400
 
 if __name__ == '__main__':
     app.run( debug=True)

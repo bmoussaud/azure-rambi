@@ -42,19 +42,11 @@
                                 </div>
                             </div>
                             <div class="col-sm">
-                                <div class="form-group mb-3">
+                                <div class="form-group">
                                     <label for="genreSelect">Genre</label>
                                     <select class="form-select" id="genreSelect" name="genre">
                                         {% for genre in rambimodel.default_genres %}
                                         <option value="{{ genre }}">{{ genre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="languageSelect">Language</label>
-                                    <select class="form-select" id="languageSelect" name="language">
-                                        {% for language in rambimodel.languages %}
-                                        <option value="{{ language }}">{{ language|title }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>

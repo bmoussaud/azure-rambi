@@ -42,10 +42,19 @@
                                 </div>
                             </div>
                             <div class="col-sm">
-                                <div class="form-group">
+                                <div class="form-group mb-3">
+                                    <label for="genreSelect">Genre</label>
                                     <select class="form-select" id="genreSelect" name="genre">
                                         {% for genre in rambimodel.default_genres %}
                                         <option value="{{ genre }}">{{ genre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="languageSelect">Language</label>
+                                    <select class="form-select" id="languageSelect" name="language">
+                                        {% for language in rambimodel.languages %}
+                                        <option value="{{ language }}">{{ language|title }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -53,7 +62,7 @@
                             <div class="col-sm">
                                 <button class="btn btn-primary" type="button" id="btn-trigger-aigenerate-movie"
                                     hx-post="/movie/generate" hx-target="#aimovieresults"
-                                    hx-include="[name='movie1Id'],[name='movie2Id'],[name='genre']">
+                                    hx-include="[name='movie1Id'],[name='movie2Id'],[name='genre'],[name='language']">
                                     Generate Movie
                                     <span class="htmx-indicator spinner-border spinner-border-sm" role="status"
                                         aria-hidden="true"></span>

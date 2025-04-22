@@ -13,6 +13,6 @@
 ### Additional Information
 
 * Target Genre: {genre} 
-
+* Output language: {language}
 
 

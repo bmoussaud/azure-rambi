@@ -82,11 +82,13 @@ class MoviePayload(BaseModel):
     movie1: Movie
     movie2: Movie
     genre: str
+    language: Optional[str] = None
 
 class GenAIMovie(Movie):
     """ Data class for GenAIMovie """
     prompt: str = None
     payload: MoviePayload = None
+    
 
 
 class GenAiMovieService:
@@ -123,12 +125,14 @@ class GenAiMovieService:
             logger.error("Failed to retrieve data: %s %s", response.status_code, response.text)
             raise Exception(f"Failed to retrieve the poster description: {response.status_code} {response.text}")
 
-    def generate_movie(self, movie1: Movie, movie2: Movie, genre: str) -> GenAIMovie:
-        """ Generate a new movie based on the two movies """ 
+    def generate_movie(self, movie1: Movie, movie2: Movie, genre: str, language: str = "english") -> GenAIMovie:
+        """ Generate a new movie based on the two movies with specified language """ 
         logger.info(
-            "generate_movie called based on two movies %s and %s, genre: %s", movie1.title, movie2.title, genre)
+            "generate_movie called based on two movies %s and %s, genre: %s, language: %s", movie1.title, movie2.title, genre, language)
+        self._language = language
         logger.info("Movie 1: %s", movie1)
         logger.info("Movie 2: %s", movie2)
+
         if movie1.poster_description is None or movie1.poster_description == "":
             movie1.poster_description = self.describe_poster(movie1.title, movie1.poster_url)
             logger.info("Movie 1 Poster Description: %s", movie1.poster_description)
@@ -146,7 +150,8 @@ class GenAiMovieService:
             movie2_title=movie2.title,
             movie2_plot=movie2.plot,
             movie2_description=movie2.poster_description,
-            genre=genre
+            genre=genre,
+            language=language,
         )
 
 
@@ -195,7 +200,7 @@ class GenAiMovieService:
             messages=[
             {
                 "role": "user", 
-                "content": f"""Given the following data, format it with the given response format using the {self._language} language: {o1_response_content}"""
+                "content": f"""Given the following data, format it with the given response format using the {language} language: {o1_response_content}"""
             }
             ])
         message = completion.choices[0].message
@@ -203,7 +208,7 @@ class GenAiMovieService:
         generated_movie = GenAIMovie.model_validate(json.loads(message.content))
         generated_movie.prompt= prompt
         generated_movie.poster_url = None
-        generated_movie.payload = MoviePayload(movie1=movie1, movie2=movie2, genre=genre)
+        generated_movie.payload = MoviePayload(movie1=movie1, movie2=movie2, genre=genre, language=language)
         generated_movie.id = f"{movie1.id}_{movie2.id}_{genre}_{random.randint(10000, 99999)}"
        
         logger.info("Generated movie: %s", generated_movie)
@@ -247,9 +252,9 @@ async def env(request: Request):
 @app.post('/generate')
 @log_request
 async def movie_generate(request: Request,payload:MoviePayload) -> GenAIMovie:
-    """Function to generate a new movie."""
+    """Function to generate a new movie with specified language."""
     logger_uvicorn.info("movie_generate")
-    movie =  service.generate_movie(payload.movie1, payload.movie2, payload.genre)
+    movie =  service.generate_movie(payload.movie1, payload.movie2, payload.genre, payload.language)
     return movie
 
 

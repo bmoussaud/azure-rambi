@@ -54,6 +54,8 @@ genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
               "Music", "Mystery", "Romance", "Science Fiction",
               "TV Movie", "Thriller", "War", "Western"]
 
+language_list = ["english", "french", "spanish", "german", "italian"]
+
 movie_poster_client = MoviePosterClient()
 
 
@@ -72,6 +74,7 @@ class RambiModel:
     movie1: Movie
     movie2: Movie
     default_genres: List[str] = dataclasses.field(default_factory=lambda: genre_list)
+    languages: List[str] = dataclasses.field(default_factory=lambda: language_list)
 
 class TwoMoviesForm(FlaskForm):
     """Form for find tow movies."""
@@ -171,6 +174,7 @@ def movie_generate():
         logger.info("movie2_id: %s", movie2_id)
 
         genre = request.form.get('genre')
+        language= request.form.get('language')
         tmdb_svc = tmdb_service()
         movie1 = tmdb_svc.get_movie_by_id(movie1_id)
         logger.info("movie1: %s", movie1)
@@ -181,9 +185,10 @@ def movie_generate():
         data = {
             "movie1": movie1.model_dump(),
             "movie2": movie2.model_dump(),
-            "genre": genre
+            "genre": genre,
+            "language": language
         }
-        logger.info("data: %s", json.dumps(data, indent=2))
+        logger.info("movie generate data: %s", json.dumps(data, indent=2))
         try:
             response = requests.post(
                 f"{endpoint}/generate",

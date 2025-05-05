@@ -49,35 +49,43 @@ azd up
 Warning: the provision phases include an APIM and A Redis Cache that can take a veryyyyyyy loooooong time to become available. Patience ! if it fails run the `azd up` command again.
 
 ```
- (✓) Done: Key Vault: rambikveab45rexk4hhs (689ms)
-  (✓) Done: Azure OpenAI: azrambi-openai-eab45rexk4hhs (695ms)
-  (✓) Done: Container Registry: azurerambieab45rexk4hhs (719ms)
-  (✓) Done: Storage account: azrambieab45rexk4hhs (723ms)
-  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-eab45rexk4hhs/gpt-4o (570ms)
-  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-eab45rexk4hhs/o1-mini (584ms)
-  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-eab45rexk4hhs/dall-e-3 (991ms)
-  (✓) Done: Log Analytics workspace: azure-rambi-log-eab45rexk4hhs (580ms)
-  (✓) Done: Cache for Redis: azure-rambi-redis-eab45rexk4hhs (1.846s)
-  (✓) Done: Application Insights: azure-rambi-appIn-eab45rexk4hhs (1.4s)
-  (✓) Done: Container Apps Environment: azure-rambi (917ms)
-  (✓) Done: Azure API Management: azure-rambi-apim-eab45rexk4hhs (23.719s)
-  (✓) Done: Container App: movie-generator-svc (17.974s)
-  (✓) Done: Container App: gui-svc (18.365s)
-  (✓) Done: Container App: movie-poster-svc (18.47s)
+  (✓) Done: Azure OpenAI: azrambi-openai-lmgne5e2wzmce (722ms)
+  (✓) Done: Container Registry: azurerambilmgne5e2wzmce (1.019s)
+  (✓) Done: Key Vault: rambikvlmgne5e2wzmce (644ms)
+  (✓) Done: Storage account: azrambilmgne5e2wzmce (769ms)
+  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-lmgne5e2wzmce/gpt-4o (634ms)
+  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-lmgne5e2wzmce/dall-e-3 (1.447s)
+  (✓) Done: Azure AI Services Model Deployment: azrambi-openai-lmgne5e2wzmce/o1-mini (1.962s)
+  (✓) Done: Log Analytics workspace: azure-rambi-log-analytics (230ms)
+  (✓) Done: Event Hubs Namespace: azure-rambi-ehn-lmgne5e2wzmce (531ms)
+  (✓) Done: Cache for Redis: azure-rambi-redis-lmgne5e2wzmce (1.223s)
+  (✓) Done: Application Insights: azure-rambi-app-insights (1.095s)
+  (✓) Done: Container Apps Environment: azure-rambi (17.733s)
+  (✓) Done: Azure API Management: azrambi-apim-lmgne5e2wzmce (22.287s)
+  (✓) Done: Azure Cosmos DB: azrambi-cosmos-dbaccount (818ms)
+  (✓) Done: Container App: gui-svc (17.619s)
+  (✓) Done: Container App: movie-poster-svc (17.052s)
+  (✓) Done: Container App: movie-gallery-svc (16.767s)
+  (✓) Done: Container App: movie-generator-svc (18.336s)
 
 Deploying services (azd deploy)
 
-  (✓) Done: Deploying service gui
-  - Endpoint: https://gui-svc.happyfield-037b39a8.francecentral.azurecontainerapps.io/
+  (✓) Done: Deploying service gui_svc
+  - Endpoint: https://gui-svc.ashybay-1b7f1976.francecentral.azurecontainerapps.io/
+
+  (✓) Done: Deploying service movie_gallery_svc
+  - Endpoint: https://movie-gallery-svc.ashybay-1b7f1976.francecentral.azurecontainerapps.io/
 
   (✓) Done: Deploying service movie_generator_svc
-  - Endpoint: https://movie-generator-svc.happyfield-037b39a8.francecentral.azurecontainerapps.io/
+  - Endpoint: https://movie-generator-svc.ashybay-1b7f1976.francecentral.azurecontainerapps.io/
 
   (✓) Done: Deploying service movie_poster_svc
-  - Endpoint: https://movie-poster-svc.happyfield-037b39a8.francecentral.azurecontainerapps.io/
+  - Endpoint: https://movie-poster-svc.ashybay-1b7f1976.francecentral.azurecontainerapps.io/
 ```
 
 To open the application, click on the link below the `Done: Deploying service gui` 
+
+![alt text](azure_architecture.png)
 
 ### Troobleshooting configuration
 

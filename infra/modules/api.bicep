@@ -119,10 +119,11 @@ resource apiDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2024-0
   }
 }
 
-resource adminUser 'Microsoft.ApiManagement/service/users/subscriptions@2023-05-01-preview' existing = {
-  name: '/users/1'
-}
+//resource adminUser 'Microsoft.ApiManagement/service/users/subscriptions@2023-05-01-preview' existing = {
+//  name: '/users/1'
+//}
 
+/*
 resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-01-preview' = {
   name: apiSubscriptionName
   parent: parentAPIM
@@ -134,5 +135,6 @@ resource apiSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-
     state: 'active'
   }
 }
+*/
 
 //output apiSubscription string = apiSubscription.listSecrets().primaryKey

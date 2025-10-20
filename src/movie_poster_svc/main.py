@@ -146,8 +146,9 @@ class GenAiMovieService:
 
     def describe_poster(self, movie_title: str, poster_url: str) -> str:
         """describe the movie poster using gp4o model"""
-        logger.info("describe_poster called with %s", poster_url)
+        logger.info("describe_poster %s called with %s", movie_title, poster_url)
         cache_key = f"poster_description:{movie_title}:{poster_url}"
+        logger.info("cache_key %s", cache_key)
         if self._use_cache:
             logger.info("cache key %s", cache_key)
             cached_description = self.redis_client.get(cache_key)
@@ -186,7 +187,7 @@ class GenAiMovieService:
             
             logger.info("describe_poster: %s", description)
         except Exception as e:
-            logger.error("describe_poster: %s", e)
+            logger.error("describe_poster error: %s", e)
             description = f"Unable to describe the movie poster for {movie_title}: {e}"
         return description
 

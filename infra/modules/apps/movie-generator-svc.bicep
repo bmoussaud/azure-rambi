@@ -71,7 +71,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               }
               {
                 name: 'AZURE_OPENAI_API_KEY'
-                secretRef: 'apim-subscription-key'
+                secretRef: 'azure-openai-api-key'
               }
 
               {

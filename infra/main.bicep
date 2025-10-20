@@ -2,69 +2,71 @@
 @description('Primary location for all resources')
 param location string
 
-@description('Restore the service instead of creating a new instance. This is useful if you previously soft-deleted the service and want to restore it. If you are restoring a service, set this to true. Otherwise, leave this as false.')
-param restore bool = false
+@minLength(1)
+@maxLength(64)
+@description('Name of the the environment which is used to generate a short unique hash used in all resources.')
+param environmentName string
 
-var openAIName = 'azrambi-openai-${uniqueString(resourceGroup().id)}'
-var acrName = 'azurerambi${uniqueString(resourceGroup().id)}'
+@description('Location for AI Foundry resources.')
+param aiFoundryLocation string = 'swedencentral' //'westus' 'switzerlandnorth' swedencentral
 
-@description('Model deployments for OpenAI')
-param deployments array = [
-  {
-    name: 'gpt-4o'
-    capacity: 40
-    version: '2024-08-06' //2024-08-06 ?
-    deployment: 'Standard'
-  }
-  {
-    name: 'dall-e-3'
-    model: 'dall-e-3'
-    version: '3.0'
-    capacity: 1
-    deployment: 'Standard'
-  }
-  {
-    name: 'o1-mini'
-    model: 'o1-mini'
-    version: '2024-09-12'
-    capacity: 10
-    deployment: 'GlobalStandard'
-  }
-]
+var rootname = 'azrambi'
 
-@description('Creates an Azure OpenAI resource.')
-resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
-  name: openAIName
-  location: 'Sweden Central'
-  kind: 'OpenAI'
-  sku: {
-    name: 'S0'
-  }
-  properties: {
-    customSubDomainName: openAIName
-    publicNetworkAccess: 'Enabled'
-    restore: restore
+module aiFoundry 'modules/ai-foundry.bicep' = {
+  name: 'aiFoundryModel'
+  params: {
+    name: '${rootname}${environmentName}'
+    location: aiFoundryLocation
+    modelDeploymentsParameters: [
+      {
+        name: 'gpt-4o'
+        model: 'gpt-4o'
+        capacity: 100
+        deployment: 'GlobalStandard'
+        version: '2024-08-06'
+        format: 'OpenAI'
+      }
+      {
+        name: 'dall-e-3'
+        model: 'dall-e-3'
+        capacity: 1
+        deployment: 'Standard'
+        version: '3.0'
+        format: 'OpenAI'
+      }
+      {
+        name: 'o1-mini'
+        model: 'o1-mini'
+        capacity: 10
+        deployment: 'GlobalStandard'
+        version: '2024-09-12'
+        format: 'OpenAI'
+      }
+      /*
+      {
+        name: 'gpt-image-1'
+        model: 'gpt-image-1'
+        capacity: 3000
+        deployment: 'GlobalStandard'
+        version: '2025-04-15'
+        format: 'OpenAI'
+      }
+        */
+    ]
   }
 }
 
-@batchSize(1)
-resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
-  for deployment in deployments: {
-    parent: openAI
-    name: deployment.name
-    sku: {
-      name: deployment.deployment
-      capacity: deployment.capacity
-    }
-    properties: {
-      model: {
-        format: 'OpenAI'
-        name: deployment.name
-        version: deployment.version
-      }
-    }
+module aiFoundryProject 'modules/ai-foundry-project.bicep' = {
+  name: 'aiFoundryProject'
+  params: {
+    location: aiFoundryLocation
+    aiFoundryName: aiFoundry.outputs.aiFoundryName
+    aiProjectName: '${rootname}-${aiFoundryLocation}-${environmentName}'
+    aiProjectFriendlyName: '${rootname} Project ${environmentName}'
+    aiProjectDescription: 'bla'
+    applicationInsightsName: applicationInsights.outputs.aiName
   }
-]
+}
 
 @description('Creates an Azure Key Vault.')
 resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
@@ -160,7 +162,7 @@ resource secretApimEndpoint 'Microsoft.KeyVault/vaults/secrets@2024-04-01-previe
 //Cognitive Services OpenAI User
 resource cognitiveServiceOpenAIUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: guid('Cognitive Services OpenAI User Role On API Management')
-  scope: openAI
+  scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
@@ -237,7 +239,7 @@ module openaiApi 'modules/api.bicep' = {
     apiPath: '/azure-openai/openai'
     openApiJson: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/definition/azure_open_ai.json'
     openApiXml: 'https://raw.githubusercontent.com/bmoussaud/azure-rambi/refs/heads/main/src/apim/policies/azure_open_ai.xml'
-    serviceUrlPrimary: '${openAI.properties.endpoint}/openai'
+    serviceUrlPrimary: aiFoundry.outputs.aiFoundryEndpoint
     apiSubscriptionName: 'azure-rambi-sub'
     aiLoggerName: 'aiLogger'
   }
@@ -280,7 +282,7 @@ module redis 'modules/redis.bicep' = {
 
 @description('Creates an Azure Container Registry.')
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
-  name: acrName
+  name: '${rootname}${uniqueString(resourceGroup().id)}'
   location: location
   sku: {
     name: 'Basic'
@@ -290,7 +292,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
   }
   tags: {
     displayName: 'Container Registry'
-    'container.registry': acrName
+    'container.registry': '${rootname}${uniqueString(resourceGroup().id)}'
   }
 }
 
@@ -368,6 +370,10 @@ var shared_secrets = [
     name: 'apim-subscription-key'
     value: apiManagement.outputs.apiAdminSubscriptionKey
   }
+  {
+    name: 'azure-openai-api-key'
+    value: aiFoundry.outputs.aiFoundryApiKey
+  }
 ]
 
 @description('Creates an Movie Poster SVC Azure Container App.')
@@ -385,7 +391,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
-        value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+        value: aiFoundry.outputs.aiFoundryEndpoint
       }
       {
         name: 'APIM_ENDPOINT'
@@ -429,7 +435,7 @@ module containerGuiSvcApp 'modules/apps/gui-svc.bicep' = {
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
-        value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+        value: aiFoundry.outputs.aiFoundryEndpoint
       }
       {
         name: 'TMDB_ENDPOINT'
@@ -461,7 +467,7 @@ module containerMovieGeneratorSvcApp 'modules/apps/movie-generator-svc.bicep' = 
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
-        value: 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
+        value: aiFoundry.outputs.aiFoundryEndpoint
       }
       {
         name: 'APIM_ENDPOINT'
@@ -552,7 +558,7 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.6.0' = {
     source: storageAccountAzureRambi.id
     topicType: 'Microsoft.Storage.StorageAccounts'
     // Non-required parameters
-    location:  location
+    location: location
     eventSubscriptions: [
       {
         destination: {
@@ -597,7 +603,7 @@ output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.outp
 output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.outputs.fqdn}'
 output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'
-output AZURE_OPENAI_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}/azure-openai'
-output AZURE_OPENAI_API_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
+output AZURE_OPENAI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
+output AZURE_OPENAI_API_KEY string = aiFoundry.outputs.aiFoundryApiKey
 output APIM_SERVICE_NAME string = apiManagement.name
 output TMDB_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName

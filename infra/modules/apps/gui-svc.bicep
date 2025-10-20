@@ -70,14 +70,6 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
           env: concat(
             [
               {
-                name: 'OPENAI_API_VERSION'
-                value: '2024-08-01-preview'
-              }
-              {
-                name: 'AZURE_OPENAI_API_KEY'
-                value: '-1'
-              }
-              {
                 name: 'MOVIE_POSTER_ENDPOINT'
                 value: 'http://movie-poster-svc'
               }

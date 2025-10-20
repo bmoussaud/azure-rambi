@@ -1,5 +1,7 @@
-# Use the official Python image from the Docker Hub
-FROM python:3.11-slim
+# Base image: using Microsoft Container Registry devcontainers image to avoid current Docker Hub 503 outage.
+# You can override at build time: docker build --build-arg BASE_IMAGE=python:3.11-slim ... once Docker Hub is healthy.
+# Later, pin to a digest for reproducibility (e.g., python:3.11.8-slim-bookworm@sha256:<digest>). 
+FROM mcr.microsoft.com/devcontainers/python:1-3.11-bookworm
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1

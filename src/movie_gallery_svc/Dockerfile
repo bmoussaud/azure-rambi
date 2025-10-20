@@ -1,5 +1,5 @@
 # Use Python 3.11 as the base image
-FROM python:3.11
+FROM mcr.microsoft.com/devcontainers/python:1-3.11-bookworm
 
 # Set the working directory in the container
 WORKDIR /code

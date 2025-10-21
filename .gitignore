@@ -7,3 +7,4 @@ __pycache__/
 .venv/
 infra/main.json
 src/movie_gallery_svc/.dapr/
+src/movie_poster_svc/x.json

@@ -167,7 +167,7 @@ resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-pre
             }
             {
               name: 'STORAGE_ACCOUNT_NAME'
-              value: 'azrambi4vcyb7vq3byju'
+              value: storageAccount.name
             }
             {
               name: 'STORAGE_QUEUE_NAME'

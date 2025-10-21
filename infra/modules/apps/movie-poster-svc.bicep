@@ -78,7 +78,6 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               name: 'APIM_SUBSCRIPTION_KEY'
               secretRef: 'apim-subscription-key'
             }
-
             {
               name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
               secretRef: 'appinsight-inst-key'

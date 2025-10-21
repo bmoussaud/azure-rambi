@@ -42,16 +42,16 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
         version: '2024-09-12'
         format: 'OpenAI'
       }
-      /*
+      
       {
         name: 'gpt-image-1'
         model: 'gpt-image-1'
-        capacity: 3000
+        capacity: 3
         deployment: 'GlobalStandard'
         version: '2025-04-15'
         format: 'OpenAI'
       }
-        */
+        
     ]
   }
 }
@@ -411,7 +411,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
       }
       {
         name: 'STORAGE_ACCOUNT_BLOB_URL'
-        value: storageAccountAzureRambi.properties.primaryEndpoints.blob
+        value: storageAccountAzureRambi.outputs.primaryBlobEndpoint
       }
       {
         name: 'AZURE_CLIENT_ID_BLOB'
@@ -488,44 +488,39 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
-    storageAccountName: storageAccountAzureRambi.name
+    storageAccountName: storageAccountAzureRambi.outputs.name
   }
 }
 
-@description('Creates an Azure Storage Account.')
-resource storageAccountAzureRambi 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: 'azrambi${uniqueString(resourceGroup().id)}'
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-  properties: {
-    allowSharedKeyAccess: false
-    networkAcls: {
-      bypass: 'AzureServices'
-      virtualNetworkRules: []
-      ipRules: []
+module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.8.3' = {
+  name: 'azrambi-storage-account'
+ 
+  params: {
+    name:  'nazrambi${uniqueString(resourceGroup().id)}'
+    allowBlobPublicAccess: false
+    allowSharedKeyAccess: false // Disable local authentication methods as per policy
+    dnsEndpointType: 'Standard'
+    publicNetworkAccess: 'Enabled'
+    networkAcls:  {
       defaultAction: 'Allow'
+      bypass: 'AzureServices'
     }
-  }
+    blobServices: {
+      containers: [
+        { name: 'movieposters' 
+          publicAccess: 'None' 
+        }
+      ]
+    }
+    queueServices: {
+      queues: [
+        { name: 'movieposters-events' }
+      ]
+    }
 
-  resource blobServices 'blobServices' = {
-    resource container 'containers' = {
-      name: 'movieposters'
-      properties: {
-        publicAccess: 'None'
-      }
-    }
-    name: 'default'
-  }
-
-  resource queueServices 'queueServices' = {
-    resource queue 'queues' = {
-      name: 'movieposters-events'
-      properties: {}
-    }
-    name: 'default'
+    minimumTlsVersion: 'TLS1_2'  // Enforcing TLS 1.2 for better security
+    location: location
+    
   }
 }
 
@@ -534,28 +529,31 @@ resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities
   location: location
 }
 
-// Define the Storage Blob Data Contributor role
-resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  scope: subscription()
-  name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
-}
 
-resource assignroleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  scope: storageAccountAzureRambi
-  name: guid(resourceGroup().id, azrStorageContributor.id, storageBlobDataContributorRoleDefinition.id)
-  properties: {
-    roleDefinitionId: storageBlobDataContributorRoleDefinition.id
-    principalId: azrStorageContributor.properties.principalId
-    principalType: 'ServicePrincipal'
+module rbacStorage 'modules/rbac_storage.bicep' = {
+  name: 'rbac-storage-assignment'
+  params: {
+    storageAccountName: storageAccountAzureRambi.outputs.name
+    managedIdentityPrincipalId: azrStorageContributor.properties.principalId
   }
 }
+
+module rbacStorageLocal 'modules/rbac_storage.bicep' = {
+  name: 'rbac-storage-assignment-local'
+  params: {
+    storageAccountName: storageAccountAzureRambi.outputs.name
+    managedIdentityPrincipalId: az.deployer().objectId
+    principalType: 'User'
+  }
+}
+
 
 module systemTopic 'br/public:avm/res/event-grid/system-topic:0.6.0' = {
   name: 'systemTopicDeployment'
   params: {
     // Required parameters
     name: 'azrambi-event-grid-topic'
-    source: storageAccountAzureRambi.id
+    source: storageAccountAzureRambi.outputs.resourceId
     topicType: 'Microsoft.Storage.StorageAccounts'
     // Non-required parameters
     location: location
@@ -565,7 +563,7 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.6.0' = {
           endpointType: 'StorageQueue'
           properties: {
             queueMessageTimeToLiveInSeconds: 86400
-            resourceId: storageAccountAzureRambi.id
+            resourceId: storageAccountAzureRambi.outputs.resourceId
             queueName: 'movieposters-events'
           }
         }
@@ -585,13 +583,14 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.6.0' = {
   }
 }
 
+/*
 module userPortalAccess 'modules/user_portal_role.bicep' = {
   name: 'user-portal-access'
   params: {
     kvName: kv.name
-    storageAccountName: storageAccountAzureRambi.name
+    storageAccountName: storageAccountAzureRambi.outputs.name
   }
-}
+}*/
 
 output AZURE_LOCATION string = location
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name
@@ -607,3 +606,4 @@ output AZURE_OPENAI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
 output AZURE_OPENAI_API_KEY string = aiFoundry.outputs.aiFoundryApiKey
 output APIM_SERVICE_NAME string = apiManagement.name
 output TMDB_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
+output STORAGE_ACCOUNT_BLOB_URL string = storageAccountAzureRambi.outputs.primaryBlobEndpoint

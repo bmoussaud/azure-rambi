@@ -97,6 +97,7 @@ class GenAiMovieService:
         )
 
         self._use_cache = os.getenv("USE_CACHE", None) is not None
+        self._use_cache = False
         if self._use_cache:
             logger.info("Initializing Redis client")
             #use managed identity to connect to redis (azure-rambi-storage-contributor)
@@ -119,12 +120,21 @@ class GenAiMovieService:
         sa_url = os.getenv("STORAGE_ACCOUNT_BLOB_URL")
         logger.info("Initializing Azure Blob Storage client with account_url: %s", sa_url)
         #use managed identity to connect to redis (azure-rambi-storage-contributor)
+        #if (os.getenv("AZURE_CLIENT_ID_BLOB") is not None or os.getenv("AZURE_CLIENT_ID_BLOB") != ""):
+        #    logger.info(f"Using Managed Identity to connect to Blob Storage [{os.getenv('AZURE_CLIENT_ID_BLOB')}]")
+        #    managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_BLOB"))
+        #else:
+        #    logger.info("Using DefaultAzureCredential to connect to Blob Storage")
+        #managed_id_credential = DefaultAzureCredential()
         managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_BLOB"))
-        logger.info("AZURE_CLIENT_ID_BLOB managedIdCredential: %s", managed_id_credential)
+        logger.info("** AZURE_CLIENT_ID_BLOB managedIdCredential: %s", managed_id_credential)
+        
         self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=managed_id_credential)
         logger.info("Blob Service Client: %s", self.blob_service_client)
+        #for container in self.blob_service_client.list_containers():
+        #    logger.info("==> Container name: %s", container['name'])
         self.container_client = self.blob_service_client.get_container_client("movieposters")
-        
+        logger.info("Container Client: %s", self.container_client)
         logger.info("GenAiMovieService initialized")
 
     def extract_username_from_token(self,token):
@@ -191,34 +201,67 @@ class GenAiMovieService:
             description = f"Unable to describe the movie poster for {movie_title}: {e}"
         return description
 
-    def store_poster(self, movie_id: str,  url: str) -> str:
+    def store_poster(self, movie_id: str,  content) -> str:
         """ Store the generated poster in Azure Blob Storage and return a sas url"""
         # Upload the generated poster to Azure Blob Storage
-        logger.info("store_poster %s %s", movie_id, url)
+        logger.info("store_poster %s", movie_id)
         blob_name = f"{movie_id}.png"
         logger.info("Blob name: %s", blob_name)
         blob_client = self.container_client.get_blob_client(blob_name)
         logger.info("uploading.....")
-        blob_client.upload_blob(requests.get(url,timeout=100).content, overwrite=True,blob_type="BlockBlob" )
+        blob_client.upload_blob(content, overwrite=True,blob_type="BlockBlob" )
         logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
         return f"/poster/{movie_id}.png"
 
     def generate_poster(self, movie_id: str, poster_description: str) -> str:
+        logger.info("GPT generate_poster called with %s", poster_description)
+        return self.generate_poster_gpt_image(movie_id, poster_description)
+
+    def generate_poster_dall_e(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
-        logger.info("generate_poster called with %s", poster_description)
+        logger.info("generate_poster_dall_e called with %s", poster_description)
         
         response = self.client.images.generate( 
             model="dall-e-3",
-            prompt="Generate a movie poster based on this description: "+poster_description,
+            prompt="Generate a movie poster based on this description: " + poster_description,
             n=1,
             size='1024x1792'
         )
         json_response = json.loads(response.model_dump_json())
         url = json_response["data"][0]["url"]
         
-        blob_url = self.store_poster(movie_id, url)
+        blob_url = self.store_poster(movie_id, requests.get(url,timeout=100).content)
         logger.info("generate_poster: %s", blob_url)
         return blob_url
+    
+    def generate_poster_gpt_image(self, movie_id: str, poster_description: str) -> str:
+        """ Generate a new movie poster based on the description using gpt-image-1 model """
+        logger.info("generate_poster_gpt_image called with %s", poster_description)
+        
+        response = self.client.images.generate( 
+            model="gpt-image-1",
+            prompt="Generate a movie poster based on this description: "+poster_description,
+            n=1,
+            size='1024x1536',
+            quality='medium'
+        )
+        json_response = json.loads(response.model_dump_json())
+        b64_json = json_response["data"][0]["b64_json"]
+        #decode the base64 string and save it as an image
+
+
+        logger.info("store the image in a temporary file")
+        self.store_poster(movie_id, b64_json)
+        image_data = base64.b64decode(b64_json)
+        image = Image.open(io.BytesIO(image_data))
+        temp_file = f"./{movie_id}.png"
+        image.save(temp_file)
+
+        logger.info("upload the image to blob storage")
+        blob_url = self.store_poster(movie_id, image_data)
+        logger.info("generate_poster gpt: %s", blob_url)
+        return blob_url
+    
     
     def extract_error_message(self, e: Exception) -> str:
         """Extract the error message from the exception"""

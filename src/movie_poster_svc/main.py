@@ -83,7 +83,59 @@ class MoviePoster(BaseModel):
     url: str | None = None
     error: str | None = None
 
+class MovieGalleryPayloadMovie(BaseModel):
+    id: str
+    title: str
+    plot: str
+    poster_url: str | None = None
+    internal_poster_url: str | None = None
+    poster_description: str | None = None
+
+class MovieGalleryPayload(BaseModel):
+    movie1: MovieGalleryPayloadMovie
+    movie2: MovieGalleryPayloadMovie
+    genre: str
+
+class GeneratedMovie(BaseModel):
+    id: str
+    title: str
+    plot: str
+    poster_url: str | None = None
+    internal_poster_url: str | None = None
+    poster_description: str | None = None
+    prompt: str | None = None
+    payload: MovieGalleryPayload | None = None
+    error: str | None = None
+
 class GenAiMovieService:
+    
+    def get_generated_movie(self, movie_id: str) -> GeneratedMovie:
+        """Fetch generated movie information from the movie gallery microservice."""
+        import requests
+        url = f"https://movie-gallery-svc.niceriver-71d47c14.francecentral.azurecontainerapps.io/movies/{movie_id}"
+        logger.info(f"Fetching generated movie info from {url}")
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            # Parse payload if present
+            payload = None
+            if "payload" in data:
+                payload = MovieGalleryPayload(**data["payload"])
+            return GeneratedMovie(
+                id=data.get("id", ""),
+                title=data.get("title", ""),
+                plot=data.get("plot", ""),
+                poster_url=data.get("poster_url"),
+                internal_poster_url=data.get("internal_poster_url"),
+                poster_description=data.get("poster_description"),
+                prompt=data.get("prompt"),
+                payload=payload
+            )
+        except Exception as e:
+            logger.error(f"get_generated_movie error: {e}")
+            return GeneratedMovie(id=movie_id, title="", plot="", error=str(e))
+        
     """ Class to manage the access to OpenAI API to generate a new movie """
     def __init__(self):
         logger.info("Initializing GenAiMovieService")
@@ -242,10 +294,11 @@ class GenAiMovieService:
     def generate_poster_gpt_image(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description using gpt-image-1 model """
         logger.info("generate_poster_gpt_image")
-        
+        generated_movie = self.get_generated_movie(movie_id)
+        logger.info("Generated movie poster_description")
         response = self.client.images.generate( 
             model="gpt-image-1",
-            prompt="Generate a movie poster based on this description: "+poster_description,
+            prompt=f"Generate a movie poster based on this description: {generated_movie.poster_description}. Movie title: {generated_movie.title}. Movie plot: {generated_movie.plot}",
             n=1,
             size='1024x1536',
             quality='medium'

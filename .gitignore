@@ -9,3 +9,5 @@ infra/main.json
 src/movie_gallery_svc/.dapr/
 src/movie_poster_svc/x.json
 src/movie_poster_svc/benoit1.png
+src/movie_poster_svc/*.png
+src/movie_poster_svc/*.jpg

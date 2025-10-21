@@ -125,8 +125,13 @@ class GenAiMovieService:
         #    managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_BLOB"))
         #else:
         #    logger.info("Using DefaultAzureCredential to connect to Blob Storage")
-        #managed_id_credential = DefaultAzureCredential()
-        managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_BLOB"))
+        if os.getenv("LOCAL_DEVELOPMENT", "false").lower() == "true":
+            logger.info("Using AzureCliCredential to connect to Blob Storage")
+            managed_id_credential = AzureCliCredential()
+        else:
+            #managed_id_credential = DefaultAzureCredential()
+            logger.info("Using ManagedIdentityCredential to connect to Blob Storage")
+            managed_id_credential = ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID_BLOB"))
         logger.info("** AZURE_CLIENT_ID_BLOB managedIdCredential: %s", managed_id_credential)
         
         self.blob_service_client = BlobServiceClient(account_url=sa_url, credential=managed_id_credential)

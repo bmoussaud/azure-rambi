@@ -219,12 +219,12 @@ class GenAiMovieService:
         return f"/poster/{movie_id}.png"
 
     def generate_poster(self, movie_id: str, poster_description: str) -> str:
-        logger.info("GPT generate_poster called with %s", poster_description)
+        logger.info(f"generate_poster {movie_id} called with {poster_description}")
         return self.generate_poster_gpt_image(movie_id, poster_description)
 
     def generate_poster_dall_e(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
-        logger.info("generate_poster_dall_e called with %s", poster_description)
+        logger.info(f"generate_poster_dall_e {movie_id}")
         
         response = self.client.images.generate( 
             model="dall-e-3",
@@ -241,7 +241,7 @@ class GenAiMovieService:
     
     def generate_poster_gpt_image(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description using gpt-image-1 model """
-        logger.info("generate_poster_gpt_image called with %s", poster_description)
+        logger.info("generate_poster_gpt_image")
         
         response = self.client.images.generate( 
             model="gpt-image-1",

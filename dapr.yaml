@@ -4,10 +4,10 @@ common:
   env:
     DEBUG: true
 apps:
-  - name: movie-gallery-svc
+  - name: gui-svc
     type: python
-    appDirPath: src/movie_gallery_svc
-    appPort: 5000
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+    appDirPath: src/gui_svc
+    appPort: 5555
+    command: ["python", "app.py"]
     appLogDestination: fileAndConsole
     daprdLogDestination: file

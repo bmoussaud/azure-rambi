@@ -215,6 +215,40 @@ def list_movies() -> list[GeneratedMovie]:
     except Exception as e:
         logging.error('RuntimeError: %s', e)
         return Response(content=json.dumps([]), media_type="application/json", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@app.delete("/movies/{movie_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_movie(movie_id: str):
+    """Endpoint to delete a movie by ID."""
+    logging.info("Deleting movie with ID: %s", movie_id)
+    try:
+        # Check if movie exists first
+        movie = store.try_find_by_id(movie_id)
+        if not movie:
+            return Response(
+                content=json.dumps({"error": "Movie not found"}),
+                media_type="application/json",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Delete the movie
+        success = store.delete(movie_id)
+        if success:
+            logging.info("Movie %s successfully deleted", movie_id)
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(
+                content=json.dumps({"error": "Failed to delete movie"}),
+                media_type="application/json",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    except Exception as e:
+        logging.error('Delete_Movie Error: %s', e)
+        logging.error('Call stack: %s', traceback.format_exc())
+        return Response(
+            content=json.dumps({'method': 'delete_movie', 'error': str(e)}),
+            media_type="application/json",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
     
 @app.get("/liveness")
 def liveness():

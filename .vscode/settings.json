@@ -8,5 +8,6 @@
     "azureFunctions.projectRuntime": "~4",
     "debug.internalConsoleOptions": "neverOpen",
     "azureFunctions.projectLanguageModel": 2,
-    "azureFunctions.projectSubpath": "src/rambi_event_handler"
+    "azureFunctions.projectSubpath": "src/rambi_event_handler",
+    "python-envs.pythonProjects": []
 }

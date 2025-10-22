@@ -1,9 +1,9 @@
 {
     "name": "Azure Rambi Dev Container",
     "image": "mcr.microsoft.com/devcontainers/python:1-3-bookworm",
-    //"forwardPorts": [
-    //    50505
-    //],
+    "forwardPorts": [
+        8000,8001,8002
+    ],
     "features": {
         "ghcr.io/azure/azure-dev/azd:latest": {},
         "ghcr.io/dapr/cli/dapr-cli:0": {},
@@ -23,7 +23,11 @@
             "userUid": "1000",
             "userGid": "1000",
             "upgradePackages": "true"
-        }
+        },
+        "ghcr.io/va-h/devcontainers-features/uv:1": {
+			"shellautocompletion": true,
+			"version": "latest"
+		}
         //"ghcr.io/jlaundry/devcontainer-features/azure-functions-core-tools:1": {}
         //"kubectl-helm-minikube": {}
     },
@@ -38,11 +42,12 @@
                 "GitHub.vscode-github-actions",
                 "GitHub.copilot",
                 "ms-azuretools.vscode-azure-github-copilot",
-                "ms-azuretools.vscode-azurecontainerapps"
+                "ms-azuretools.vscode-azurecontainerapps",
+                "teticio.python-envy"
             ]
         }
     },
-    "postCreateCommand": "./.devcontainer/postCreateCommand.sh",
+    //"postCreateCommand": "./.devcontainer/postCreateCommand.sh",
     "remoteUser": "vscode",
     "hostRequirements": {
         "memory": "8gb"

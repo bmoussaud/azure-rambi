@@ -29,10 +29,14 @@
                             <p class="card-text small text-muted">ID: {{ movie.id }}</p>
                             <p class="card-text">{{ movie.plot[:150] }}{% if movie.plot|length > 150 %}...{% endif %}</p>
                         </div>
-                        <div class="card-footer">
+                        <div class="card-footer d-flex justify-content-between">
                             <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" 
                                 data-bs-target="#movieModal{{ loop.index }}">
                                 <i class="bi bi-film"></i> View Movie Details
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" type="button" 
+                                onclick="deleteMovie('{{ movie.id }}', '{{ movie.title }}', this)">
+                                <i class="bi bi-trash"></i> Delete
                             </button>
                         </div>
                         
@@ -134,6 +138,10 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
+                                        <button type="button" class="btn btn-danger" 
+                                            onclick="deleteMovie('{{ movie.id }}', '{{ movie.title }}', this); bootstrap.Modal.getInstance(document.getElementById('movieModal{{ loop.index }}')).hide();">
+                                            <i class="bi bi-trash"></i> Delete Movie
+                                        </button>
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                     </div>
                                 </div>
@@ -150,4 +158,116 @@
         {% endif %}
     </div>
 </section>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the movie "<span id="movieToDelete"></span>"?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Movie</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let movieIdToDelete = null;
+let movieCardToDelete = null;
+
+function deleteMovie(movieId, movieTitle, buttonElement) {
+    movieIdToDelete = movieId;
+    // Find the movie card element (traverse up from button to the card)
+    movieCardToDelete = buttonElement.closest('.col');
+    document.getElementById('movieToDelete').textContent = movieTitle;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    deleteModal.show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (movieIdToDelete && movieCardToDelete) {
+        // Show loading state
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+        
+        fetch('/delete_movie/' + movieIdToDelete, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Hide modal
+                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                deleteModal.hide();
+                
+                // Show success message
+                const successAlert = document.createElement('div');
+                successAlert.className = 'alert alert-success alert-dismissible fade show';
+                successAlert.innerHTML = `
+                    <strong>Success!</strong> Movie deleted successfully. Refreshing page...
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.querySelector('.container').insertBefore(successAlert, document.querySelector('.container').children[1]);
+                
+                // Simple solution: reload the page to ensure clean state
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    <strong>Success!</strong> Movie deleted successfully.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').children[1]);
+                
+                // Auto-dismiss success message after 3 seconds
+                setTimeout(() => {
+                    if (alertDiv && alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 3000);
+            } else {
+                throw new Error(data.message || 'Failed to delete movie');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting movie:', error);
+            
+            // Show error message
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+            errorAlert.innerHTML = `
+                <strong>Error!</strong> ${error.message || 'Failed to delete movie. Please try again.'}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            document.querySelector('.container').insertBefore(errorAlert, document.querySelector('.container').children[1]);
+            
+            // Hide modal
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+            deleteModal.hide();
+        })
+        .finally(() => {
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = 'Delete Movie';
+            movieIdToDelete = null;
+            movieCardToDelete = null;
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -23,4 +23,4 @@
 **/secrets.dev.yaml
 **/values.dev.yaml
 README.md
-.env
+.env__pycache__/

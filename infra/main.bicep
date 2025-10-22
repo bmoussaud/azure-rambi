@@ -605,5 +605,5 @@ output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
 output AZURE_OPENAI_API_KEY string = aiFoundry.outputs.aiFoundryApiKey
 output APIM_SERVICE_NAME string = apiManagement.name
-output TMDB_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
+output TMDB_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}'
 output STORAGE_ACCOUNT_BLOB_URL string = storageAccountAzureRambi.outputs.primaryBlobEndpoint

@@ -1,0 +1,11 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: movie-gallery-svc-nameresolution
+  namespace: default
+spec:
+  type: nameresolution.http
+  version: v1
+  metadata:
+  - name: movie-gallery-svc
+    value: "https://movie-gallery-svc.niceriver-71d47c14.francecentral.azurecontainerapps.io"

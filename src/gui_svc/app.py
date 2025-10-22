@@ -46,8 +46,11 @@ if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING") is not None:
     logger.info("configure_azure_monitor")
     configure_azure_monitor()
 
-logger.info("Instrumenting Flask app")
-FlaskInstrumentor().instrument_app(app)
+# Only instrument if not already instrumented
+if not hasattr(app, '_instrumented'):
+    logger.info("Instrumenting Flask app")
+    FlaskInstrumentor().instrument_app(app)
+    app._instrumented = True
 
 
 genre_list = ["Action", "Adventure", "Animation","Comedy", "Crime",
@@ -253,6 +256,33 @@ def movie_gallery():
         
     return render_template('gallery.html', movies=movies, github=GitHubContext())
 
+@app.route('/delete_movie/<movie_id>', methods=['DELETE'])
+def delete_movie(movie_id):
+    """Delete a movie from the gallery."""
+    logger.info(f"Deleting movie with ID: {movie_id}")
+    try:
+        with DaprClient() as d:
+            logger.info("Invoking movie gallery service to delete movie")
+            resp = d.invoke_method(
+                app_id="movie-gallery-svc",
+                method_name=f"movies/{movie_id}",
+                http_verb='DELETE'
+            )
+            
+            if resp.status_code == 204:
+                logger.info(f"Successfully deleted movie {movie_id}")
+                return jsonify({"status": "success", "message": "Movie deleted successfully"})
+            elif resp.status_code == 404:
+                logger.warning(f"Movie {movie_id} not found")
+                return jsonify({"status": "error", "message": "Movie not found"}), 404
+            else:
+                logger.error(f"Failed to delete movie {movie_id}, status code: {resp.status_code}")
+                return jsonify({"status": "error", "message": "Failed to delete movie"}), 500
+                
+    except Exception as e:
+        logger.exception("Error deleting movie from gallery service", exc_info=e)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
+
 @app.route('/set_language', methods=['POST'])
 def set_language():
     """Set user language preference"""
@@ -266,4 +296,5 @@ def set_language():
         return jsonify({"status": "error", "message": "Invalid language selection"}), 400
 
 if __name__ == '__main__':
-    app.run( debug=True)
+    port = int(os.getenv('PORT', 5555))
+    app.run(debug=True, port=port, host='0.0.0.0')

@@ -1,0 +1,14 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-config-local
+spec:
+  httpPipeline:
+    handlers:
+    - name: http
+      type: middleware.http.routingalias
+  nameResolution:
+    component: "http"
+    version: "v1"
+    configuration:
+      movie-gallery-svc: "https://movie-gallery-svc.niceriver-71d47c14.francecentral.azurecontainerapps.io"

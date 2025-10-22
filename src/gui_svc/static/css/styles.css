@@ -44,3 +44,17 @@ header a:hover {
     object-fit: cover;
     /* Ensure the image covers the specified height */
 }
+
+/* Movie gallery animations and grid handling */
+.movie-card-removing {
+    transition: all 0.3s ease-out;
+    overflow: hidden;
+}
+
+.row.row-cols-1.row-cols-md-2.row-cols-lg-3 {
+    transition: all 0.3s ease;
+}
+
+.row.row-cols-1.row-cols-md-2.row-cols-lg-3 .col {
+    transition: all 0.3s ease;
+}

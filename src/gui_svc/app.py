@@ -220,8 +220,8 @@ def movie_generate():
                     data=json.dumps(generated_movie),
                     http_verb='POST'
                 )
-        except requests.RequestException as e:
-            logger.exception("Error in calling movie_generate service")
+        except Exception as e:
+            logger.exception("Exception in calling movie_generate service")
             generated_movie = {
                 "title": "Generation Movie Error",
                 "plot": f"Error in calling movie_generate service: {e}",

@@ -1,11 +1,12 @@
 
 from main import GenAiMovieService
 service = GenAiMovieService()
-genmovie = service.get_generated_movie("9317_346698_Romance_99443")
+movie_id = "9392_22_Science Fiction_51894"
+genmovie = service.get_generated_movie(movie_id)
 print(genmovie)
 
 print("generate poster  .......")
-url = service.generate_poster("9317_346698_Romance_99443", None)
+url = service.generate_poster_gpt_image_edit(movie_id)
 print(url)
 
 import sys

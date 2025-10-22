@@ -3,6 +3,7 @@ import os
 import sys
 import logging
 import json
+from urllib.parse import urlparse
 import redis
 import base64
 import requests
@@ -270,9 +271,9 @@ class GenAiMovieService:
         logger.info("Uploaded poster to Azure Blob Storage: %s", blob_client.url)
         return f"/poster/{movie_id}.png"
 
-    def generate_poster(self, movie_id: str, poster_description: str) -> str:
-        logger.info(f"generate_poster {movie_id} called with {poster_description}")
-        return self.generate_poster_gpt_image(movie_id, poster_description)
+    def generate_poster(self, movie_id: str) -> str:
+        logger.info(f"generate_poster {movie_id} called")
+        return self.generate_poster_gpt_image_edit(movie_id)
 
     def generate_poster_dall_e(self, movie_id: str, poster_description: str) -> str:
         """ Generate a new movie poster based on the description """
@@ -291,14 +292,14 @@ class GenAiMovieService:
         logger.info("generate_poster: %s", blob_url)
         return blob_url
     
-    def generate_poster_gpt_image(self, movie_id: str, poster_description: str) -> str:
+    def generate_poster_gpt_image(self, movie_id: str) -> str:
         """ Generate a new movie poster based on the description using gpt-image-1 model """
         logger.info("generate_poster_gpt_image")
         generated_movie = self.get_generated_movie(movie_id)
         logger.info("Generated movie poster_description")
         response = self.client.images.generate( 
             model="gpt-image-1",
-            prompt=f"Generate a movie poster based on this description: {generated_movie.poster_description}. Movie title: {generated_movie.title}. Movie plot: {generated_movie.plot}",
+            prompt=self._generate_poster_prompt_image(generated_movie, add_poster_desc=True),
             n=1,
             size='1024x1536',
             quality='medium'
@@ -306,21 +307,71 @@ class GenAiMovieService:
         json_response = json.loads(response.model_dump_json())
         b64_json = json_response["data"][0]["b64_json"]
         #decode the base64 string and save it as an image
-
-
-        logger.info("store the image in a temporary file")
-        self.store_poster(movie_id, b64_json)
         image_data = base64.b64decode(b64_json)
-        image = Image.open(io.BytesIO(image_data))
-        temp_file = f"./{movie_id}.png"
-        image.save(temp_file)
-
         logger.info("upload the image to blob storage")
         blob_url = self.store_poster(movie_id, image_data)
         logger.info("generate_poster gpt: %s", blob_url)
         return blob_url
     
+    def _generate_poster_prompt_image(self, generated_movie: GeneratedMovie, add_poster_desc : bool = False) -> str:
+        if add_poster_desc:
+            desc = f"""
+            Generated poster description: {generated_movie.poster_description}.
+            Movie 1 poster description: {generated_movie.payload.movie1.poster_description}.
+            Movie 2 poster description: {generated_movie.payload.movie2.poster_description}.
+            """
+        else:
+            desc = "Use the 2 attached images, posters of the two movies to find the key symbols and elements to include them in the new poster."
+
+        prompt =  f"""Generate a movie poster combined from 2 other movies based on this description: .
+                   Movie title: {generated_movie.title}. Movie plot: {generated_movie.plot}. {desc}"""
+        
+        logger.info("generate_poster_prompt_image: %s", prompt)
+        return prompt
     
+
+
+    def generate_poster_gpt_image_edit(self, movie_id: str) -> str:
+        """ Generate a new movie poster based on the description using gpt-image-1 model with editing """
+        logger.info("generate_poster_gpt_image_edit")
+        generated_movie = self.get_generated_movie(movie_id)
+        images = [
+            self._image_to_io(generated_movie.payload.movie1.poster_url),
+            self._image_to_io(generated_movie.payload.movie2.poster_url)
+        ]
+        response = self.client.images.edit(
+            model="gpt-image-1",
+            image=images,
+            prompt=self._generate_poster_prompt_image(generated_movie),
+            n=1,
+            size='1024x1536',
+            quality='medium'
+        )
+        json_response = json.loads(response.model_dump_json())
+        b64_json = json_response["data"][0]["b64_json"]
+        image_data = base64.b64decode(b64_json)
+        logger.info("upload the image to blob storage")
+        blob_url = self.store_poster(movie_id, image_data)
+        logger.info("generate_poster gpt edit: %s", blob_url)
+        return blob_url
+
+    def _image_to_io(self, url: str) -> tuple[io.BytesIO, str]:
+        """ Convert an image URL to a BytesIO stream and detect mimetype """
+        logger.info("image_to_io called with %s", url)
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        content_type = response.headers.get("Content-Type", "image/jpeg")
+        # Only allow supported types
+        if content_type not in ["image/jpeg", "image/png", "image/webp"]:
+            logger.warning(f"Unsupported image type {content_type}, defaulting to image/jpeg")
+            content_type = "image/jpeg"
+        logger.info("image_to_io content_type: %s", content_type)
+        # Extract the last part of the URL for logging/debugging
+        parsed_url = urlparse(url)
+        last_part = parsed_url.path.split('/')[-1]
+        logger.info("image_to_io last part of url: %s", last_part)
+        return (last_part,response.content, content_type)
+
     def extract_error_message(self, e: Exception) -> str:
         """Extract the error message from the exception"""
         error_message = None
@@ -419,7 +470,7 @@ async def movie_poster_generate(request: Request, poster: MoviePoster) -> MovieP
     """Function to show the movie poster description."""
     try:
         logger.info("movie_poster_generate called with %s", poster)
-        poster.url = service.generate_poster(poster.id, poster.description)
+        poster.url = service.generate_poster(poster.id)
     except Exception as e:  
         logger.error("movie_poster_generate error: %s", e)
         error_message = service.extract_error_message(e)

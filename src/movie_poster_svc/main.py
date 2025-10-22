@@ -321,7 +321,7 @@ class GenAiMovieService:
             Movie 2 poster description: {generated_movie.payload.movie2.poster_description}.
             """
         else:
-            desc = "Use the 2 attached images, posters of the two movies to find the key symbols and elements to include them in the new poster."
+            desc = "Generated poster description: {generated_movie.poster_description}. Use the 2 attached images, posters of the two movies to find the key symbols and elements to include them in the new poster."
 
         prompt =  f"""Generate a movie poster combined from 2 other movies based on this description: .
                    Movie title: {generated_movie.title}. Movie plot: {generated_movie.plot}. {desc}"""

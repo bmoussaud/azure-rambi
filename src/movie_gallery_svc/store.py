@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 class MovieStore:
+  
     """Class to manage the movie store."""
     def __init__(self, dapr_client : DaprClient):
         self.dapr_client = dapr_client
@@ -79,3 +80,17 @@ class MovieStore:
             logging.error("Call stack: %s", traceback.format_exc())
             logging.error("Returning empty list")
             return []
+        
+    def delete(self, movie_id: str) -> bool:
+        """Delete a movie from the store by its ID."""
+        logging.info("Deleting movie by ID: %s", movie_id)
+        try:
+            self.dapr_client.delete_state(
+                store_name=self.state_store_name,
+                key=movie_id
+            )
+            logging.info("Movie %s deleted from store", movie_id)
+            return True
+        except Exception as e:
+            logging.error("Error deleting movie by ID: %s", e)
+            return False

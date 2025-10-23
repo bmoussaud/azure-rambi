@@ -328,40 +328,26 @@ async def validate_poster_endpoint(
     movie_title: str = Form(None, description="Movie title for context"),
     movie_genre: str = Form(None, description="Movie genre for context"),
     poster_url: str = Form(None, description="URL of the poster image"),
-    poster_file: UploadFile = File(None, description="Upload poster image file")
+    language: str = Form("en", description="Language for the validation response")
 ):
     """Validate a movie poster image and description."""
     try:
         # Validate input
-        if not poster_url and not poster_file:
-            raise HTTPException(status_code=400, detail="Either poster_url or poster_file must be provided")
-        
-        if poster_url and poster_file:
-            raise HTTPException(status_code=400, detail="Provide either poster_url or poster_file, not both")
         
         # Create validation request
         request = PosterValidationRequest(
             poster_url=poster_url,
             poster_description=poster_description,
             movie_title=movie_title,
-            movie_genre=movie_genre
+            movie_genre=movie_genre,
+            language=language
         )
         
-        # Process image
-        image_base64 = None
-        if poster_url:
-            image_base64 = await poster_agent.encode_image_from_url(poster_url)
-            logger.info(f"Processed image from URL: {poster_url}")
-        elif poster_file:
-            image_base64 = await poster_agent.encode_image_from_file(poster_file)
-            logger.info(f"Processed uploaded image: {poster_file.filename}")
-        
         # Validate the poster
-        result = await poster_agent.validate_poster(request, image_base64)
+        result = await poster_agent.validate_poster(request)
         
         logger.info(f"Validation completed with overall score: {result.overall_score}")
         return result
-        
     except HTTPException:
         raise
     except Exception as e:

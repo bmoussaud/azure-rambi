@@ -492,6 +492,44 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
   }
 }
 
+@description('Creates a Movie Poster Agent Azure Container App.')
+module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bicep' = {
+  name: 'movie-poster-agent-svc'
+  params: {
+    location: location
+    containerName: 'movie-poster-agent-svc'
+    containerPort: 8005
+    containerRegistryName: containerRegistry.name
+    acrPullRoleName: uaiAzureRambiAcrPull.name
+    shared_secrets: shared_secrets
+    containerAppsEnvironment: containerAppsEnv.name
+    storageContributorRoleName: azrStorageContributor.name
+    additionalProperties: [
+      {
+        name: 'AZURE_OPENAI_ENDPOINT'
+        value: aiFoundry.outputs.aiFoundryEndpoint
+      }
+      { 
+        name: 'AZURE_AI_PROJECT_ENDPOINT'
+        value: aiFoundryProject.outputs.projectEndpoint
+      }
+      {
+        name:'AZURE_AI_MODEL_DEPLOYMENT'
+        value: 'gpt-4o'
+      }
+
+      {
+        name: 'STORAGE_ACCOUNT_BLOB_URL'
+        value: storageAccountAzureRambi.outputs.primaryBlobEndpoint
+      }
+      {
+        name: 'AZURE_CLIENT_ID_BLOB'
+        value: azrStorageContributor.properties.clientId
+      }
+    ]
+  }
+}
+
 module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.8.3' = {
   name: 'azrambi-storage-account'
  
@@ -607,3 +645,4 @@ output AZURE_OPENAI_API_KEY string = aiFoundry.outputs.aiFoundryApiKey
 output APIM_SERVICE_NAME string = apiManagement.name
 output TMDB_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}'
 output STORAGE_ACCOUNT_BLOB_URL string = storageAccountAzureRambi.outputs.primaryBlobEndpoint
+output AZURE_AI_PROJECT_ENDPOINT string = aiFoundryProject.outputs.projectEndpoint

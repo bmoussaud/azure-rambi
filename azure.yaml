@@ -40,6 +40,13 @@ services:
     docker:
       remoteBuild: true
 
+  movie_poster_agent_svc:
+    language: python
+    project: src/movie_poster_agent_svc
+    host: containerapp
+    docker:
+      remoteBuild: true
+
 #hooks:
 #  postdeploy: # Pull environment variable inline from local device and set in .env file
 #      shell: sh

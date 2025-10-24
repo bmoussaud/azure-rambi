@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, UTC
 from io import BytesIO
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from PIL import Image
@@ -109,16 +109,20 @@ Finally, provide:
 
 Be thorough, objective, and constructive in your analysis.
 """
-        
-        return ChatAgent(
-            chat_client=AzureAIAgentClient(
+        chat_client=AzureAIAgentClient(
                 project_endpoint=self.project_endpoint,
                 model_deployment_name=self.model_deployment,
                 async_credential=DefaultAzureCredential(),
                 agent_name="MoviePosterValidator",
-            ),
+            )
+        # Enable Azure AI observability (optional but recommended)
+        await chat_client.setup_azure_ai_observability()
+        
+        return ChatAgent(
+            chat_client=chat_client,
             instructions=agent_instructions,
         )
+        
     
     async def encode_image_from_url(self, image_url: str) -> str:
         """Download and encode image from URL."""
@@ -353,6 +357,65 @@ async def validate_poster_endpoint(
     except Exception as e:
         logger.error(f"Unexpected error in validation endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error during validation")
+
+
+
+@app.get("/liveness")
+async def liveness():
+    """
+    Liveness probe endpoint.
+    """
+    #logging.info("Liveness probe")
+    return Response(content=json.dumps({"status": "alive"}), media_type="application/json")
+
+@app.get("/readiness")
+async def readiness():
+    """
+    Readiness probe endpoint.
+    """
+    #logging.info("Readiness probe")
+    return Response(content=json.dumps({"status": "ready"}), media_type="application/json")
+
+@app.get("/env")
+async def environment_info():
+    """
+    Environment information endpoint.
+    Shows configuration and environment variables (sensitive values masked).
+    """
+    try:
+        env_info = {
+            "service": "movie-poster-agent",
+            "version": "1.0.0",
+            "environment_variables": {
+                "AZURE_AI_PROJECT_ENDPOINT": os.getenv("AZURE_AI_PROJECT_ENDPOINT", "Not set"),
+                "AZURE_AI_MODEL_DEPLOYMENT": os.getenv("AZURE_AI_MODEL_DEPLOYMENT", "gpt-4o"),
+                "PORT": os.getenv("PORT", "8005"),
+                "PYTHON_VERSION": f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
+                "APPLICATIONINSIGHTS_CONNECTION_STRING": "***MASKED***" if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING") else "Not set",
+                "AZURE_STORAGE_CONNECTION_STRING": "***MASKED***" if os.getenv("AZURE_STORAGE_CONNECTION_STRING") else "Not set",
+                "AZURE_CLIENT_ID": os.getenv("AZURE_CLIENT_ID", "Not set"),
+            },
+            "agent_configuration": {
+                "project_endpoint_configured": poster_agent.project_endpoint is not None,
+                "model_deployment": poster_agent.model_deployment,
+                "blob_storage_configured": poster_agent.blob_client is not None,
+            },
+            "runtime_info": {
+                "hostname": os.getenv("HOSTNAME", "Unknown"),
+                "container_name": os.getenv("CONTAINER_APP_NAME", "Unknown"),
+                "revision": os.getenv("CONTAINER_APP_REVISION", "Unknown"),
+            }
+        }
+        
+        return env_info
+        
+    except Exception as e:
+        logger.error(f"Error getting environment info: {str(e)}")
+        return Response(
+            content=json.dumps({"error": "Failed to retrieve environment information"}),
+            status_code=500,
+            media_type="application/json"
+        )
 
 @app.post("/validate-batch", response_model=List[PosterValidationResponse])
 async def validate_posters_batch(requests: List[PosterValidationRequest]):

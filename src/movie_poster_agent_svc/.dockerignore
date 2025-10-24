@@ -1,0 +1,56 @@
+# Ignore virtual environments
+.venv/
+venv/
+env/
+
+# Ignore Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Ignore development and IDE files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore documentation and examples
+README.md
+*.md
+docs/
+examples/
+
+# Ignore test files (optional - remove if you want tests in the container)
+test_*.py
+*_test.py
+tests/
+
+# Ignore development scripts
+deploy.sh
+local_run.py
+cli_curl.sh
+
+# Ignore lock files (they'll be regenerated)
+uv.lock

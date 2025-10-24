@@ -113,7 +113,7 @@ class GenAiMovieService:
     def get_generated_movie(self, movie_id: str) -> GeneratedMovie:
         """Fetch generated movie information from the movie gallery microservice."""
         import requests
-        url = f"https://movie-gallery-svc.niceriver-71d47c14.francecentral.azurecontainerapps.io/movies/{movie_id}"
+        url = f"http://movie-gallery-svc/movies/{movie_id}"
         logger.info(f"Fetching generated movie info from {url}")
         try:
             response = requests.get(url, timeout=10)
@@ -123,6 +123,7 @@ class GenAiMovieService:
             payload = None
             if "payload" in data:
                 payload = MovieGalleryPayload(**data["payload"])
+
             return GeneratedMovie(
                 id=data.get("id", ""),
                 title=data.get("title", ""),
@@ -296,6 +297,9 @@ class GenAiMovieService:
         """ Generate a new movie poster based on the description using gpt-image-1 model """
         logger.info("generate_poster_gpt_image")
         generated_movie = self.get_generated_movie(movie_id)
+        if generated_movie.error is not None:
+            raise Exception(f"Error fetching generated movie: {generated_movie.error}")
+        
         logger.info("Generated movie poster_description")
         response = self.client.images.generate( 
             model="gpt-image-1",

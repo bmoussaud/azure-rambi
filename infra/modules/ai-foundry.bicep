@@ -5,7 +5,7 @@ param location string
 @description('Model deployments for OpenAI')
 param modelDeploymentsParameters array
 
-resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-07-01-preview' = {
+resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: name
   location: location
   tags: {
@@ -29,7 +29,7 @@ resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-07-01-preview' = {
 }
 
 @batchSize(1)
-resource modelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
+resource modelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = [
   for deployment in modelDeploymentsParameters: {
     parent: aiFoundry
     name: deployment.name
@@ -57,5 +57,5 @@ output aiFoundryInferenceEndpoint string = '${aiFoundry.properties.endpoints['Az
 output aiFoundryApiEndpoint string = aiFoundry.properties.endpoints['AI Foundry API']
 
 output defaultModelDeploymentName string = modelDeploymentsParameters[0].name
-output aiFoundryInferenceKey string = listKeys(aiFoundry.id, '2025-07-01-preview').key1
-output aiFoundryApiKey string       = listKeys(aiFoundry.id, '2025-07-01-preview').key1
+output aiFoundryInferenceKey string = listKeys(aiFoundry.id, '2024-06-01-preview').key1
+output aiFoundryApiKey string       = listKeys(aiFoundry.id, '2024-06-01-preview').key1

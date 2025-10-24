@@ -8,14 +8,16 @@ param location string
 param environmentName string
 
 @description('Location for AI Foundry resources.')
-param aiFoundryLocation string = 'swedencentral' //'westus' 'switzerlandnorth' swedencentral
+param aiFoundryLocation string = 'eastus2' //'westus' 'switzerlandnorth' swedencentral
 
+param enable_cache bool = false
 var rootname = 'azrambi'
+
 
 module aiFoundry 'modules/ai-foundry.bicep' = {
   name: 'aiFoundryModel'
   params: {
-    name: '${rootname}${environmentName}'
+    name: '${rootname}-${environmentName}'
     location: aiFoundryLocation
     modelDeploymentsParameters: [
       {
@@ -26,7 +28,8 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
         version: '2024-08-06'
         format: 'OpenAI'
       }
-      {
+      /*
+         {
         name: 'dall-e-3'
         model: 'dall-e-3'
         capacity: 1
@@ -34,6 +37,7 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
         version: '3.0'
         format: 'OpenAI'
       }
+        */
       {
         name: 'o1-mini'
         model: 'o1-mini'
@@ -61,10 +65,11 @@ module aiFoundryProject 'modules/ai-foundry-project.bicep' = {
   params: {
     location: aiFoundryLocation
     aiFoundryName: aiFoundry.outputs.aiFoundryName
-    aiProjectName: '${rootname}-${aiFoundryLocation}-${environmentName}'
+    aiProjectName: '${rootname}-${aiFoundryLocation}'
     aiProjectFriendlyName: '${rootname} Project ${environmentName}'
-    aiProjectDescription: 'bla'
+    aiProjectDescription: 'Azure Rambi Suites AI Foundry Project'
     applicationInsightsName: applicationInsights.outputs.aiName
+    // storageAccountName: storageAccountAzureRambi.outputs.name // Removed to avoid deployment conflicts
   }
 }
 
@@ -271,7 +276,7 @@ module applicationInsights 'modules/app-insights.bicep' = {
   }
 }
 
-module redis 'modules/redis.bicep' = {
+module redis 'modules/redis.bicep' = if (enable_cache) {
   name: 'redis-cache'
   params: {
     location: location
@@ -397,18 +402,21 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
         name: 'APIM_ENDPOINT'
         value: apiManagement.outputs.apiManagementProxyHostName
       }
+      /*
       {
         name: 'REDIS_HOST'
-        value: redis.outputs.redisHost
-      }
+        value: redis.outputs.redisHost 
+      } 
       {
         name: 'REDIS_PORT'
         value: '${int('${redis.outputs.redisPort}')}'
       }
+        */
       {
         name: 'USE_CACHE'
-        value: 'oui'
+        value: 'no'
       }
+        
       {
         name: 'STORAGE_ACCOUNT_BLOB_URL'
         value: storageAccountAzureRambi.outputs.primaryBlobEndpoint
@@ -441,14 +449,7 @@ module containerGuiSvcApp 'modules/apps/gui-svc.bicep' = {
         name: 'TMDB_ENDPOINT'
         value: 'https://${apiManagement.outputs.apiManagementProxyHostName}'
       }
-      {
-        name: 'REDIS_HOST'
-        value: redis.outputs.redisHost
-      }
-      {
-        name: 'REDIS_PORT'
-        value: '${int('${redis.outputs.redisPort}')}'
-      }
+      
     ]
   }
 }
@@ -504,6 +505,7 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
     storageContributorRoleName: azrStorageContributor.name
+    
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
@@ -523,14 +525,16 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
         value: storageAccountAzureRambi.outputs.primaryBlobEndpoint
       }
       {
-        name: 'AZURE_CLIENT_ID_BLOB'
+        name: 'AZURE_CLIENT_ID'
         value: azrStorageContributor.properties.clientId
       }
     ]
   }
 }
 
-module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.8.3' = {
+
+
+module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.1' = {
   name: 'azrambi-storage-account'
  
   params: {
@@ -637,6 +641,7 @@ output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.l
 output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscriptionKey
 output APIM_ENDPOINT string = apiManagement.outputs.apiManagementProxyHostName
 output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.outputs.fqdn}'
+output MOVIE_POSTER_AGENT_ENDPOINT string = 'https://${containerMoviePosterAgentSvcApp.outputs.fqdn}'
 output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.outputs.fqdn}'
 output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'

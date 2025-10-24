@@ -17,13 +17,14 @@ param aiProjectDescription string
 
 param applicationInsightsName string
 
-param customKey object = {
-  name: 'xxxx'
-  target: 'https://api.xxxx.com/'
-  authKey: ''
-}
+// @description('Storage account name.')
+// param storageAccountName string
 
-resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = {
+// resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
+//   name: storageAccountName
+// }
+
+resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-06-01' existing = {
   name: aiFoundryName
 }
 
@@ -31,13 +32,14 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02-preview' 
   name: applicationInsightsName
 }
 
-resource project 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = {
+resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   parent: aiFoundry
   name: aiProjectName
   location: location
+  
   properties: {
-    description: aiProjectFriendlyName
-    displayName: aiProjectDescription
+    description: aiProjectDescription
+    displayName: aiProjectFriendlyName
   }
   identity: {
     type: 'SystemAssigned'
@@ -45,7 +47,7 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-previ
 }
 
 // Creates the Azure Foundry connection to your Azure App Insights resource
-resource connectionAppInsight 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = {
+resource connectionAppInsight 'Microsoft.CognitiveServices/accounts/projects/connections@2025-06-01' = {
   name: 'appinsights-connection'
   parent: project
   properties: {
@@ -54,7 +56,7 @@ resource connectionAppInsight 'Microsoft.CognitiveServices/accounts/projects/con
     authType: 'ApiKey'
     //isSharedToAll: true
     credentials: {
-      key: applicationInsights.properties.connectionString
+      key: applicationInsights.properties.ConnectionString
     }
     metadata: {
       ApiType: 'Azure'
@@ -63,22 +65,23 @@ resource connectionAppInsight 'Microsoft.CognitiveServices/accounts/projects/con
   }
 }
 
-resource connectionCustom 'Microsoft.CognitiveServices/accounts/connections@2025-04-01-preview' = {
-  name: '${customKey.name}-customkey-connection'
-  parent: aiFoundry
-  properties: {
-    category: 'CustomKeys'
-    target: customKey.target
-    authType: 'CustomKeys'
-    //isSharedToAll: true
-    credentials: {
-      keys: {
-        'x-api-key': customKey.authKey
-      }
-    }
-    metadata: {}
-  }
-}
+
+
+// Note: Storage account connection moved to avoid conflicts during deployment
+// This can be created separately after the main AI Foundry resource is stable
+// resource connectionStorageAccount 'Microsoft.CognitiveServices/accounts/connections@2025-06-01' = {
+//   name: '${storageAccount.name}-connection'
+//   parent: aiFoundry
+//   properties: {
+//     category: 'StorageAccounts'
+//     target: storageAccount.id
+//     authType: 'AccountKey'
+//     credentials: {
+//       key: listKeys(storageAccount.id, storageAccount.apiVersion).keys[0].value
+//     }
+//     metadata: {}
+//   }
+// }
 
 output projectName string = project.name
 output projectId string = project.id

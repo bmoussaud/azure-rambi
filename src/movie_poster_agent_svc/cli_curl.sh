@@ -1,11 +1,23 @@
 #!/bin/bash
 set -ex
+source .env
 URL="http://localhost:8005"
-URL="https://movie-poster-agent-svc.niceriver-71d47c14.francecentral.azurecontainerapps.io"
-curl -X POST "$URL/validate" \
+MOVIE_ID="525_346698_Romance_82051"
+curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .
+movie_title=$(curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .title)
+echo "Movie title: $movie_title"
+poster_description=$(curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .poster_description)
+echo "Poster description: $poster_description"
+poster_url=$(curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .poster_url)
+echo "Poster URL: $poster_url"
+genre=$(curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .payload.genre  )
+echo "Genre: $genre"
+
+
+curl -X POST "$MOVIE_POSTER_AGENT_ENDPOINT/validate" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "poster_description=The poster showcases two charismatic mice dressed in stylish outfits—one in a sharp black suit with a white shirt and a trendy hat, and the other in a colorful blazer with a playful tie. They both wear cool sunglasses, exuding confidence and charm. Behind them is a vibrant, gradient background transitioning from light blue at the top to deep blue at the bottom, adding a lively and dynamic feel. Surrounding the main characters are their diverse band members, each holding different musical instruments that hint at a fun and energetic performance. The scene is set against a backdrop of a bustling animated cityscape with musical notes floating around, emphasizing the film's focus on music and camaraderie. The overall aesthetic is bright, engaging, and full of movement, capturing the essence of an uplifting animated musical adventure." \
-  -d "poster_url=https://gui-svc.niceriver-71d47c14.francecentral.azurecontainerapps.io/poster/525_420821_Animation_66602.png" \
-  -d "movie_title=The Melody Mice" \
-  -d "movie_genre=Anime" \
+  -d "poster_description=${poster_description}" \
+  -d "poster_url=${poster_url}" \
+  -d "movie_title=${movie_title}" \
+  -d "movie_genre=${genre}" \
   -d "language=french" | jq .

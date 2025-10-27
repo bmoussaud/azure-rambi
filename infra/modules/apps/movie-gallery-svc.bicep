@@ -218,6 +218,17 @@ resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' = {
     ]
     databaseAccountOfferType: 'Standard'
     publicNetworkAccess: 'Enabled'
+    // Allow access from Azure datacenters (Container Apps have dynamic IPs)
+    ipRules: [
+      {
+        ipAddressOrRange: '0.0.0.0'
+      }
+    ]
+    isVirtualNetworkFilterEnabled: false
+    enableAutomaticFailover: false
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
   }
 }
 

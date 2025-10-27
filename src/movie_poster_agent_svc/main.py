@@ -18,10 +18,12 @@ import httpx
 from dotenv import load_dotenv
 from agent_framework import ChatAgent
 from agent_framework_azure_ai import AzureAIAgentClient
-from azure.identity import DefaultAzureCredential
+from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.storage.blob.aio import BlobServiceClient
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from agent_framework import ChatMessage, TextContent, UriContent, DataContent, Role
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -80,10 +82,25 @@ class PosterValidationAgent:
             logger.info(f"Initializing agent with endpoint: {self.project_endpoint}")
             logger.info(f"Using model deployment: {self.model_deployment}")
         
-        # Initialize blob storage for image processing
-        self.blob_client = None
-        if storage_connection := os.getenv("AZURE_STORAGE_CONNECTION_STRING"):
-            self.blob_client = BlobServiceClient.from_connection_string(storage_connection)
+        # Initialize blob storage for image processing with managed identity
+        self.blob_service_client = None
+        self.storage_account_url = os.getenv("STORAGE_ACCOUNT_BLOB_URL")
+        
+        if self.storage_account_url:
+            # Use managed identity for blob storage access
+            client_id = os.getenv("AZURE_CLIENT_ID")
+            if client_id:
+                logger.info(f"Using managed identity {client_id} for blob storage access")
+                credential = ManagedIdentityCredential(client_id=client_id)
+            else:
+                logger.info("Using default Azure credential for blob storage access")
+                credential = DefaultAzureCredential()
+            
+            self.blob_service_client = BlobServiceClient(
+                account_url=self.storage_account_url,
+                credential=credential
+            )
+            logger.info(f"Blob service client initialized with URL: {self.storage_account_url}")
     
     async def create_agent(self) -> ChatAgent:
         """Create and configure the chat agent."""
@@ -125,20 +142,88 @@ Be thorough, objective, and constructive in your analysis.
         
     
     async def encode_image_from_url(self, image_url: str) -> str:
-        """Download and encode image from URL."""
+        logger.info(f"Encoding image from URL: {image_url}")
+        """Encode image from URL to base64, using managed identity for Azure blob storage URLs."""
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(image_url)
-                response.raise_for_status()
-                
-                # Validate it's an image
-                image = Image.open(BytesIO(response.content))
-                
-                # Convert to base64
-                return base64.b64encode(response.content).decode('utf-8')
+            # Check if this is an Azure blob storage URL
+            if self._is_azure_blob_url(image_url):
+                logger.info("Detected Azure blob storage URL, using authenticated access")
+                return await self._encode_image_from_blob_url(image_url)
+            else:
+                # Regular HTTP URL - use direct access
+                logger.info("Using direct HTTP access for non-blob URL")
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(image_url)
+                    response.raise_for_status()
+                    
+                    logger.info(f"Image fetched successfully: {len(response.content)} bytes")
+                    image = Image.open(BytesIO(response.content))
+                    
+                    # Convert to base64
+                    logger.info("Encoding image to base64")
+                    return base64.b64encode(response.content).decode('utf-8')
         except Exception as e:
             logger.error(f"Error encoding image from URL {image_url}: {str(e)}")
             raise HTTPException(status_code=400, detail=f"Failed to process image from URL: {str(e)}")
+    
+    def _is_azure_blob_url(self, url: str) -> bool:
+        """Check if URL is an Azure blob storage URL."""
+        try:
+            parsed = urlparse(url)
+            return 'blob.core.windows.net' in parsed.netloc
+        except Exception:
+            return False
+    
+    async def _encode_image_from_blob_url(self, blob_url: str) -> str:
+        """Encode image from Azure blob storage URL using managed identity."""
+        try:
+            if not self.blob_service_client:
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Blob storage client not configured for authenticated access"
+                )
+            
+            # Parse the blob URL to extract container and blob name
+            parsed = urlparse(blob_url)
+            path_parts = parsed.path.lstrip('/').split('/')
+            
+            if len(path_parts) < 2:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid blob URL format: {blob_url}"
+                )
+            
+            container_name = path_parts[0]
+            blob_name = '/'.join(path_parts[1:])
+            
+            logger.info(f"Accessing blob: container={container_name}, blob={blob_name}")
+            
+            # Get blob client and download content
+            blob_client = self.blob_service_client.get_blob_client(
+                container=container_name,
+                blob=blob_name
+            )
+            
+            # Download blob content
+            async with blob_client:
+                blob_data = await blob_client.download_blob()
+                content = await blob_data.readall()
+            
+            logger.info(f"Blob downloaded successfully: {len(content)} bytes")
+            
+            # Validate it's an image
+            image = Image.open(BytesIO(content))
+            
+            # Convert to base64
+            logger.info("Encoding blob image to base64")
+            return base64.b64encode(content).decode('utf-8')
+            
+        except Exception as e:
+            logger.error(f"Error accessing blob {blob_url}: {str(e)}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Failed to access blob with managed identity: {str(e)}"
+            )
     
     async def encode_image_from_file(self, image_file: UploadFile) -> str:
         """Encode uploaded image file."""
@@ -250,6 +335,8 @@ Be thorough, objective, and constructive in your analysis.
     async def validate_poster(self, request: PosterValidationRequest) -> PosterValidationResponse:
         """Validate a movie poster using the AI agent."""
         try:
+            image_base64 = await self.encode_image_from_url(request.poster_url)
+
             async with await self.create_agent() as agent:
                 # Build the validation prompt
                 validation_prompt = f"""
@@ -259,7 +346,7 @@ Movie Details:
 - Title: {request.movie_title or 'Not specified'}
 - Genre: {request.movie_genre or 'Not specified'}
 - Description: {request.poster_description}
-- Poster: {request.poster_url}
+- Original Poster URL: {request.poster_url}
 
 Please evaluate the poster across these categories and provide scores from 0-100:
 
@@ -277,29 +364,27 @@ Finally, provide:
 - An overall weighted score
 - 3-5 specific recommendations for improvement
 Provide your response in a structured format and the language is {request.language or "en"}.
-
-
 """
-                
-
-            from agent_framework import ChatMessage, TextContent, UriContent, Role
+    
             message = ChatMessage(
                 role=Role.USER,
                 contents=[
                     TextContent(text=validation_prompt),
-                    UriContent(
-                        uri=request.poster_url,
-                        media_type="image/jpeg"
+                    DataContent(
+                        data=base64.b64decode(image_base64),
+                        media_type="image/png"
                     )
                 ]
             )
-            logger.info("Sending validation prompt to agent")
-            logger.info(f"{message.contents[0].text}")
+            logger.info("Sending validation prompt to agent with image data content")
+            logger.info(f"Prompt length: {len(message.contents[0].text)} characters")
+            logger.info(f"Image data size: {len(base64.b64decode(image_base64))} bytes")
+            
             result = await agent.run(message, response_format=PosterValidationResponse)
             
             logger.info(f"Agent response received: {len(result.text)} characters")
             
-            # Parse the response into structured format$
+            # Parse the response into structured format
             return result.value
                 
         except Exception as e:
@@ -393,13 +478,14 @@ async def environment_info():
                 "PORT": os.getenv("PORT", "8005"),
                 "PYTHON_VERSION": f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
                 "APPLICATIONINSIGHTS_CONNECTION_STRING": "***MASKED***" if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING") else "Not set",
-                "AZURE_STORAGE_CONNECTION_STRING": "***MASKED***" if os.getenv("AZURE_STORAGE_CONNECTION_STRING") else "Not set",
+                "STORAGE_ACCOUNT_BLOB_URL": os.getenv("STORAGE_ACCOUNT_BLOB_URL", "Not set"),
                 "AZURE_CLIENT_ID": os.getenv("AZURE_CLIENT_ID", "Not set"),
             },
             "agent_configuration": {
                 "project_endpoint_configured": poster_agent.project_endpoint is not None,
                 "model_deployment": poster_agent.model_deployment,
-                "blob_storage_configured": poster_agent.blob_client is not None,
+                "blob_storage_configured": poster_agent.blob_service_client is not None,
+                "storage_account_url": poster_agent.storage_account_url or "Not configured",
             },
             "runtime_info": {
                 "hostname": os.getenv("HOSTNAME", "Unknown"),

@@ -24,13 +24,13 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from agent_framework import ChatMessage, TextContent, UriContent, DataContent, Role
 from urllib.parse import urlparse
-
+from ai_tools import ImageLoader
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO    )
+logger.setLevel(logging.INFO)
 
 # Configure telemetry
 if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
@@ -73,35 +73,17 @@ class PosterValidationAgent:
     
     def __init__(self):
         """Initialize the validation agent."""
+        
         self.project_endpoint = os.getenv("AZURE_AI_PROJECT_ENDPOINT")
         self.model_deployment = os.getenv("AZURE_AI_MODEL_DEPLOYMENT", "gpt-4o")
-        
         if not self.project_endpoint:
             raise ValueError("AZURE_AI_PROJECT_ENDPOINT environment variable is required")
-        else:
-            logger.info(f"Initializing agent with endpoint: {self.project_endpoint}")
-            logger.info(f"Using model deployment: {self.model_deployment}")
         
-        # Initialize blob storage for image processing with managed identity
-        self.blob_service_client = None
-        self.storage_account_url = os.getenv("STORAGE_ACCOUNT_BLOB_URL")
-        
-        if self.storage_account_url:
-            # Use managed identity for blob storage access
-            client_id = os.getenv("AZURE_CLIENT_ID")
-            if client_id:
-                logger.info(f"Using managed identity {client_id} for blob storage access")
-                credential = ManagedIdentityCredential(client_id=client_id)
-            else:
-                logger.info("Using default Azure credential for blob storage access")
-                credential = DefaultAzureCredential()
-            
-            self.blob_service_client = BlobServiceClient(
-                account_url=self.storage_account_url,
-                credential=credential
-            )
-            logger.info(f"Blob service client initialized with URL: {self.storage_account_url}")
-    
+        logger.info(f"Initializing agent with endpoint: {self.project_endpoint}")
+        logger.info(f"Using model deployment: {self.model_deployment}")
+
+        self._image_loader = ImageLoader(os.getenv("AZURE_CLIENT_ID"))
+       
     async def create_agent(self) -> ChatAgent:
         """Create and configure the chat agent."""
         agent_instructions = """
@@ -229,7 +211,7 @@ Be thorough, objective, and constructive in your analysis.
     async def validate_poster(self, request: PosterValidationRequest) -> PosterValidationResponse:
         """Validate a movie poster using the AI agent."""
         try:
-            image_base64 = await self.encode_image_from_url(request.poster_url)
+            image_base64 = self._image_loader.encode_image_from_url(request.poster_url) if request.poster_url else None
 
             async with await self.create_agent() as agent:
                 # Build the validation prompt

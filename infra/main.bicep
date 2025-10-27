@@ -651,3 +651,4 @@ output APIM_SERVICE_NAME string = apiManagement.name
 output TMDB_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}'
 output STORAGE_ACCOUNT_BLOB_URL string = storageAccountAzureRambi.outputs.primaryBlobEndpoint
 output AZURE_AI_PROJECT_ENDPOINT string = aiFoundryProject.outputs.projectEndpoint
+output AZURE_CLIENT_ID string = azrStorageContributor.properties.clientId

@@ -7,7 +7,7 @@ import os
 import logging
 from dotenv import load_dotenv
 from main import PosterValidationAgent, PosterValidationRequest
-
+from ai_tools import ImageLoader
 # Load environment variables
 load_dotenv()
 
@@ -19,11 +19,11 @@ async def test_validate_poster():
     """Test the updated validate_poster method."""
     try:
         # Initialize the agent
-        agent = PosterValidationAgent()
+        agent = ImageLoader()
         
         # Create a test request
         test_request = PosterValidationRequest(
-            poster_url="https://nazrambihxklazmdpap4s.blob.core.windows.net/movieposters/test_image.png",
+            poster_url="https://nazrambihxklazmdpap4s.blob.core.windows.net/movieposters/525_3170_Romance_87490.png",
             poster_description="A dramatic movie poster featuring action scenes",
             movie_title="Test Movie",
             movie_genre="Action",

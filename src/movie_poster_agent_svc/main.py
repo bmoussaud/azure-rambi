@@ -225,112 +225,6 @@ Be thorough, objective, and constructive in your analysis.
                 detail=f"Failed to access blob with managed identity: {str(e)}"
             )
     
-    async def encode_image_from_file(self, image_file: UploadFile) -> str:
-        """Encode uploaded image file."""
-        try:
-            content = await image_file.read()
-            
-            # Validate it's an image
-            image = Image.open(BytesIO(content))
-            
-            # Convert to base64
-            return base64.b64encode(content).decode('utf-8')
-        except Exception as e:
-            logger.error(f"Error encoding uploaded image: {str(e)}")
-            raise HTTPException(status_code=400, detail=f"Failed to process uploaded image: {str(e)}")
-    
-    def parse_agent_response(self, response_text: str) -> PosterValidationResponse:
-        """Parse the agent's response into structured validation results."""
-        try:
-            # This is a simplified parser - in production, you might want to use more sophisticated parsing
-            # or structure the agent's response format more strictly
-
-            logger.info("Parsing agent response")
-            logger.info(response_text)
-            
-            lines = response_text.split('\n')
-            detailed_scores = []
-            recommendations = []
-            overall_score = 75  # Default fallback
-            
-            current_section = None
-            
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                
-                # Look for section headers
-                if "Visual Quality" in line and ":" in line:
-                    current_section = "visual_quality"
-                elif "Content Accuracy" in line and ":" in line:
-                    current_section = "content_accuracy"
-                elif "Description Alignment" in line and ":" in line:
-                    current_section = "description_alignment"
-                elif "Professional Standards" in line and ":" in line:
-                    current_section = "professional_standards"
-                elif "Genre Appropriateness" in line and ":" in line:
-                    current_section = "genre_appropriateness"
-                elif "Overall Score" in line and ":" in line:
-                    current_section = "overall"
-                elif "Recommendations" in line:
-                    current_section = "recommendations"
-                
-                # Extract scores and reasoning
-                if current_section and current_section != "recommendations" and current_section != "overall":
-                    if "/100" in line or "Score:" in line:
-                        # Extract score
-                        import re
-                        score_match = re.search(r'(\d+)(?:/100)?', line)
-                        if score_match:
-                            score = int(score_match.group(1))
-                            # Look for reasoning in the next few lines
-                            reasoning = line.split(':', 1)[-1].strip() if ':' in line else "No specific reasoning provided"
-                            
-                            detailed_scores.append(ValidationScore(
-                                category=current_section.replace('_', ' ').title(),
-                                score=min(100, max(0, score)),
-                                reasoning=reasoning
-                            ))
-                
-                # Extract overall score
-                if current_section == "overall" and any(char.isdigit() for char in line):
-                    import re
-                    score_match = re.search(r'(\d+)', line)
-                    if score_match:
-                        overall_score = int(score_match.group(1))
-                
-                # Extract recommendations
-                if current_section == "recommendations" and (line.startswith('-') or line.startswith('•') or line.startswith('*')):
-                    recommendation = line.lstrip('-•* ').strip()
-                    if recommendation:
-                        recommendations.append(recommendation)
-            
-            # Ensure we have at least some default scores if parsing failed
-            if not detailed_scores:
-                detailed_scores = [
-                    ValidationScore(category="General Assessment", score=overall_score, reasoning="Automated assessment based on overall analysis")
-                ]
-            
-            if not recommendations:
-                recommendations = ["Consider professional design review", "Ensure high image quality", "Verify content accuracy"]
-            
-            return PosterValidationResponse(
-                overall_score=min(100, max(0, overall_score)),
-                detailed_scores=detailed_scores,
-                recommendations=recommendations
-            )
-            
-        except Exception as e:
-            logger.error(f"Error parsing agent response: {str(e)}")
-            # Return a fallback response
-            return PosterValidationResponse(
-                overall_score=50,
-                detailed_scores=[
-                    ValidationScore(category="General Assessment", score=50, reasoning="Unable to parse detailed analysis")
-                ],
-                recommendations=["Please review the poster manually due to analysis error"]
-            )
     
     async def validate_poster(self, request: PosterValidationRequest) -> PosterValidationResponse:
         """Validate a movie poster using the AI agent."""
@@ -347,22 +241,6 @@ Movie Details:
 - Genre: {request.movie_genre or 'Not specified'}
 - Description: {request.poster_description}
 - Original Poster URL: {request.poster_url}
-
-Please evaluate the poster across these categories and provide scores from 0-100:
-
-1. Visual Quality Assessment: Image quality, composition, resolution, visual appeal
-2. Content Accuracy: Does the poster accurately represent the described content?
-3. Description Alignment: How well does the description match the actual image?
-4. Professional Standards: Does it meet professional movie poster standards?
-5. Genre Appropriateness: Does the visual style match the movie genre?
-
-For each category, provide:
-- A score from 0-100
-- Clear reasoning for the score
-
-Finally, provide:
-- An overall weighted score
-- 3-5 specific recommendations for improvement
 Provide your response in a structured format and the language is {request.language or "en"}.
 """
     
@@ -378,6 +256,7 @@ Provide your response in a structured format and the language is {request.langua
             )
             logger.info("Sending validation prompt to agent with image data content")
             logger.info(f"Prompt length: {len(message.contents[0].text)} characters")
+            logger.info(f"{message.contents[0].text}")
             logger.info(f"Image data size: {len(base64.b64decode(image_base64))} bytes")
             
             result = await agent.run(message, response_format=PosterValidationResponse)
@@ -504,41 +383,6 @@ async def environment_info():
             media_type="application/json"
         )
 
-@app.post("/validate-batch", response_model=List[PosterValidationResponse])
-async def validate_posters_batch(requests: List[PosterValidationRequest]):
-    """Validate multiple movie posters in batch."""
-    try:
-        results = []
-        
-        for i, request in enumerate(requests):
-            try:
-                logger.info(f"Processing batch item {i+1}/{len(requests)}")
-                
-                # Process image if URL provided
-                image_base64 = None
-                if request.poster_url:
-                    image_base64 = await poster_agent.encode_image_from_url(request.poster_url)
-                
-                # Validate the poster
-                result = await poster_agent.validate_poster(request, image_base64)
-                results.append(result)
-                
-            except Exception as e:
-                logger.error(f"Error processing batch item {i+1}: {str(e)}")
-                # Add error result for this item
-                results.append(PosterValidationResponse(
-                    overall_score=0,
-                    detailed_scores=[
-                        ValidationScore(category="Error", score=0, reasoning=f"Processing failed: {str(e)}")
-                    ],
-                    recommendations=["Please retry this validation individually"]
-                ))
-        
-        return results
-        
-    except Exception as e:
-        logger.error(f"Unexpected error in batch validation: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error during batch validation")
 
 if __name__ == "__main__":
     import uvicorn

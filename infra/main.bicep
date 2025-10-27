@@ -13,7 +13,6 @@ param aiFoundryLocation string = 'eastus2' //'westus' 'switzerlandnorth' swedenc
 param enable_cache bool = false
 var rootname = 'azrambi'
 
-
 module aiFoundry 'modules/ai-foundry.bicep' = {
   name: 'aiFoundryModel'
   params: {
@@ -46,7 +45,7 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
         version: '2024-09-12'
         format: 'OpenAI'
       }
-      
+
       {
         name: 'gpt-image-1'
         model: 'gpt-image-1'
@@ -55,7 +54,6 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
         version: '2025-04-15'
         format: 'OpenAI'
       }
-        
     ]
   }
 }
@@ -416,7 +414,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
         name: 'USE_CACHE'
         value: 'no'
       }
-        
+
       {
         name: 'STORAGE_ACCOUNT_BLOB_URL'
         value: storageAccountAzureRambi.outputs.primaryBlobEndpoint
@@ -449,7 +447,6 @@ module containerGuiSvcApp 'modules/apps/gui-svc.bicep' = {
         name: 'TMDB_ENDPOINT'
         value: 'https://${apiManagement.outputs.apiManagementProxyHostName}'
       }
-      
     ]
   }
 }
@@ -505,18 +502,18 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
     storageContributorRoleName: azrStorageContributor.name
-    
+
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
         value: aiFoundry.outputs.aiFoundryEndpoint
       }
-      { 
+      {
         name: 'AZURE_AI_PROJECT_ENDPOINT'
         value: aiFoundryProject.outputs.projectEndpoint
       }
       {
-        name:'AZURE_AI_MODEL_DEPLOYMENT'
+        name: 'AZURE_AI_MODEL_DEPLOYMENT'
         value: 'gpt-4o'
       }
 
@@ -532,26 +529,22 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
   }
 }
 
-
-
 module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.1' = {
   name: 'azrambi-storage-account'
- 
+
   params: {
-    name:  'nazrambi${uniqueString(resourceGroup().id)}'
+    name: 'nazrambi${uniqueString(resourceGroup().id)}'
     allowBlobPublicAccess: false
     allowSharedKeyAccess: false // Disable local authentication methods as per policy
     dnsEndpointType: 'Standard'
     publicNetworkAccess: 'Enabled'
-    networkAcls:  {
+    networkAcls: {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
     }
     blobServices: {
       containers: [
-        { name: 'movieposters' 
-          publicAccess: 'None' 
-        }
+        { name: 'movieposters', publicAccess: 'None' }
       ]
     }
     queueServices: {
@@ -560,9 +553,8 @@ module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.
       ]
     }
 
-    minimumTlsVersion: 'TLS1_2'  // Enforcing TLS 1.2 for better security
+    minimumTlsVersion: 'TLS1_2' // Enforcing TLS 1.2 for better security
     location: location
-    
   }
 }
 
@@ -570,7 +562,6 @@ resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities
   name: 'azure-rambi-storage-contributor'
   location: location
 }
-
 
 module rbacStorage 'modules/rbac_storage.bicep' = {
   name: 'rbac-storage-assignment'
@@ -589,6 +580,14 @@ module rbacStorageLocal 'modules/rbac_storage.bicep' = {
   }
 }
 
+module rbacAgentFoundry 'modules/rbac_agent_foundry.bicep' = {
+  name: 'rbac-agent-foundry-assignment'  
+  params: {
+    aiFoundryAccountName: aiFoundry.outputs.aiFoundryName
+    aiFoundryProjectName: aiFoundryProject.outputs.projectName
+    managedIdentityPrincipalId: azrStorageContributor.properties.principalId
+  }
+}
 
 module systemTopic 'br/public:avm/res/event-grid/system-topic:0.6.0' = {
   name: 'systemTopicDeployment'
@@ -644,6 +643,7 @@ output MOVIE_POSTER_ENDPOINT string = 'https://${containerMoviePosterSvcApp.outp
 output MOVIE_POSTER_AGENT_ENDPOINT string = 'https://${containerMoviePosterAgentSvcApp.outputs.fqdn}'
 output MOVIE_GENERATOR_ENDPOINT string = 'https://${containerMovieGeneratorSvcApp.outputs.fqdn}'
 output MOVIE_GALLERY_ENDPOINT string = 'https://${containerMovieGallerySvcApp.outputs.fqdn}'
+output GUI_ENDPOINT string = 'https://${containerGuiSvcApp.outputs.fqdn}'
 output OPENAI_API_VERSION string = '2024-08-01-preview'
 output AZURE_OPENAI_ENDPOINT string = aiFoundry.outputs.aiFoundryEndpoint
 output AZURE_OPENAI_API_KEY string = aiFoundry.outputs.aiFoundryApiKey

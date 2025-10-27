@@ -247,7 +247,7 @@ Be thorough, objective, and constructive in your analysis.
                 recommendations=["Please review the poster manually due to analysis error"]
             )
     
-    async def validate_poster(self, request: PosterValidationRequest, image_base64: Optional[str] = None) -> PosterValidationResponse:
+    async def validate_poster(self, request: PosterValidationRequest) -> PosterValidationResponse:
         """Validate a movie poster using the AI agent."""
         try:
             async with await self.create_agent() as agent:
@@ -259,6 +259,7 @@ Movie Details:
 - Title: {request.movie_title or 'Not specified'}
 - Genre: {request.movie_genre or 'Not specified'}
 - Description: {request.poster_description}
+- Poster: {request.poster_url}
 
 Please evaluate the poster across these categories and provide scores from 0-100:
 
@@ -277,7 +278,7 @@ Finally, provide:
 - 3-5 specific recommendations for improvement
 Provide your response in a structured format and the language is {request.language or "en"}.
 
-Image: {"[Image provided for analysis]" if image_base64 else "[No image provided - analysis based on description only]"}
+
 """
                 
 
@@ -293,7 +294,7 @@ Image: {"[Image provided for analysis]" if image_base64 else "[No image provided
                 ]
             )
             logger.info("Sending validation prompt to agent")
-            logger.info(f"{message.contents[0].text[:200]}...")  # Log first 200 chars of prompt
+            logger.info(f"{message.contents[0].text}")
             result = await agent.run(message, response_format=PosterValidationResponse)
             
             logger.info(f"Agent response received: {len(result.text)} characters")

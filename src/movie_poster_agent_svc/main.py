@@ -24,7 +24,7 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from agent_framework import ChatMessage, TextContent, UriContent, DataContent, Role
 from urllib.parse import urlparse
-from ai_tools import ImageLoader
+from ai_tools import ImageLoader, get_image_content
 load_dotenv()
 
 # Configure logging
@@ -73,7 +73,6 @@ class PosterValidationAgent:
     
     def __init__(self):
         """Initialize the validation agent."""
-        
         self.project_endpoint = os.getenv("AZURE_AI_PROJECT_ENDPOINT")
         self.model_deployment = os.getenv("AZURE_AI_MODEL_DEPLOYMENT", "gpt-4o")
         if not self.project_endpoint:
@@ -86,6 +85,8 @@ class PosterValidationAgent:
        
     async def create_agent(self) -> ChatAgent:
         """Create and configure the chat agent."""
+        #tools = [get_image_content]
+        tools = []
         agent_instructions = """
 You are a movie poster validation expert. Your job is to analyze movie posters and their descriptions to provide accurate validation scores.
 
@@ -101,6 +102,7 @@ For each category, provide:
 - A score from 0-100
 - Clear reasoning explaining the score
 - Specific observations about the poster
+
 
 Finally, provide:
 - An overall score (weighted average of all categories)
@@ -119,99 +121,15 @@ Be thorough, objective, and constructive in your analysis.
         
         return ChatAgent(
             chat_client=chat_client,
-            instructions=agent_instructions,
+            instructions=agent_instructions + "If you need to fetch the image content from a URL, use the `get_image_content` AI function which retrieves base64 encoded image data from Azure Blob Storage URLs" if len(tools) > 0 else ".",
+            tools=tools
         )
         
-    
-    async def encode_image_from_url(self, image_url: str) -> str:
-        logger.info(f"Encoding image from URL: {image_url}")
-        """Encode image from URL to base64, using managed identity for Azure blob storage URLs."""
-        try:
-            # Check if this is an Azure blob storage URL
-            if self._is_azure_blob_url(image_url):
-                logger.info("Detected Azure blob storage URL, using authenticated access")
-                return await self._encode_image_from_blob_url(image_url)
-            else:
-                # Regular HTTP URL - use direct access
-                logger.info("Using direct HTTP access for non-blob URL")
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(image_url)
-                    response.raise_for_status()
-                    
-                    logger.info(f"Image fetched successfully: {len(response.content)} bytes")
-                    image = Image.open(BytesIO(response.content))
-                    
-                    # Convert to base64
-                    logger.info("Encoding image to base64")
-                    return base64.b64encode(response.content).decode('utf-8')
-        except Exception as e:
-            logger.error(f"Error encoding image from URL {image_url}: {str(e)}")
-            raise HTTPException(status_code=400, detail=f"Failed to process image from URL: {str(e)}")
-    
-    def _is_azure_blob_url(self, url: str) -> bool:
-        """Check if URL is an Azure blob storage URL."""
-        try:
-            parsed = urlparse(url)
-            return 'blob.core.windows.net' in parsed.netloc
-        except Exception:
-            return False
-    
-    async def _encode_image_from_blob_url(self, blob_url: str) -> str:
-        """Encode image from Azure blob storage URL using managed identity."""
-        try:
-            if not self.blob_service_client:
-                raise HTTPException(
-                    status_code=500, 
-                    detail="Blob storage client not configured for authenticated access"
-                )
-            
-            # Parse the blob URL to extract container and blob name
-            parsed = urlparse(blob_url)
-            path_parts = parsed.path.lstrip('/').split('/')
-            
-            if len(path_parts) < 2:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid blob URL format: {blob_url}"
-                )
-            
-            container_name = path_parts[0]
-            blob_name = '/'.join(path_parts[1:])
-            
-            logger.info(f"Accessing blob: container={container_name}, blob={blob_name}")
-            
-            # Get blob client and download content
-            blob_client = self.blob_service_client.get_blob_client(
-                container=container_name,
-                blob=blob_name
-            )
-            
-            # Download blob content
-            async with blob_client:
-                blob_data = await blob_client.download_blob()
-                content = await blob_data.readall()
-            
-            logger.info(f"Blob downloaded successfully: {len(content)} bytes")
-            
-            # Validate it's an image
-            image = Image.open(BytesIO(content))
-            
-            # Convert to base64
-            logger.info("Encoding blob image to base64")
-            return base64.b64encode(content).decode('utf-8')
-            
-        except Exception as e:
-            logger.error(f"Error accessing blob {blob_url}: {str(e)}")
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Failed to access blob with managed identity: {str(e)}"
-            )
-    
     
     async def validate_poster(self, request: PosterValidationRequest) -> PosterValidationResponse:
         """Validate a movie poster using the AI agent."""
         try:
-            image_base64 = self._image_loader.encode_image_from_url(request.poster_url) if request.poster_url else None
+            #image_base64 = self._image_loader.encode_image_from_url(request.poster_url) if request.poster_url else None
 
             async with await self.create_agent() as agent:
                 # Build the validation prompt
@@ -230,16 +148,17 @@ Provide your response in a structured format and the language is {request.langua
                 role=Role.USER,
                 contents=[
                     TextContent(text=validation_prompt),
-                    DataContent(
-                        data=base64.b64decode(image_base64),
-                        media_type="image/png"
-                    )
+                    
+                    #DataContent(
+                    #    data=base64.b64decode(image_base64),
+                    #    media_type="image/png"
+                    #)
                 ]
             )
             logger.info("Sending validation prompt to agent with image data content")
             logger.info(f"Prompt length: {len(message.contents[0].text)} characters")
             logger.info(f"{message.contents[0].text}")
-            logger.info(f"Image data size: {len(base64.b64decode(image_base64))} bytes")
+            #logger.info(f"Image data size: {len(base64.b64decode(image_base64))} bytes")
             
             result = await agent.run(message, response_format=PosterValidationResponse)
             

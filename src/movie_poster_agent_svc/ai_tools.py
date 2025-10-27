@@ -18,9 +18,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 @ai_function
-def get_image_content(url: Annotated[str, "url to image stored in Azure Blob Storage"]) -> str:
-    """Get the current weather for a given location."""
-    # Simulate weather data
+def get_image_content(url: Annotated[str, "fetch the content from url pointing to an image stored in Azure Blob Storage, base64 encoded content"]) -> str:
+    logger.info(f"AI_FUNCTION: Getting image content from URL: {url}")
     client_id = os.getenv("AZURE_CLIENT_ID", None)
     return ImageLoader(client_id).encode_image_from_url(url)
 

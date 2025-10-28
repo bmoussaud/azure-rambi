@@ -90,7 +90,7 @@ class PosterValidationAgent:
         agent_instructions = """
 You are a movie poster validation expert. Your job is to analyze movie posters and their descriptions to provide accurate validation scores.
 
-For each validation request, you should:
+For each validation request, you should includes the following categories in your analysis:
 
 1. **Visual Quality Assessment (0-100)**: Evaluate the image quality, composition, resolution, and visual appeal
 2. **Content Accuracy (0-100)**: Check if the poster accurately represents the described content
@@ -155,7 +155,7 @@ Provide your response in a structured format and the language is {request.langua
                     #)
                 ]
             )
-            logger.info("Sending validation prompt to agent with image data content")
+            logger.info("Sending validation prompt to agent without image data content")
             logger.info(f"Prompt length: {len(message.contents[0].text)} characters")
             logger.info(f"{message.contents[0].text}")
             #logger.info(f"Image data size: {len(base64.b64decode(image_base64))} bytes")

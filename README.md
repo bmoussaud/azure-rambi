@@ -4,7 +4,7 @@
 
 Welcome to the Azure Rambi project! This repository contains code and resources for managing and deploying the Rambi Application using Azure services.
 
-![alt text](rambi.png)
+![alt text](rambi_gpt_image.png)
 
 ## Table of Contents
 

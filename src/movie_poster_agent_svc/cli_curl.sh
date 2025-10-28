@@ -1,11 +1,10 @@
 #!/bin/bash
 set -ex
 source .env
-URL="http://localhost:8005"
-MOVIE_ID="525_346698_Romance_82051"
-#GUI_ENDPOINT=${GUI_ENDPOINT:-$URL}
-GUI_ENDPOINT=https://gui-svc.nicedune-a69e5f5d.eastus2.azurecontainerapps.io
-STORAGE_ENDPOINT="https://nazrambihxklazmdpap4s.blob.core.windows.net/movieposters"
+
+MOVIE_ID="1369_3170_Family_59954"
+
+
 curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .
 movie_title=$(curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .title)
 echo "Movie title: $movie_title"
@@ -20,7 +19,7 @@ echo "Genre: $genre"
 curl -X POST "$MOVIE_POSTER_AGENT_ENDPOINT/validate" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "poster_description=${poster_description}" \
-  -d "poster_url=https://nazrambihxklazmdpap4s.blob.core.windows.net/movieposters/525_3170_Romance_87490.png" \
+  -d "poster_url=${STORAGE_ACCOUNT_BLOB_URL}movieposters/${MOVIE_ID}.png" \
   -d "movie_title=${movie_title}" \
   -d "movie_genre=${genre}" \
   -d "language=french" | jq .

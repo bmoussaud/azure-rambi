@@ -18,7 +18,7 @@ param aiProjectDescription string
 param applicationInsightsName string
 
 // @description('Storage account name.')
-// param storageAccountName string
+param storageName string
 
 // resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
 //   name: storageAccountName
@@ -30,6 +30,10 @@ resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-06-01' existing = 
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02-preview' existing = {
   name: applicationInsightsName
+}
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
+  name: storageName
 }
 
 resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
@@ -65,6 +69,24 @@ resource connectionAppInsight 'Microsoft.CognitiveServices/accounts/projects/con
   }
 }
 
+
+resource project_connection_azure_storage 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = {
+  name: storageName
+  parent: project
+  properties: {
+    category: 'AzureBlob'
+    target: storageAccount.properties.primaryEndpoints.blob
+    // target: storageAccountTarget
+    authType: 'AAD'
+    metadata: {
+      ApiType: 'Azure'
+      ResourceId: storageAccount.id
+      location: storageAccount.location
+      accountName: storageAccount.name
+      containerName: 'movieposters'
+    }
+  }
+}
 
 
 // Note: Storage account connection moved to avoid conflicts during deployment

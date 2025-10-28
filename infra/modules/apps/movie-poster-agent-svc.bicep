@@ -5,7 +5,9 @@ param containerRegistryName string
 param acrPullRoleName string
 param shared_secrets array
 param containerAppsEnvironment string
-param storageContributorRoleName string
+
+@description('Azure Managed Identity name')
+param azureRambiAppsManagedIdentityName string 
 
 @description('Additional properties to be added to the container app')
 param additionalProperties array = []
@@ -18,8 +20,8 @@ resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@
   name: acrPullRoleName
 }
 
-resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = {
-  name: storageContributorRoleName
+resource azrAppsMi 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' existing = {
+  name: azureRambiAppsManagedIdentityName
 }
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
@@ -33,7 +35,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
     type: 'UserAssigned'
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
-      '${azrStorageContributor.id}': {}
+      '${azrAppsMi.id}': {}
     }
   }
   tags: { 'azd-service-name': replace(containerName, '-', '_') }

@@ -4,6 +4,8 @@ param containerName string
 param containerPort int
 param containerRegistryName string
 param acrPullRoleName string
+@description('Azure Managed Identity name')
+param azureRambiAppsManagedIdentityName string 
 
 param shared_secrets array
 param containerAppsEnvironment string
@@ -11,6 +13,11 @@ param additionalProperties array = []
 
 resource acrPullRole 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = {
   name: acrPullRoleName
+}
+
+
+resource azrAppsMi 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' existing = {
+  name: azureRambiAppsManagedIdentityName
 }
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
@@ -28,6 +35,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
     type: 'UserAssigned'
     userAssignedIdentities: {
       '${acrPullRole.id}': {}
+      '${azrAppsMi.id}': {}
     }
   }
   tags: { 'azd-service-name': replace(containerName, '-', '_') }
@@ -69,6 +77,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
                 name: 'MOVIE_POSTER_ENDPOINT'
                 value: 'http://movie-poster-svc'
               }
+              //TODO: Use Managed Identity to access OpenAI
               {
                 name: 'AZURE_OPENAI_API_KEY'
                 secretRef: 'azure-openai-api-key'

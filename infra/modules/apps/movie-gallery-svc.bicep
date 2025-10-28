@@ -12,6 +12,9 @@ param shared_secrets array = []
 @description('User identity IDs for the container app.')
 param acrPullRoleName string = ''
 
+@description('Azure Managed Identity name')
+param azureRambiAppsManagedIdentityName string 
+
 @description('Azure Container Registry name.')
 param containerRegistryName string
 
@@ -30,6 +33,12 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
 resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' existing = {
   name: acrPullRoleName
 }
+
+resource azrAppsMi 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' existing = {
+  name: azureRambiAppsManagedIdentityName
+}
+
+
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
   name: storageAccountName
@@ -60,7 +69,7 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
         }
         {
           name: 'azureClientId'
-          value: managedIdentity.properties.clientId
+          value: azrAppsMi.properties.clientId
         }
       ]
       scopes: [
@@ -87,7 +96,7 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
         }
         {
           name: 'azureClientId'
-          value: managedIdentity.properties.clientId
+          value: azrAppsMi.properties.clientId
         }
       ]
       scopes: [
@@ -104,7 +113,7 @@ resource containerMovieGallerySvcApp 'Microsoft.App/containerApps@2024-10-02-pre
     type: 'UserAssigned'
     userAssignedIdentities: {
       '${uaiAzureRambiAcrPull.id}': {}
-      '${managedIdentity.id}': {}
+      '${azrAppsMi.id}': {}
     }
   }
   tags: { 'azd-service-name': replace(containerName, '-', '_') }
@@ -275,7 +284,7 @@ resource backendApiService_cosmosdb_role_assignment 'Microsoft.DocumentDB/databa
   )
   parent: cosmosDbAccount
   properties: {
-    principalId: managedIdentity.properties.principalId
+    principalId: azrAppsMi.properties.principalId
     roleDefinitionId: resourceId(
       'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions',
       cosmosDbAccount.name,
@@ -285,21 +294,7 @@ resource backendApiService_cosmosdb_role_assignment 'Microsoft.DocumentDB/databa
   }
 }
 
-resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
-  name: 'dapr-state-store-identity'
-  location: location
-}
 
-// Role assignment for Storage Queue Data Contributor to the managed identity
-resource storageQueueDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, storageAccount.name, managedIdentity.id)
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88') // Storage Queue Data Contributor role
-    principalId: managedIdentity.properties.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
 
 output name string = containerMovieGallerySvcApp.name
 output fqdn string = containerMovieGallerySvcApp.properties.configuration.ingress.fqdn

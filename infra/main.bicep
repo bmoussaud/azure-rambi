@@ -67,7 +67,7 @@ module aiFoundryProject 'modules/ai-foundry-project.bicep' = {
     aiProjectFriendlyName: '${rootname} Project ${environmentName}'
     aiProjectDescription: 'Azure Rambi Suites AI Foundry Project'
     applicationInsightsName: applicationInsights.outputs.aiName
-    // storageAccountName: storageAccountAzureRambi.outputs.name // Removed to avoid deployment conflicts
+    storageName: storageAccountAzureRambi.outputs.name 
   }
 }
 
@@ -85,7 +85,7 @@ resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
     //publicNetworkAccess: 'Enabled'
   }
 }
-resource azrKeyVaultContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+resource azrKeyVaultContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
   name: 'azure-rambi-keyvault-user'
   location: location
 }
@@ -279,7 +279,7 @@ module redis 'modules/redis.bicep' = if (enable_cache) {
   params: {
     location: location
     redisCacheName: 'azure-rambi-redis-${uniqueString(resourceGroup().id)}'
-    redisContributorName: azrStorageContributor.name
+    redisContributorName: azrAppsMi.name
   }
 }
 
@@ -343,7 +343,7 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
   }
 }
 
-resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
   name: 'azure-rambi-acr-pull'
   location: location
 }
@@ -390,7 +390,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
-    storageContributorRoleName: azrStorageContributor.name
+    azureRambiAppsManagedIdentityName: azrAppsMi.name
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
@@ -421,7 +421,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
       }
       {
         name: 'AZURE_CLIENT_ID_BLOB'
-        value: azrStorageContributor.properties.clientId
+        value: azrAppsMi.properties.clientId
       }
     ]
   }
@@ -460,6 +460,7 @@ module containerMovieGeneratorSvcApp 'modules/apps/movie-generator-svc.bicep' = 
     containerPort: 8001
     containerRegistryName: containerRegistry.name
     acrPullRoleName: uaiAzureRambiAcrPull.name
+    azureRambiAppsManagedIdentityName: azrAppsMi.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
     additionalProperties: [
@@ -486,6 +487,7 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
+    azureRambiAppsManagedIdentityName: azrAppsMi.name
     storageAccountName: storageAccountAzureRambi.outputs.name
   }
 }
@@ -499,10 +501,10 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
     containerPort: 8005
     containerRegistryName: containerRegistry.name
     acrPullRoleName: uaiAzureRambiAcrPull.name
+    azureRambiAppsManagedIdentityName: azrAppsMi.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
-    storageContributorRoleName: azrStorageContributor.name
-
+    
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
@@ -523,7 +525,7 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
       }
       {
         name: 'AZURE_CLIENT_ID'
-        value: azrStorageContributor.properties.clientId
+        value: azrAppsMi.properties.clientId
       }
     ]
   }
@@ -533,7 +535,7 @@ module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.
   name: 'azrambi-storage-account'
 
   params: {
-    name: 'nazrambi${uniqueString(resourceGroup().id)}'
+    name: 'azrambi${uniqueString(resourceGroup().id)}'
     allowBlobPublicAccess: false
     allowSharedKeyAccess: false // Disable local authentication methods as per policy
     dnsEndpointType: 'Standard'
@@ -552,40 +554,41 @@ module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.
         { name: 'movieposters-events' }
       ]
     }
-
+    roleAssignments:  [
+      {
+        principalId: az.deployer().objectId
+        principalType: 'User'
+        roleDefinitionIdOrName: 'Storage Blob Data Contributor'
+      }
+      {
+        principalId: azrAppsMi.properties.principalId
+        principalType: 'ServicePrincipal'
+        roleDefinitionIdOrName: 'Storage Blob Data Contributor'
+      }
+      {
+        principalId: azrAppsMi.properties.principalId
+        principalType: 'ServicePrincipal'
+        roleDefinitionIdOrName: 'Storage Queue Data Contributor'
+      }
+    ]
+    
     minimumTlsVersion: 'TLS1_2' // Enforcing TLS 1.2 for better security
     location: location
   }
 }
-
-resource azrStorageContributor 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
-  name: 'azure-rambi-storage-contributor'
+resource azrAppsMi 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
+  name: 'azure-rambi-apps'
   location: location
 }
 
-module rbacStorage 'modules/rbac_storage.bicep' = {
-  name: 'rbac-storage-assignment'
-  params: {
-    storageAccountName: storageAccountAzureRambi.outputs.name
-    managedIdentityPrincipalId: azrStorageContributor.properties.principalId
-  }
-}
 
-module rbacStorageLocal 'modules/rbac_storage.bicep' = {
-  name: 'rbac-storage-assignment-local'
-  params: {
-    storageAccountName: storageAccountAzureRambi.outputs.name
-    managedIdentityPrincipalId: az.deployer().objectId
-    principalType: 'User'
-  }
-}
 
 module rbacAgentFoundry 'modules/rbac_agent_foundry.bicep' = {
   name: 'rbac-agent-foundry-assignment'  
   params: {
     aiFoundryAccountName: aiFoundry.outputs.aiFoundryName
     aiFoundryProjectName: aiFoundryProject.outputs.projectName
-    managedIdentityPrincipalId: azrStorageContributor.properties.principalId
+    managedIdentityPrincipalId: azrAppsMi.properties.principalId
   }
 }
 
@@ -651,4 +654,4 @@ output APIM_SERVICE_NAME string = apiManagement.name
 output TMDB_ENDPOINT string = 'https://${apiManagement.outputs.apiManagementProxyHostName}'
 output STORAGE_ACCOUNT_BLOB_URL string = storageAccountAzureRambi.outputs.primaryBlobEndpoint
 output AZURE_AI_PROJECT_ENDPOINT string = aiFoundryProject.outputs.projectEndpoint
-output AZURE_CLIENT_ID string = azrStorageContributor.properties.clientId
+output AZURE_CLIENT_ID string = azrAppsMi.properties.clientId

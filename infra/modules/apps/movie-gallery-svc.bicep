@@ -317,6 +317,25 @@ resource backendApiService_cosmosdb_role_assignment 'Microsoft.DocumentDB/databa
   }
 }
 
+resource user_cosmosdb_role_assignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2022-08-15' = {
+  name: guid(
+    az.deployer().objectId,
+    'docdbcontributor',
+    containerMovieGallerySvcApp.name,
+    '00000000-0000-0000-0000-000000000002'
+  )
+  parent: cosmosDbAccount
+  properties: {
+    principalId: az.deployer().objectId
+    roleDefinitionId: resourceId(
+      'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions',
+      cosmosDbAccount.name,
+      '00000000-0000-0000-0000-000000000002'
+    ) //DocumentDB Data Contributor
+    scope: '${cosmosDbAccount.id}/dbs/${cosmosDbDatabase.name}/colls/${cosmosDbDatabaseCollection.name}'
+  }
+}
+
 
 
 output name string = containerMovieGallerySvcApp.name

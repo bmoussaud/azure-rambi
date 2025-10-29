@@ -264,13 +264,12 @@ module eventHub 'modules/event-hub.bicep' = {
   }
 }
 
-var serviceBusNamespaceName = 'azure-rambi-sb-${uniqueString(resourceGroup().id)}'
 
 module serviceBus 'modules/service-bus.bicep' = {
   name: 'service-bus'
   params: {
     location: location
-    serviceBusNamespaceName: serviceBusNamespaceName
+    serviceBusNamespaceName: 'azure-rambi-sb-${uniqueString(resourceGroup().id)}'
     managedIdentityName: azrAppsMi.name
   }
 }
@@ -514,6 +513,7 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
     azureRambiAppsManagedIdentityName: azrAppsMi.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.name
+    serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
     
     additionalProperties: [
       {

@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, UTC
 from io import BytesIO
 
-from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from PIL import Image
@@ -25,6 +25,9 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from agent_framework import ChatMessage, TextContent, UriContent, DataContent, Role
 from urllib.parse import urlparse
 from ai_tools import ImageLoader, get_image_content
+from dapr.ext.fastapi import DaprApp
+from dapr.clients import DaprClient
+from cloudevents.http import from_http
 load_dotenv()
 
 # Configure logging
@@ -43,10 +46,24 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Initialize DAPR
+dapr_app = DaprApp(app)
+dapr_client = DaprClient()
+
 # Instrument FastAPI
 FastAPIInstrumentor.instrument_app(app)
 
 # Pydantic models
+class MovieUpdateEvent(BaseModel):
+    """Model for movie update events from pubsub."""
+    movie_id: str
+    title: Optional[str] = None
+    genre: Optional[str] = None
+    description: Optional[str] = None
+    poster_url: Optional[str] = None
+    internal_poster_url: Optional[str] = None
+    created_at: Optional[str] = None
+
 class PosterValidationRequest(BaseModel):
     """Request model for poster validation."""
     poster_url: Optional[str] = Field(None, description="URL of the poster image")
@@ -228,22 +245,29 @@ async def validate_poster_endpoint(
 
 @app.get("/liveness")
 async def liveness():
-    """
-    Liveness probe endpoint.
-    """
-    #logging.info("Liveness probe")
-    return Response(content=json.dumps({"status": "alive"}), media_type="application/json")
+    """Liveness probe endpoint."""
+    return {"status": "alive"}
 
 @app.get("/readiness")
 async def readiness():
-    """
-    Readiness probe endpoint.
-    """
-    #logging.info("Readiness probe")
-    return Response(content=json.dumps({"status": "ready"}), media_type="application/json")
+    """Readiness probe endpoint."""
+    return {"status": "ready"}
+
+
+@app.get("/dapr/subscribe")
+async def dapr_subscribe():
+    """DAPR subscription endpoint for service discovery."""
+    return [
+        {
+            "pubsubname": "moviepubsub",
+            "topic": "movie-updates",
+            "route": "/movie-updates"
+        }
+    ]
+
 
 @app.get("/env")
-async def environment_info():
+async def get_environment():
     """
     Environment information endpoint.
     Shows configuration and environment variables (sensitive values masked).
@@ -264,8 +288,7 @@ async def environment_info():
             "agent_configuration": {
                 "project_endpoint_configured": poster_agent.project_endpoint is not None,
                 "model_deployment": poster_agent.model_deployment,
-                "blob_storage_configured": poster_agent.blob_service_client is not None,
-                "storage_account_url": poster_agent.storage_account_url or "Not configured",
+                "image_loader_configured": hasattr(poster_agent, '_image_loader') and poster_agent._image_loader is not None,
             },
             "runtime_info": {
                 "hostname": os.getenv("HOSTNAME", "Unknown"),
@@ -283,6 +306,89 @@ async def environment_info():
             status_code=500,
             media_type="application/json"
         )
+
+
+
+async def trigger_poster_validation(movie_update: MovieUpdateEvent):
+    """Trigger poster validation for a movie update."""
+    try:
+        logger.info(f"Triggering poster validation for movie {movie_update.movie_id}")
+        
+        # Create validation request
+        validation_request = PosterValidationRequest(
+            movie_title=movie_update.title,
+            movie_genre=movie_update.genre,
+            poster_description=movie_update.description or "Movie poster validation",
+            poster_url=movie_update.internal_poster_url,
+            language="en"
+        )
+        
+        # Get the global poster agent instance
+        global poster_agent
+        
+        # Perform validation
+        validation_result = await poster_agent.validate_poster(validation_request)
+        
+        logger.info(f"Validation completed for movie {movie_update.movie_id}")
+        logger.info(f"Overall score: {validation_result.overall_score}")
+        logger.info(f"Recommendations: {validation_result.recommendations}")
+        
+        # Here you could publish the validation results back to another topic
+        # or store them in a database for later retrieval
+        
+        return validation_result
+        
+    except Exception as e:
+        logger.error(f"Error in poster validation for movie {movie_update.movie_id}: {str(e)}")
+        raise
+
+
+# DAPR subscription configuration endpoint
+@dapr_app.subscribe(pubsub="moviepubsub", topic="movie-updates", route="/movie-updates")
+async def movie_updates_subscription(request: Request):
+    """DAPR subscription decorator for movie updates."""
+    logger.info("🎬 DAPR subscription triggered!")
+    
+    try:
+        # Get the request body (DAPR sends data in the body)
+        body = await request.body()
+        headers = dict(request.headers)
+        
+        logger.info(f"Headers: {headers}")
+        logger.info(f"Body (first 200 chars): {body[:200] if body else 'Empty body'}")
+        
+        # Parse the event data from body
+        if body:
+            try:
+                event_data = json.loads(body.decode('utf-8'))
+                logger.info(f"Parsed event data: {event_data}")
+                logger.info(f"{json.dumps(event_data,indent=2)}")
+                data = json.loads(json.loads(event_data.get("data","{}")))
+                logger.info(f"{json.dumps(data,indent=2)}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON from body: {e}")
+                return {"success": False, "error": "Invalid JSON in request body"}
+        else:
+            logger.warning("Empty request body received")
+            return {"success": False, "error": "Empty request body"}
+
+        # Create Poster Validation Request
+        logger.info("Create Poster Validation Request")
+        poster_validation_request = PosterValidationRequest(
+            poster_url=data.get('internal_poster_url','no poster url provided'), 
+            poster_description=data.get('poster_description', 'no description provided'),
+            movie_title=data.get('title','no title provided'),
+            movie_genre=data.get('genre','no genre provided'))
+        
+        logger.info(f"🖼️ Starting validation for movie '{poster_validation_request.movie_title}' (ID: {event_data.get('id')})")
+        result = await poster_agent.validate_poster(poster_validation_request)
+
+        logger.info(f"✅ Validation completed for movie '{poster_validation_request.movie_title}' with overall score: {result.overall_score}")
+        logger.info(f"Results are:  {result}")
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"❌ Error in DAPR subscription handler: {str(e)}", exc_info=True)
+        return {"success": False, "error": str(e)}
 
 
 if __name__ == "__main__":

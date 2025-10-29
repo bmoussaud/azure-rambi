@@ -245,6 +245,7 @@ def movie_gallery():
                 method_name="movies",
                 http_verb='GET'
             )
+            logging.info(f"Response from movie gallery service: {resp}")
             # Properly access data from Dapr InvokeMethodResponse object
             if resp.data:
                 movies = json.loads(resp.data.decode('utf-8'))

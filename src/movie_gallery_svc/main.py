@@ -141,6 +141,9 @@ async def movieposters_events_handler(request: Request):
                         movie.poster_url = f"/poster/{movie_id}.png"
                         store.upsert(movie)
                         logging.info("Updated movie %s with poster URL %s", movie_id, blob_url)
+                        logging.info("Publishing movie update event for movie ID %s", movie_id)
+                        # Publish an event to notify other services of the update
+                        dapr_client.publish_event(pubsub_name="moviepubsub", topic_name="movie-updates", data=json.dumps(movie.to_json()))
                     else:
                         logging.warning("Movie %s not found in data store", movie_id)
                 except Exception as extract_error:

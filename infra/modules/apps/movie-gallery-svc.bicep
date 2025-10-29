@@ -24,6 +24,9 @@ param containerPort int = 5000
 @description('Storage account name.')
 param storageAccountName string
 
+@description('Service Bus namespace name.')
+param serviceBusNamespaceName string
+
 param location string = resourceGroup().location
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
@@ -78,6 +81,26 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
     }
   }
 
+  resource pubsubComponent 'daprComponents@2022-03-01' = {
+    name: 'moviepubsub'
+    properties: {
+      componentType: 'pubsub.azure.servicebus'
+      version: 'v1'
+      metadata: [
+        {
+          name: 'namespaceName'
+          value: '${serviceBusNamespaceName}.servicebus.windows.net'
+        }
+        {
+          name: 'azureClientId'
+          value: azrAppsMi.properties.clientId
+        }
+      ]
+      scopes: [
+        containerName
+      ]
+    }
+  }
   resource queueComponent 'daprComponents@2022-03-01' = {
     name: 'movieposters-events-queue'
     properties: {

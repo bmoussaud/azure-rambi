@@ -10,7 +10,6 @@ param environmentName string
 @description('Location for AI Foundry resources.')
 param aiFoundryLocation string = 'eastus2' //'westus' 'switzerlandnorth' swedencentral
 
-param enable_cache bool = false
 var rootname = 'azrambi'
 
 module aiFoundry 'modules/ai-foundry.bicep' = {
@@ -265,6 +264,17 @@ module eventHub 'modules/event-hub.bicep' = {
   }
 }
 
+var serviceBusNamespaceName = 'azure-rambi-sb-${uniqueString(resourceGroup().id)}'
+
+module serviceBus 'modules/service-bus.bicep' = {
+  name: 'service-bus'
+  params: {
+    location: location
+    serviceBusNamespaceName: serviceBusNamespaceName
+    managedIdentityName: azrAppsMi.name
+  }
+}
+
 module applicationInsights 'modules/app-insights.bicep' = {
   name: 'application-insights'
   params: {
@@ -274,7 +284,7 @@ module applicationInsights 'modules/app-insights.bicep' = {
   }
 }
 
-module redis 'modules/redis.bicep' = if (enable_cache) {
+module redis 'modules/redis.bicep' =  {
   name: 'redis-cache'
   params: {
     location: location
@@ -400,7 +410,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
         name: 'APIM_ENDPOINT'
         value: apiManagement.outputs.apiManagementProxyHostName
       }
-      /*
+      
       {
         name: 'REDIS_HOST'
         value: redis.outputs.redisHost 
@@ -409,7 +419,6 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
         name: 'REDIS_PORT'
         value: '${int('${redis.outputs.redisPort}')}'
       }
-        */
       {
         name: 'USE_CACHE'
         value: 'no'
@@ -489,6 +498,7 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
     containerAppsEnvironment: containerAppsEnv.name
     azureRambiAppsManagedIdentityName: azrAppsMi.name
     storageAccountName: storageAccountAzureRambi.outputs.name
+    serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
   }
 }
 

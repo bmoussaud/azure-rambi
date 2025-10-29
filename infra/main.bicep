@@ -308,47 +308,16 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
   }
 }
 
-@description('Creates an Azure Container Apps Environment.')
-resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
-  name: 'azure-rambi'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${azrKeyVaultContributor.id}': {}
-    }
-  }
-
-  properties: {
-    daprAIInstrumentationKey: applicationInsights.outputs.instrumentationKey
-
-    appInsightsConfiguration: {
-      connectionString: applicationInsights.outputs.connectionString
-    }
-    openTelemetryConfiguration: {
-      tracesConfiguration: {
-        destinations: ['appInsights']
-      }
-      logsConfiguration: {
-        destinations: ['appInsights']
-      }
-    }
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logAnalyticsWorkspace.outputs.customerId
-        sharedKey: logAnalyticsWorkspace.outputs.primarySharedKey
-      }
-    }
-
-    workloadProfiles: [
-      {
-        name: 'default'
-        workloadProfileType: 'D4'
-        minimumCount: 1
-        maximumCount: 2
-      }
-    ]
+module containerAppsEnv 'modules/container-apps-environment.bicep' = {
+  name: 'container-apps-environment'
+  params: {
+    location: location
+    environmentName: 'azure-rambi'
+    keyVaultContributorIdentityId: azrKeyVaultContributor.id
+    appInsightsInstrumentationKey: applicationInsights.outputs.instrumentationKey
+    appInsightsConnectionString: applicationInsights.outputs.connectionString
+    logAnalyticsCustomerId: logAnalyticsWorkspace.outputs.customerId
+    logAnalyticsPrimarySharedKey: logAnalyticsWorkspace.outputs.primarySharedKey
   }
 }
 
@@ -398,7 +367,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
     containerRegistryName: containerRegistry.name
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
-    containerAppsEnvironment: containerAppsEnv.name
+    containerAppsEnvironment: containerAppsEnv.outputs.environmentName
     azureRambiAppsManagedIdentityName: azrAppsMi.name
     additionalProperties: [
       {
@@ -445,7 +414,7 @@ module containerGuiSvcApp 'modules/apps/gui-svc.bicep' = {
     containerRegistryName: containerRegistry.name
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
-    containerAppsEnvironment: containerAppsEnv.name
+    containerAppsEnvironment: containerAppsEnv.outputs.environmentName
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
@@ -470,7 +439,7 @@ module containerMovieGeneratorSvcApp 'modules/apps/movie-generator-svc.bicep' = 
     acrPullRoleName: uaiAzureRambiAcrPull.name
     azureRambiAppsManagedIdentityName: azrAppsMi.name
     shared_secrets: shared_secrets
-    containerAppsEnvironment: containerAppsEnv.name
+    containerAppsEnvironment: containerAppsEnv.outputs.environmentName
     additionalProperties: [
       {
         name: 'AZURE_OPENAI_ENDPOINT'
@@ -494,7 +463,7 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
     containerRegistryName: containerRegistry.name
     acrPullRoleName: uaiAzureRambiAcrPull.name
     shared_secrets: shared_secrets
-    containerAppsEnvironment: containerAppsEnv.name
+    containerAppsEnvironment: containerAppsEnv.outputs.environmentName
     azureRambiAppsManagedIdentityName: azrAppsMi.name
     storageAccountName: storageAccountAzureRambi.outputs.name
     serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
@@ -512,7 +481,7 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
     acrPullRoleName: uaiAzureRambiAcrPull.name
     azureRambiAppsManagedIdentityName: azrAppsMi.name
     shared_secrets: shared_secrets
-    containerAppsEnvironment: containerAppsEnv.name
+    containerAppsEnvironment: containerAppsEnv.outputs.environmentName
     serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
     
     additionalProperties: [
@@ -647,7 +616,7 @@ module userPortalAccess 'modules/user_portal_role.bicep' = {
 }*/
 
 output AZURE_LOCATION string = location
-output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.name
+output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnv.outputs.environmentName
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
 output APIM_SUBSCRIPTION_KEY string = apiManagement.outputs.apiAdminSubscriptionKey

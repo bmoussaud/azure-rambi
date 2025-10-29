@@ -66,7 +66,7 @@ module aiFoundryProject 'modules/ai-foundry-project.bicep' = {
     aiProjectFriendlyName: '${rootname} Project ${environmentName}'
     aiProjectDescription: 'Azure Rambi Suites AI Foundry Project'
     applicationInsightsName: applicationInsights.outputs.aiName
-    storageName: storageAccountAzureRambi.outputs.name 
+    storageName: storageAccountAzureRambi.outputs.name
   }
 }
 
@@ -264,7 +264,6 @@ module eventHub 'modules/event-hub.bicep' = {
   }
 }
 
-
 module serviceBus 'modules/service-bus.bicep' = {
   name: 'service-bus'
   params: {
@@ -283,7 +282,7 @@ module applicationInsights 'modules/app-insights.bicep' = {
   }
 }
 
-module redis 'modules/redis.bicep' =  {
+module redis 'modules/redis.bicep' = {
   name: 'redis-cache'
   params: {
     location: location
@@ -318,6 +317,19 @@ module containerAppsEnv 'modules/container-apps-environment.bicep' = {
     appInsightsConnectionString: applicationInsights.outputs.connectionString
     logAnalyticsCustomerId: logAnalyticsWorkspace.outputs.customerId
     logAnalyticsPrimarySharedKey: logAnalyticsWorkspace.outputs.primarySharedKey
+    
+  }
+}
+
+module daprComponents 'modules/dapr-components.bicep' = {
+  name: 'daprComponents'
+  params: {
+    location: location
+    containerAppsEnvironmentName: containerAppsEnv.outputs.environmentName
+    storageAccountName: storageAccountAzureRambi.outputs.name
+    azureRambiAppsManagedIdentityName: azrAppsMi.name
+    cosmosDbAccountDocumentEndpoint: cosmosDb.outputs.docummentEndpoint
+    serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
   }
 }
 
@@ -378,11 +390,11 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
         name: 'APIM_ENDPOINT'
         value: apiManagement.outputs.apiManagementProxyHostName
       }
-      
+
       {
         name: 'REDIS_HOST'
-        value: redis.outputs.redisHost 
-      } 
+        value: redis.outputs.redisHost
+      }
       {
         name: 'REDIS_PORT'
         value: '${int('${redis.outputs.redisPort}')}'
@@ -402,6 +414,7 @@ module containerMoviePosterSvcApp 'modules/apps/movie-poster-svc.bicep' = {
       }
     ]
   }
+ 
 }
 
 @description('Creates an GUI SVC Azure Container App.')
@@ -426,6 +439,7 @@ module containerGuiSvcApp 'modules/apps/gui-svc.bicep' = {
       }
     ]
   }
+  
 }
 
 @description('Creates an Movie Generator SVC Azure Container App.')
@@ -451,6 +465,7 @@ module containerMovieGeneratorSvcApp 'modules/apps/movie-generator-svc.bicep' = 
       }
     ]
   }
+  
 }
 
 @description('Creates a Movie Gallery Azure Container App.')
@@ -465,8 +480,28 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.outputs.environmentName
     azureRambiAppsManagedIdentityName: azrAppsMi.name
-    storageAccountName: storageAccountAzureRambi.outputs.name
-    serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
+    additionalProperties: [
+      {
+        name: 'STORAGE_ACCOUNT_NAME'
+        value: storageAccountAzureRambi.name
+      }
+      {
+        name: 'STORAGE_QUEUE_NAME'
+        value: 'movieposters-events'
+      }
+    ]
+  }
+  dependsOn: [
+    daprComponents
+  ]
+}
+
+module cosmosDb 'modules/cosmosdb.bicep' = {
+  name: 'cosmosdb-deployment'
+  params: {
+    containerName: 'movie-gallery-svc'
+    location: location
+    azureRambiAppsManagedIdentityName: azrAppsMi.name
   }
 }
 
@@ -482,7 +517,6 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
     azureRambiAppsManagedIdentityName: azrAppsMi.name
     shared_secrets: shared_secrets
     containerAppsEnvironment: containerAppsEnv.outputs.environmentName
-    serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
     
     additionalProperties: [
       {
@@ -508,6 +542,9 @@ module containerMoviePosterAgentSvcApp 'modules/apps/movie-poster-agent-svc.bice
       }
     ]
   }
+  dependsOn: [
+    daprComponents
+  ]
 }
 
 module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.1' = {
@@ -533,7 +570,7 @@ module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.
         { name: 'movieposters-events' }
       ]
     }
-    roleAssignments:  [
+    roleAssignments: [
       {
         principalId: az.deployer().objectId
         principalType: 'User'
@@ -550,7 +587,7 @@ module storageAccountAzureRambi 'br/public:avm/res/storage/storage-account:0.27.
         roleDefinitionIdOrName: 'Storage Queue Data Contributor'
       }
     ]
-    
+
     minimumTlsVersion: 'TLS1_2' // Enforcing TLS 1.2 for better security
     location: location
   }
@@ -560,10 +597,8 @@ resource azrAppsMi 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30'
   location: location
 }
 
-
-
 module rbacAgentFoundry 'modules/rbac_agent_foundry.bicep' = {
-  name: 'rbac-agent-foundry-assignment'  
+  name: 'rbac-agent-foundry-assignment'
   params: {
     aiFoundryAccountName: aiFoundry.outputs.aiFoundryName
     aiFoundryProjectName: aiFoundryProject.outputs.projectName

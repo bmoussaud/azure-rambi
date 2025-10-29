@@ -22,6 +22,7 @@ param logAnalyticsCustomerId string
 @secure()
 param logAnalyticsPrimarySharedKey string
 
+
 @description('Creates an Azure Container Apps Environment.')
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
   name: environmentName
@@ -65,6 +66,7 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview'
     ]
   }
 }
+
 
 output environmentName string = containerAppsEnv.name
 output environmentId string = containerAppsEnv.id

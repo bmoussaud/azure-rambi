@@ -9,35 +9,11 @@ param containerAppsEnvironment string
 @description('Azure Managed Identity name')
 param azureRambiAppsManagedIdentityName string 
 
-@description('Service Bus namespace name.')
-param serviceBusNamespaceName string
-
 @description('Additional properties to be added to the container app')
 param additionalProperties array = []
 
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' existing = {
   name: containerAppsEnvironment
-  
-  resource pubsubComponent 'daprComponents@2022-03-01' = {
-    name: 'moviepubsub'
-    properties: {
-      componentType: 'pubsub.azure.servicebus'
-      version: 'v1'
-      metadata: [
-        {
-          name: 'namespaceName'
-          value: '${serviceBusNamespaceName}.servicebus.windows.net'
-        }
-        {
-          name: 'azureClientId'
-          value: azrAppsMi.properties.clientId
-        }
-      ]
-      scopes: [
-        containerName
-      ]
-    }
-  }
 }
 
 resource uaiAzureRambiAcrPull 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' existing = {
@@ -164,3 +140,4 @@ resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
 }
 
 output fqdn string = containerApp.properties.configuration.ingress.fqdn
+output containerName string = containerName

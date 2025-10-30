@@ -27,7 +27,9 @@ from urllib.parse import urlparse
 from ai_tools import ImageLoader, get_image_content
 from dapr.ext.fastapi import DaprApp
 from dapr.clients import DaprClient
+from store import ValidationStore
 from cloudevents.http import from_http
+from entities import PosterValidationRequest, PosterValidationResponse, MovieUpdateEvent
 load_dotenv()
 
 # Configure logging
@@ -49,41 +51,11 @@ app = FastAPI(
 # Initialize DAPR
 dapr_app = DaprApp(app)
 dapr_client = DaprClient()
-
+store=ValidationStore(dapr_client)
 # Instrument FastAPI
 FastAPIInstrumentor.instrument_app(app)
 
-# Pydantic models
-class MovieUpdateEvent(BaseModel):
-    """Model for movie update events from pubsub."""
-    movie_id: str
-    title: Optional[str] = None
-    genre: Optional[str] = None
-    description: Optional[str] = None
-    poster_url: Optional[str] = None
-    internal_poster_url: Optional[str] = None
-    created_at: Optional[str] = None
 
-class PosterValidationRequest(BaseModel):
-    """Request model for poster validation."""
-    poster_url: Optional[str] = Field(None, description="URL of the poster image")
-    poster_description: str = Field(..., description="Description of the movie poster")
-    movie_title: Optional[str] = Field(None, description="Movie title for context")
-    movie_genre: Optional[str] = Field(None, description="Movie genre for context")
-    language: Optional[str] = Field("en", description="Language for the validation response")
-
-class ValidationScore(BaseModel):
-    """Individual validation score."""
-    category: str = Field(..., description="Validation category")
-    score: int = Field(..., ge=0, le=100, description="Score from 0-100")
-    reasoning: str = Field(..., description="Explanation of the score")
-
-class PosterValidationResponse(BaseModel):
-    """Response model for poster validation."""
-    overall_score: int = Field(..., ge=0, le=100, description="Overall validation score")
-    detailed_scores: List[ValidationScore] = Field(..., description="Detailed breakdown of scores")
-    recommendations: List[str] = Field(..., description="Recommendations for improvement")
-    validation_timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 class PosterValidationAgent:
     """Agent for validating movie posters using AI."""
@@ -154,6 +126,7 @@ Be thorough, objective, and constructive in your analysis.
 Please analyze this movie poster and provide a detailed validation assessment.
 
 Movie Details:
+- Movie ID: {request.movie_id or 'Not specified'}
 - Title: {request.movie_title or 'Not specified'}
 - Genre: {request.movie_genre or 'Not specified'}
 - Description: {request.poster_description}
@@ -178,9 +151,8 @@ Provide your response in a structured format and the language is {request.langua
             #logger.info(f"Image data size: {len(base64.b64decode(image_base64))} bytes")
             
             result = await agent.run(message, response_format=PosterValidationResponse)
-            
+            result.value.id = request.movie_id
             logger.info(f"Agent response received: {len(result.text)} characters")
-            
             # Parse the response into structured format
             return result.value
                 
@@ -211,6 +183,7 @@ async def health_check():
 
 @app.post("/validate", response_model=PosterValidationResponse)
 async def validate_poster_endpoint(
+    movie_id: str = Form(..., description="Unique identifier for the movie"),
     poster_description: str = Form(..., description="Description of the movie poster"),
     movie_title: str = Form(None, description="Movie title for context"),
     movie_genre: str = Form(None, description="Movie genre for context"),
@@ -223,6 +196,7 @@ async def validate_poster_endpoint(
         
         # Create validation request
         request = PosterValidationRequest(
+            movie_id=movie_id,
             poster_url=poster_url,
             poster_description=poster_description,
             movie_title=movie_title,
@@ -232,7 +206,7 @@ async def validate_poster_endpoint(
         
         # Validate the poster
         result = await poster_agent.validate_poster(request)
-        
+        logger.info(f"Poster validation result for movie {request.movie_id}: {result}")
         logger.info(f"Validation completed with overall score: {result.overall_score}")
         return result
     except HTTPException:
@@ -309,39 +283,6 @@ async def get_environment():
 
 
 
-async def trigger_poster_validation(movie_update: MovieUpdateEvent):
-    """Trigger poster validation for a movie update."""
-    try:
-        logger.info(f"Triggering poster validation for movie {movie_update.movie_id}")
-        
-        # Create validation request
-        validation_request = PosterValidationRequest(
-            movie_title=movie_update.title,
-            movie_genre=movie_update.genre,
-            poster_description=movie_update.description or "Movie poster validation",
-            poster_url=movie_update.internal_poster_url,
-            language="en"
-        )
-        
-        # Get the global poster agent instance
-        global poster_agent
-        
-        # Perform validation
-        validation_result = await poster_agent.validate_poster(validation_request)
-        
-        logger.info(f"Validation completed for movie {movie_update.movie_id}")
-        logger.info(f"Overall score: {validation_result.overall_score}")
-        logger.info(f"Recommendations: {validation_result.recommendations}")
-        
-        # Here you could publish the validation results back to another topic
-        # or store them in a database for later retrieval
-        
-        return validation_result
-        
-    except Exception as e:
-        logger.error(f"Error in poster validation for movie {movie_update.movie_id}: {str(e)}")
-        raise
-
 
 # DAPR subscription configuration endpoint
 @dapr_app.subscribe(pubsub="moviepubsub", topic="movie-updates", route="/movie-updates")
@@ -375,16 +316,22 @@ async def movie_updates_subscription(request: Request):
         # Create Poster Validation Request
         logger.info("Create Poster Validation Request")
         poster_validation_request = PosterValidationRequest(
+            movie_id=data.get('id','no id provided'),
             poster_url=data.get('internal_poster_url','no poster url provided'), 
             poster_description=data.get('poster_description', 'no description provided'),
             movie_title=data.get('title','no title provided'),
             movie_genre=data.get('genre','no genre provided'))
         
-        logger.info(f"🖼️ Starting validation for movie '{poster_validation_request.movie_title}' (ID: {event_data.get('id')})")
+        logger.info(f"Created Poster Validation Request: {poster_validation_request}")
+        logger.info(f"🖼️ Starting validation for movie '{poster_validation_request.movie_title}' (ID: {data.get('id')})")
+
         result = await poster_agent.validate_poster(poster_validation_request)
 
         logger.info(f"✅ Validation completed for movie '{poster_validation_request.movie_title}' with overall score: {result.overall_score}")
         logger.info(f"Results are:  {result}")
+        # Store the validation result
+        stored_result = store.upsert(result)
+        logger.info(f"💾 Stored validation result for movie ID {poster_validation_request.movie_id}: {stored_result}")
         return {"success": True}
     except Exception as e:
         logger.error(f"❌ Error in DAPR subscription handler: {str(e)}", exc_info=True)

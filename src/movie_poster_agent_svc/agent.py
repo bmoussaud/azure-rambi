@@ -2,18 +2,38 @@
 
 import os
 import logging
-from typing import Optional
+import sys
+from typing import Annotated, Optional
 
 from fastapi import HTTPException
-from agent_framework import ChatAgent, ChatMessage, TextContent, Role
+from agent_framework import ChatAgent, ChatMessage, TextContent, Role, ai_function
 from agent_framework_azure_ai import AzureAIAgentClient
 from azure.identity import DefaultAzureCredential
 from ai_tools import ImageLoader, get_image_content
 from entities import PosterValidationRequest, PosterValidationResponse
+from dapr.clients import DaprClient
+from store import ValidationStore
 
 # Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
+
+@ai_function(name="store_validation_result", description="Store the validation result and return the movie ID.")
+def store_validation_result(result: Annotated[PosterValidationResponse,"Store the validation result"]) -> str:
+    """Store the validation result and return the movie ID."""
+    # Placeholder for actual storage logic
+    logger.info(f"*** Storing validation result for movie ID: {result}")
+    logger.info(f"**type of result: {type(result)}")
+    # if type is dict, convert to PosterValidationResponse
+    if isinstance(result, dict):
+        result = PosterValidationResponse(**result)
+    logger.info(f"**type of result: {type(result)}")
+    store=ValidationStore(DaprClient())
+    stored_result = store.upsert(result)
+    logger.info(f"*** Stored validation result for movie ID: {stored_result.id}")
+    return stored_result.id
 
 class PosterValidationAgent:
     """Agent for validating movie posters using AI."""
@@ -33,11 +53,11 @@ class PosterValidationAgent:
     async def create_agent(self) -> ChatAgent:
         """Create and configure the chat agent."""
         #tools = [get_image_content]
-        tools = []
+        tools = [store_validation_result]
         agent_instructions = """
 You are a movie poster validation expert. Your job is to analyze movie posters and their descriptions to provide accurate validation scores.
 
-For each validation request, you should includes the following categories in your analysis:
+For each validation request, you should includes always the following categories in your analysis:
 
 1. **Visual Quality Assessment (0-100)**: Evaluate the image quality, composition, resolution, and visual appeal
 2. **Content Accuracy (0-100)**: Check if the poster accurately represents the described content
@@ -68,7 +88,7 @@ Be thorough, objective, and constructive in your analysis.
         
         return ChatAgent(
             chat_client=chat_client,
-            instructions=agent_instructions + "If you need to fetch the image content from a URL, use the `get_image_content` AI function which retrieves base64 encoded image data from Azure Blob Storage URLs" if len(tools) > 0 else ".",
+            instructions=agent_instructions,
             tools=tools
         )
         
@@ -76,12 +96,10 @@ Be thorough, objective, and constructive in your analysis.
     async def validate_poster(self, request: PosterValidationRequest) -> PosterValidationResponse:
         """Validate a movie poster using the AI agent."""
         try:
-            #image_base64 = self._image_loader.encode_image_from_url(request.poster_url) if request.poster_url else None
-
             async with await self.create_agent() as agent:
                 # Build the validation prompt
                 validation_prompt = f"""
-Please analyze this movie poster and provide a detailed validation assessment.
+Validate this movie poster.
 
 Movie Details:
 - Movie ID: {request.movie_id or 'Not specified'}
@@ -91,29 +109,41 @@ Movie Details:
 - Original Poster URL: {request.poster_url}
 Provide your response in a structured format and the language is {request.language or "en"}.
 """
-    
-                message = ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(text=validation_prompt),
-                        
-                        #DataContent(
-                        #    data=base64.b64decode(image_base64),
-                        #    media_type="image/png"
-                        #)
-                    ]
-                )
                 logger.info("Sending validation prompt to agent without image data content")
-                logger.info(f"Prompt length: {len(message.contents[0].text)} characters")
-                logger.info(f"{message.contents[0].text}")
-                #logger.info(f"Image data size: {len(base64.b64decode(image_base64))} bytes")
-                
-                result = await agent.run(message, response_format=PosterValidationResponse)
+                logger.info(f"Prompt length: {len(validation_prompt)} characters")
+                logger.info(f"{validation_prompt}")
+
+                result = await agent.run(validation_prompt, response_format=PosterValidationResponse)
                 result.value.id = request.movie_id
+                
                 logger.info(f"Agent response received: {len(result.text)} characters")
                 # Parse the response into structured format
                 return result.value
-                    
         except Exception as e:
-            logger.error(f"Error during poster validation: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")
+            logger.error(f"Error during poster validation: {str(e)}",exc_info=True)
+            raise Exception(f"Validation failed: {str(e)}")
+
+    async def validate_poster_str(self, request: str , language : str = "English", store_validation: bool = False) -> PosterValidationResponse:
+        """Validate a movie poster using the AI agent."""
+        try:
+            async with await self.create_agent() as agent:
+                # Build the validation prompt
+                store_instruction = "Use the available tools to Store the validation result after processing." if store_validation else "."
+                validation_prompt = f"""
+                Extract from the following JSON string the movie poster details and
+                validate this movie poster.
+                Provide your response in a structured format and the language is {language}.
+                Movie Details JSON:
+                {request}
+                {store_instruction}
+                """     
+                logger.info("Sending validation prompt to agent without image data content")
+                logger.info(f"Prompt length: {len(validation_prompt)} characters")
+                logger.info(f"{validation_prompt}")
+                result = await agent.run(validation_prompt, response_format=PosterValidationResponse)    
+                logger.info(f"Agent response received: {len(result.text)} characters")
+                # Parse the response into structured format
+                return result.value
+        except Exception as e:
+            logger.error(f"Error during poster str validation: {str(e)}",exc_info=True)
+            raise Exception(f"String Validation failed: {str(e)}")

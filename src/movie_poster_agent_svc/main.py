@@ -51,12 +51,9 @@ app = FastAPI(
 
 # Initialize DAPR
 dapr_app = DaprApp(app)
-dapr_client = DaprClient()
-store=ValidationStore(dapr_client)
+store=ValidationStore(DaprClient())
 # Instrument FastAPI
 FastAPIInstrumentor.instrument_app(app)
-
-
 
 # Global agent instance
 poster_agent = PosterValidationAgent()
@@ -250,49 +247,16 @@ async def get_environment():
 async def movie_updates_subscription(request: Request):
     """DAPR subscription decorator for movie updates."""
     logger.info("🎬 DAPR subscription triggered!")
-    
     try:
         # Get the request body (DAPR sends data in the body)
         body = await request.body()
         headers = dict(request.headers)
-        
         logger.info(f"Headers: {headers}")
-        logger.info(f"Body (first 200 chars): {body[:200] if body else 'Empty body'}")
-        
-        # Parse the event data from body
-        if body:
-            try:
-                event_data = json.loads(body.decode('utf-8'))
-                logger.info(f"Parsed event data: {event_data}")
-                logger.info(f"{json.dumps(event_data,indent=2)}")
-                data = json.loads(json.loads(event_data.get("data","{}")))
-                logger.info(f"{json.dumps(data,indent=2)}")
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON from body: {e}")
-                return {"success": False, "error": "Invalid JSON in request body"}
-        else:
-            logger.warning("Empty request body received")
-            return {"success": False, "error": "Empty request body"}
-
-        # Create Poster Validation Request
-        logger.info("Create Poster Validation Request")
-        poster_validation_request = PosterValidationRequest(
-            movie_id=data.get('id','no id provided'),
-            poster_url=data.get('internal_poster_url','no poster url provided'), 
-            poster_description=data.get('poster_description', 'no description provided'),
-            movie_title=data.get('title','no title provided'),
-            movie_genre=data.get('genre','no genre provided'))
-        
-        logger.info(f"Created Poster Validation Request: {poster_validation_request}")
-        logger.info(f"🖼️ Starting validation for movie '{poster_validation_request.movie_title}' (ID: {data.get('id')})")
-
-        result = await poster_agent.validate_poster(poster_validation_request)
-
-        logger.info(f"✅ Validation completed for movie '{poster_validation_request.movie_title}' with overall score: {result.overall_score}")
-        logger.info(f"Results are:  {result}")
-        # Store the validation result
-        stored_result = store.upsert(result)
-        logger.info(f"💾 Stored validation result for movie ID {poster_validation_request.movie_id}: {stored_result}")
+        logger.info("-Body---")
+        logger.info(f"{body.decode('utf-8') if body else 'Empty body'}")
+        logger.info("-/Body---")
+        result = await poster_agent.validate_poster_str(body.decode('utf-8'), store_validation=True)
+        logger.info(f"💾 validation result : {result}")
         return {"success": True}
     except Exception as e:
         logger.error(f"❌ Error in DAPR subscription handler: {str(e)}", exc_info=True)

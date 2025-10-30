@@ -55,12 +55,12 @@ module cosmosDb 'br/public:avm/res/document-db/database-account:0.18.0' =  {
         principalId: managedIdentityPrincipalId
         roleDefinitionId: guid(resourceGroup().id, nameFormatted, 'custom-sql-role')
       }
-      /*
+      
       {
         principalId: az.deployer().objectId
         roleDefinitionId: guid(resourceGroup().id, nameFormatted, 'custom-sql-role')
       }
-        */
+        
     ]
 
 

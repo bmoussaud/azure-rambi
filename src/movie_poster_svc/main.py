@@ -151,7 +151,7 @@ class GenAiMovieService:
         )
 
         self._use_cache = os.getenv("USE_CACHE", None) is not None
-        self._use_cache = False
+        logger.info("USE_CACHE: %s", self._use_cache)
         if self._use_cache:
             logger.info("Initializing Redis client")
             #use managed identity to connect to redis (azure-rambi-storage-contributor)

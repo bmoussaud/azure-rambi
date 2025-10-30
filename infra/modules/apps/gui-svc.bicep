@@ -78,6 +78,10 @@ resource guirSvcApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
                 value: 'http://movie-generator-svc'
               }
               {
+                name: 'MOVIE_POSTER_AGENT_ENDPOINT'
+                value: 'http://movie-poster-agent-svc'
+              }
+              {
                 name: 'APIM_SUBSCRIPTION_KEY'
                 secretRef: 'apim-subscription-key'
               }

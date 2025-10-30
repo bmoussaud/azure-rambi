@@ -250,6 +250,18 @@ def movie_gallery():
             if resp.data:
                 movies = json.loads(resp.data.decode('utf-8'))
                 logger.info(f"Retrieved {len(movies)} movies from gallery")
+                
+                # Fetch validation scores for each movie
+                for movie in movies:
+                    if 'id' in movie:
+                        validation_scores = movie_poster_client.get_validation_scores(movie['id'])
+                        if validation_scores:
+                            movie['validation_scores'] = validation_scores
+                            logger.info(f"Added validation scores for movie {movie['id']}: overall_score={validation_scores.get('overall_score', 'N/A')}")
+                        else:
+                            logger.info(f"No validation scores found for movie {movie['id']}")
+                    else:
+                        logger.warning(f"Movie missing 'id' field: {movie}")
             else:
                 logger.warning("No data returned from movie gallery service")
     except Exception as e:

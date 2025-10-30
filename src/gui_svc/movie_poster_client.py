@@ -69,3 +69,32 @@ class MoviePosterClient:
         endpoint = f"{self._endpoint}/poster/{movie_id}.png"
         logger.info("redirect_poster_url to endpoint %s", endpoint)
         return endpoint
+    
+    def get_validation_scores(self, movie_id: str) -> dict:
+        """Get validation scores for a movie poster from movie_poster_agent_svc"""
+        logger.info("Getting validation scores for movie_id: %s", movie_id)
+        
+        # Get the movie poster agent service endpoint
+        agent_endpoint = os.getenv("MOVIE_POSTER_AGENT_ENDPOINT")
+        if not agent_endpoint:
+            logger.warning("MOVIE_POSTER_AGENT_ENDPOINT not configured")
+            return None
+            
+        endpoint = f"{agent_endpoint}/validations/{movie_id}"
+        logger.info("Calling validation endpoint: %s", endpoint)
+        
+        try:
+            response = requests.get(endpoint, timeout=30)
+            if response.status_code == 200:
+                validation_data = response.json()
+                logger.info("Validation response: %s", json.dumps(validation_data))
+                return validation_data
+            elif response.status_code == 404:
+                logger.info("No validation found for movie_id: %s", movie_id)
+                return None
+            else:
+                logger.error("Failed to get validation scores: %s %s", response.status_code, response.text)
+                return None
+        except Exception as e:
+            logger.exception("Error getting validation scores for movie_id %s: %s", movie_id, str(e))
+            return None

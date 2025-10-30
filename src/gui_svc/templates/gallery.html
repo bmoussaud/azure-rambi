@@ -28,6 +28,14 @@
                             <h5 class="card-title">{{ movie.title }}</h5>
                             <p class="card-text small text-muted">ID: {{ movie.id }}</p>
                             <p class="card-text">{{ movie.plot[:150] }}{% if movie.plot|length > 150 %}...{% endif %}</p>
+                            
+                            {% if movie.validation_scores %}
+                            <div class="mt-2">
+                                <span class="badge bg-primary fs-6">
+                                    <i class="bi bi-award"></i> Score: {{ movie.validation_scores.overall_score }}
+                                </span>
+                            </div>
+                            {% endif %}
                         </div>
                         <div class="card-footer d-flex justify-content-between">
                             <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" 
@@ -70,6 +78,52 @@
                                                     {% if movie.poster_description %}
                                                     <h4>Poster Description</h4>
                                                     <p>{{ movie.poster_description }}</p>
+                                                    {% endif %}
+                                                    
+                                                    {% if movie.validation_scores %}
+                                                    <h4>Poster Quality Score</h4>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="alert alert-info">
+                                                                <h5><i class="bi bi-award"></i> Overall Score: {{ movie.validation_scores.overall_score }}</h5>
+                                                                {% if movie.validation_scores.validation_timestamp %}
+                                                                <small class="text-muted">Validated on: {{ movie.validation_scores.validation_timestamp }}</small>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {% if movie.validation_scores.detailed_scores %}
+                                                    <h5>Detailed Scores</h5>
+                                                    <div class="row">
+                                                        {% for score in movie.validation_scores.detailed_scores %}
+                                                        <div class="col-md-6 mb-3">
+                                                            <div class="card">
+                                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                                    <h6 class="mb-0">{{ score.category }}</h6>
+                                                                    <span class="badge bg-{% if score.score >= 80 %}success{% elif score.score >= 60 %}warning{% else %}danger{% endif %}">
+                                                                        {{ score.score }}
+                                                                    </span>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <p class="card-text small">{{ score.reasoning }}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                    {% endif %}
+                                                    
+                                                    {% if movie.validation_scores.recommendations %}
+                                                    <h5>Recommendations</h5>
+                                                    <ul class="list-group list-group-flush">
+                                                        {% for recommendation in movie.validation_scores.recommendations %}
+                                                        <li class="list-group-item">
+                                                            <i class="bi bi-lightbulb text-warning"></i> {{ recommendation }}
+                                                        </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                    {% endif %}
                                                     {% endif %}
                                                 </div>
                                             </div>

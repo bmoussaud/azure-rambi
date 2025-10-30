@@ -216,6 +216,69 @@ async def validate_poster_endpoint(
         raise HTTPException(status_code=500, detail="Internal server error during validation")
 
 
+@app.get("/validations/{movie_id}", response_model=PosterValidationResponse)
+async def get_validation(movie_id: str):
+    """Get a specific validation result by movie ID."""
+    try:
+        logger.info(f"Retrieving validation for movie ID: {movie_id}")
+        validation = store.try_find_by_id(movie_id)
+        
+        if validation is None:
+            logger.warning(f"Validation not found for movie ID: {movie_id}")
+            raise HTTPException(status_code=404, detail=f"Validation not found for movie ID: {movie_id}")
+        
+        logger.info(f"Retrieved validation for movie ID: {movie_id}")
+        return validation
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving validation for movie ID {movie_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving validation")
+
+
+@app.get("/validations", response_model=List[PosterValidationResponse])
+async def list_validations():
+    """List all stored validation results."""
+    try:
+        logger.info("Retrieving all validations")
+        validations = store.find_all()
+        
+        logger.info(f"Retrieved {len(validations)} validations")
+        return validations
+    except Exception as e:
+        logger.error(f"Error retrieving all validations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving validations")
+
+
+@app.delete("/validations/{movie_id}")
+async def delete_validation(movie_id: str):
+    """Delete a validation result by movie ID."""
+    try:
+        logger.info(f"Deleting validation for movie ID: {movie_id}")
+        
+        # Check if validation exists first
+        existing_validation = store.try_find_by_id(movie_id)
+        if existing_validation is None:
+            logger.warning(f"Validation not found for movie ID: {movie_id}")
+            raise HTTPException(status_code=404, detail=f"Validation not found for movie ID: {movie_id}")
+        
+        # Delete the validation
+        success = store.delete(movie_id)
+        
+        if success:
+            logger.info(f"Successfully deleted validation for movie ID: {movie_id}")
+            return {"message": f"Validation for movie ID {movie_id} deleted successfully", "success": True}
+        else:
+            logger.error(f"Failed to delete validation for movie ID: {movie_id}")
+            raise HTTPException(status_code=500, detail="Failed to delete validation")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting validation for movie ID {movie_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while deleting validation")
+
+
 
 @app.get("/liveness")
 async def liveness():

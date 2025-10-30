@@ -24,7 +24,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2022-03-01'
   name: containerAppsEnvironmentName
 }
 
-resource statestoreComponent 'Microsoft.App/managedEnvironments/daprComponents@2025-01-01' = {
+resource movieGalleryStatestoreComponent 'Microsoft.App/managedEnvironments/daprComponents@2025-01-01' = {
   parent: containerAppsEnvironment
   name: 'movie-gallery-svc-statetore'
 
@@ -40,11 +40,11 @@ resource statestoreComponent 'Microsoft.App/managedEnvironments/daprComponents@2
       }
       {
         name: 'database'
-        value: 'movie-gallery-svc'
+        value: 'azrambi-db'
       }
       {
         name: 'collection'
-        value: 'state'
+        value: 'movies'
       }
       {
         name: 'azureClientId'
@@ -53,6 +53,39 @@ resource statestoreComponent 'Microsoft.App/managedEnvironments/daprComponents@2
     ]
     scopes: [
       'movie-gallery-svc'
+    ]
+  }
+}
+
+resource moviePosterAgentStatestoreComponent 'Microsoft.App/managedEnvironments/daprComponents@2025-01-01' = {
+  parent: containerAppsEnvironment
+  name: 'movie-poster-agent-svc-statetore'
+
+  properties: {
+    componentType: 'state.azure.cosmosdb'
+    version: 'v1'
+    initTimeout: '5m'
+    secrets: []
+    metadata: [
+      {
+        name: 'url'
+        value: cosmosDbAccountDocumentEndpoint
+      }
+      {
+        name: 'database'
+        value: 'azrambi-db'
+      }
+      {
+        name: 'collection'
+        value: 'validations'
+      }
+      {
+        name: 'azureClientId'
+        value: azrAppsMi.properties.clientId
+      }
+    ]
+    scopes: [
+      'movie-poster-agent-svc'
     ]
   }
 }

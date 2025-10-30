@@ -328,7 +328,7 @@ module daprComponents 'modules/dapr-components.bicep' = {
     containerAppsEnvironmentName: containerAppsEnv.outputs.environmentName
     storageAccountName: storageAccountAzureRambi.outputs.name
     azureRambiAppsManagedIdentityName: azrAppsMi.name
-    cosmosDbAccountDocumentEndpoint: cosmosDb.outputs.docummentEndpoint
+    cosmosDbAccountDocumentEndpoint: cosmosDb.outputs.documentEndpoint
     serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
   }
 }
@@ -496,12 +496,30 @@ module containerMovieGallerySvcApp 'modules/apps/movie-gallery-svc.bicep' = {
   ]
 }
 
+
 module cosmosDb 'modules/cosmosdb.bicep' = {
   name: 'cosmosdb-deployment'
   params: {
-    containerName: 'movie-gallery-svc'
-    location: location
-    azureRambiAppsManagedIdentityName: azrAppsMi.name
+    name: 'azrambi-cosmosdb-${uniqueString(resourceGroup().id)}'
+    location: 'Central US'
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.id
+    managedIdentityPrincipalId: azrAppsMi.properties.principalId 
+    databases: [
+      {
+        name: 'azrambi-db'
+        throughput: 400
+        containers: [
+          {
+            name: 'movies'
+            paths: ['/partitionKey']
+          }
+           {
+            name: 'validations'
+            paths: ['/partitionKey']
+          }
+        ]
+      }
+    ]
   }
 }
 

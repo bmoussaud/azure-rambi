@@ -86,6 +86,7 @@ async def validate_poster_endpoint(
     language: str = Form("en", description="Language for the validation response")
 ):
     """Validate a movie poster image and description."""
+    logger.info(f"Validation for movie ID: {movie_id}")
     try:
         # Validate input
         

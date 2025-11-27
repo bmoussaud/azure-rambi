@@ -84,7 +84,7 @@ Be thorough, objective, and constructive in your analysis.
             agent_name="MoviePosterValidator",
         )
         # Enable Azure AI observability (optional but recommended)
-        await chat_client.setup_azure_ai_observability()
+        # DEPRECATED await chat_client.setup_azure_ai_observability()
         
         return ChatAgent(
             chat_client=chat_client,

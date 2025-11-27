@@ -1,8 +1,8 @@
 #!/bin/bash
-set -ex
+#set -ex
 source .env
 
-MOVIE_ID="1369_3170_Family_59954"
+MOVIE_ID="525_268153_Comedy_47573"
 
 
 curl -X GET "$MOVIE_GALLERY_ENDPOINT/movies/$MOVIE_ID" | jq .
@@ -22,4 +22,5 @@ curl -X POST "$MOVIE_POSTER_AGENT_ENDPOINT/validate" \
   -d "poster_url=${STORAGE_ACCOUNT_BLOB_URL}movieposters/${MOVIE_ID}.png" \
   -d "movie_title=${movie_title}" \
   -d "movie_genre=${genre}" \
+  -d "movie_id=${MOVIE_ID}" \
   -d "language=french" | jq .

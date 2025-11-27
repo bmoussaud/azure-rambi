@@ -45,7 +45,7 @@ def query():
         )
     #print(json.dumps(json_payload, indent=2))
 
-    o1_response = client.chat.completions.create(model="o1-mini", messages=messages)
+    o1_response = client.chat.completions.create(model="gpt-5-mini", messages=messages)
     o1_response_content = o1_response.choices[0].message.content
     print(o1_response_content)
     print("---")

@@ -37,11 +37,11 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
       }
         */
       {
-        name: 'o1-mini'
-        model: 'o1-mini'
+        name: 'gpt-5-mini'
+        model: 'gpt-5-mini'
         capacity: 10
         deployment: 'GlobalStandard'
-        version: '2024-09-12'
+        version: '2025-08-07'
         format: 'OpenAI'
       }
 

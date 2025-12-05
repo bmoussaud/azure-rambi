@@ -14,7 +14,6 @@ from dapr.ext.fastapi import DaprApp
 from cloudevents.http import from_http
 
 
-
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()

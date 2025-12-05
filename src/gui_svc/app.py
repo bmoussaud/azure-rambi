@@ -216,7 +216,7 @@ def movie_generate():
 
             logger.info("Generated movie: %s", json.dumps(generated_movie, indent=2))
             with DaprClient() as d:
-                logger.info("Invoke movie gallery service to save the generated movie")
+                logger.info(f"Invoke movie gallery service to save the generated movie {generated_movie['id']}")
                 d.invoke_method(
                     app_id="movie-gallery-svc",
                     method_name="movies",
@@ -224,7 +224,7 @@ def movie_generate():
                     http_verb='POST'
                 )
         except Exception as e:
-            logger.exception("Exception in calling movie_generate service")
+            logger.exception("Exception in calling movie_generate service", exc_info=e)
             generated_movie = {
                 "title": "Generation Movie Error",
                 "plot": f"Error in calling movie_generate service: {e}",
